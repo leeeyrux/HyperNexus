@@ -1,4 +1,6 @@
 package com.hypernexus.ui.components
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
