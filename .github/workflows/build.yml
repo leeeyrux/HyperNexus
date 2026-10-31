@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
@@ -29,10 +29,18 @@ jobs:
         echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
     
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace
+      run: |
+        unset _JAVA_OPTIONS
+        unset JAVA_TOOL_OPTIONS
+        ./gradlew assembleDebug --stacktrace
+
     
     - name: Build Release APK
-      run: ./gradlew assembleRelease --stacktrace
+      run: |
+        unset _JAVA_OPTIONS
+        unset JAVA_TOOL_OPTIONS
+        ./gradlew assembleRelease --stacktrace
+
     
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
