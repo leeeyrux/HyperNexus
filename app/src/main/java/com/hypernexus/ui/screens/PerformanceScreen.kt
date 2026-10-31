@@ -212,7 +212,7 @@ fun PerformanceScreen(
         }
         
         // Info card
-        item {
+         this@LazyColumn.item {
             GlassCard {
                 Row {
                     Icon(
@@ -244,7 +244,7 @@ fun PerformanceScreen(
         }
         
         // Espacio final
-        item {
+        this@LazyColumn.item {
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
