@@ -29,7 +29,7 @@ jobs:
         echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
     
     - name: Build Debug APK
-      run: JAVA_OPTS="" ./gradlew assembleDebug --stacktrace
+      run: export GRADLE_OPTS="-Xmx3g -XX:MaxMetaspaceSize=512m" && ./gradlew assembleDebug --stacktrace
 
 
     
