@@ -39,14 +39,14 @@ jobs:
 
     
     - name: Upload Debug APK
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.6.0
       with:
         name: HyperNexus-Debug
         path: app/build/outputs/apk/debug/app-debug.apk
         retention-days: 30
     
     - name: Upload Release APK
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.6.0
       with:
         name: HyperNexus-Release
         path: app/build/outputs/apk/release/app-release.apk
@@ -54,7 +54,7 @@ jobs:
     
     - name: Upload Mapping (Release)
       if: success()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.6.0
       with:
         name: mapping-release
         path: app/build/outputs/mapping/release/mapping.txt

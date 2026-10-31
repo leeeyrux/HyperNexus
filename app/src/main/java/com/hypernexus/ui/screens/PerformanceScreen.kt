@@ -85,21 +85,21 @@ fun PerformanceScreen(
         // Modo Alto Rendimiento
         item {
             IOSSwitchTile(
-                title = "Modo Alto Rendimiento",
-                subtitle = "Usa toda la RAM disponible sin restricciones para evitar cierres",
-                checked = highPerformanceEnabled,
-(highPerformanceEnabled)                onCheckedChange = { enabled ->
-                    highPerformanceEnabled = enabled
-                    scope.launch {
-                        isApplying = true
-                        if (enabled) {
-                            privilegedActions.enableHighPerformance()
-                        }
-                        isApplying = false
+            title = "Modo Alto Rendimiento",
+            subtitle = "Usa toda la RAM disponible sin restricciones para evitar cierres",
+            checked = highPerformanceEnabled,
+            onCheckedChange = { enabled ->
+                highPerformanceEnabled = enabled
+                scope.launch {
+                    isApplying = true
+                    if (enabled) {
+                        privilegedActions.enableHighPerformance()
                     }
+                    isApplying = false
                 }
-            )
-        }
+            }
+        )
+
         
         // Respuesta Táctil
         item {
