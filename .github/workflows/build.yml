@@ -29,17 +29,13 @@ jobs:
         echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
     
     - name: Build Debug APK
-      run: |
-        unset _JAVA_OPTIONS
-        unset JAVA_TOOL_OPTIONS
-        ./gradlew assembleDebug --stacktrace
+      run: JAVA_OPTS="" ./gradlew assembleDebug --stacktrace
+
 
     
     - name: Build Release APK
-      run: |
-        unset _JAVA_OPTIONS
-        unset JAVA_TOOL_OPTIONS
-        ./gradlew assembleRelease --stacktrace
+      run: JAVA_OPTS="" ./gradlew assembleRelease --stacktrace
+
 
     
     - name: Upload Debug APK
