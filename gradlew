@@ -49,9 +49,6 @@ if [ "$darwin" = "false" -a "$msys" = "false" ] ; then
         *) warn "Unsupported shell, your $SHELL may not work with this script." ;;
     esac
 fi
-if [ "$cygwin" = "false" -a "$msys" = "false" ] ; then
-    GRADLE_OPTS="$GRADLE_OPTS \"-Xdock:name=$APP_NAME\" \"-Xdock:icon=$APP_HOME/media/gradle.icns\""
-fi
 if [ "$cygwin" = "false" -a "$msys" = "false" -a "$nonstop" = "false" ] ; then
     case $GRADLE_OPTS in
         *-Dorg.gradle.jvmargs=*) ;;
