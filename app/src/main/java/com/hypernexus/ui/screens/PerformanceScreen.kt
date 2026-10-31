@@ -77,7 +77,7 @@ fun PerformanceScreen(
                         isApplying = false
                     }
                 },
-                warningText = if (enabled) "Puede tardar unos minutos la primera vez" else null
+                warningText = if (highPerformanceEnable) "Puede tardar unos minutos la primera vez" else null
             )
         }
         
@@ -87,7 +87,7 @@ fun PerformanceScreen(
                 title = "Modo Alto Rendimiento",
                 subtitle = "Usa toda la RAM disponible sin restricciones para evitar cierres",
                 checked = highPerformanceEnabled,
-                onCheckedChange = { enabled ->
+(highPerformanceEnabled)                onCheckedChange = { enabled ->
                     highPerformanceEnabled = enabled
                     scope.launch {
                         isApplying = true
