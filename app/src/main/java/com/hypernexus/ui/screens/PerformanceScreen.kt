@@ -1,6 +1,7 @@
 package com.hypernexus.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,7 +78,7 @@ fun PerformanceScreen(
                         isApplying = false
                     }
                 },
-                warningText = if (highPerformanceEnable) "Puede tardar unos minutos la primera vez" else null
+                warningText = if (highPerformanceEnabled) "Puede tardar unos minutos la primera vez" else null
             )
         }
         
