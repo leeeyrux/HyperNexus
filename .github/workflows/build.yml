@@ -34,7 +34,7 @@ jobs:
 
     
     - name: Build Release APK
-      run: JAVA_OPTS="" ./gradlew assembleRelease --stacktrace
+      run: ./gradlew assembleRelease --stacktrace -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=512m"
 
 
     
