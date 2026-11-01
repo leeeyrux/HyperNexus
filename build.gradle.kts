@@ -3,8 +3,6 @@
 plugins {
     // Plugin de aplicaciones Android estable y compatible
     id("com.android.application") version "8.2.0" apply false
-    // Plugin de Kotlin para Android unificado en la 1.9.20
-    id("rikka.shizuku.api") version "13.1.0" apply false
 }
 
 // Configuración global para todas las tareas de compilación de Kotlin
