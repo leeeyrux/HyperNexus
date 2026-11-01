@@ -101,6 +101,7 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
         )
         executeScriptWithValidation(commands, "Show Dirty Regions: $enable")
     }
+
     suspend fun configureAntialiasing(enabled: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
         val commands = if (enabled) {
             listOf(
@@ -141,8 +142,7 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
     // ==========================================
     
     suspend fun getRamUsage(): RamInfo = withContext(Dispatchers.IO) {
-        val result = bridge.executeShellCommand("cat /proc/meminfo")
-        val info = result.second
+        val info = readCpuFile("/proc/meminfo") ?: ""
         val total = extractValue(info, "MemTotal") ?: 0L
         val available = extractValue(info, "MemAvailable") ?: 0L
         val used = total - available
@@ -158,8 +158,8 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
             val currentFreq = readCpuFile("/sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq")
             cores.add(CpuCoreInfo(
                 coreId = i,
-                currentMhz = (currentFreq?.toIntOrNull() ?: 0) / 1000,
-                maxMhz = (maxFreq?.toIntOrNull() ?: 0) / 1000
+                currentMhz = (currentFreq?.trim()?.toIntOrNull() ?: 0) / 1000,
+                maxMhz = (maxFreq?.trim()?.toIntOrNull() ?: 0) / 1000
             ))
         }
         cores
@@ -174,7 +174,7 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
         )
         var maxTemp = 0f
         for (zone in thermalZones) {
-            val tempRaw = readCpuFile(zone)?.toFloatOrNull()
+            val tempRaw = readCpuFile(zone)?.trim()?.toFloatOrNull()
             if (tempRaw != null && tempRaw > maxTemp) { maxTemp = tempRaw }
         }
         if (maxTemp > 1000f) maxTemp / 1000f else maxTemp
@@ -207,7 +207,8 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
     private fun readCpuFile(path: String): String? {
         return try {
             val result = bridge.executeShellCommand("cat $path")
-            if (result.first == 0) result.second.trim() else null
+            // Cambiado para admitir respuestas exitosas del shell nativo heredado
+            if (result.first == 0 || result.second.isNotEmpty()) result.second.trim() else null
         } catch (e: Exception) {
             null
         }
