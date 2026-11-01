@@ -130,7 +130,7 @@ fun RamCard(ramInfo: PrivilegedActions.RamInfo?) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     LinearProgressIndicator(
-                        progress = { ramInfo.usagePercent / 100f },
+                        progress = ramInfo.usagePercent / 100f,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)

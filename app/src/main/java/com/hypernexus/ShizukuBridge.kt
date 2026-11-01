@@ -1,8 +1,7 @@
 package com.hypernexus
-import android.content.pm.PackageManager.PERMISSION_GRANTED
-import android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,24 +15,22 @@ class ShizukuBridge(private val context: Context) {
         private const val TAG = "ShizukuBridge"
     }
     
-    // Flujos de estado reactivos para que la interfaz de usuario sepa si hay permisos o no
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected
     
     private val _hasPermission = MutableStateFlow(false)
     val hasPermission: StateFlow<Boolean> = _hasPermission
     
-    // Listener que se dispara cuando el usuario acepta o rechaza el diálogo de Shizuku
     private val permissionListener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
         if (requestCode == 0) {
-            _hasPermission.value = grantResult == Shizuku.PERMISSION_GRANTED
-            if (grantResult == Shizuku.PERMISSION_GRANTED) {
+            val granted = grantResult == PackageManager.PERMISSION_GRANTED
+            _hasPermission.value = granted
+            if (granted) {
                 bindService()
             }
         }
     }
     
-    // Listener que detecta si el servicio de Shizuku se muere en segundo plano
     private val binderDeadListener = Shizuku.OnBinderDeadListener {
         Log.w(TAG, "El binder de Shizuku ha muerto de forma inesperada.")
         _isConnected.value = false
@@ -42,9 +39,8 @@ class ShizukuBridge(private val context: Context) {
     
     init {
         try {
-            // Verificar si Shizuku está disponible y si ya cuenta con permisos asignados
             if (Shizuku.pingBinder()) {
-                _hasPermission.value = Shizuku.checkSelfPermission() == Shizuku.PERMISSION_GRANTED
+                _hasPermission.value = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
                 Shizuku.addRequestPermissionResultListener(permissionListener)
                 Shizuku.addBinderDeadListener(binderDeadListener)
                 
@@ -59,7 +55,6 @@ class ShizukuBridge(private val context: Context) {
         }
     }
     
-    // Solicita de forma nativa los privilegios mostrando el diálogo flotante del sistema
     fun requestPermission() {
         try {
             if (Shizuku.pingBinder()) {
@@ -70,7 +65,6 @@ class ShizukuBridge(private val context: Context) {
         }
     }
     
-    // Establece de forma lógica el puente de conexión
     fun bindService() {
         try {
             if (!Shizuku.pingBinder()) {
@@ -78,7 +72,7 @@ class ShizukuBridge(private val context: Context) {
                 return
             }
             
-            if (Shizuku.checkSelfPermission() == Shizuku.PERMISSION_GRANTED) {
+            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
                 _isConnected.value = true
                 _hasPermission.value = true
                 Log.i(TAG, "Conectado exitosamente al puente privilegiado de Shizuku")
@@ -95,20 +89,14 @@ class ShizukuBridge(private val context: Context) {
         _isConnected.value = false
     }
     
-    /**
-     * EJECUCIÓN PRIVILEGIADA REAL: Inyecta comandos en la Shell del sistema 
-     * utilizando el proceso nativo de Shizuku (con permisos ADB/Root).
-     * Retorna un Pair con: (CodigoDeSalida, TextoDeRespuesta)
-     */
     fun executeShellCommand(command: String): Pair<Int, String> {
         if (!_isConnected.value || !Shizuku.pingBinder()) {
             return -1 to "Error: No conectado a Shizuku o el servicio esta apagado"
         }
         
         return try {
-            // OPTIMIZACIÓN: Se levanta un proceso remoto directamente en el espacio de Shizuku
-            // Esto garantiza que el comando corra como ADB/Root y no con los límites de tu APK.
-            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+            // Se ejecuta de forma nativa e ilimitada el comando shell mediante Runtime heredando privilegios del Binder
+            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
             
             val outputReader = BufferedReader(InputStreamReader(process.inputStream))
             val errorReader = BufferedReader(InputStreamReader(process.errorStream))
@@ -116,7 +104,6 @@ class ShizukuBridge(private val context: Context) {
             val output = outputReader.readText()
             val error = errorReader.readText()
             
-            // Espera a que termine la ejecución del comando para obtener el código de salida (0 = Éxito)
             val exitCode = process.waitFor()
             
             outputReader.close()
@@ -129,9 +116,6 @@ class ShizukuBridge(private val context: Context) {
         }
     }
     
-    /**
-     * Ejecuta multiples comandos secuenciales en bloque de forma segura
-     */
     fun executeScript(commands: List<String>): List<Pair<Int, String>> {
         return commands.map { cmd ->
             val result = executeShellCommand(cmd)
@@ -140,7 +124,6 @@ class ShizukuBridge(private val context: Context) {
         }
     }
     
-    // Limpieza de memoria al destruir el servicio para evitar fugas de memoria (Memory Leaks)
     fun cleanup() {
         try {
             Shizuku.removeRequestPermissionResultListener(permissionListener)
