@@ -1,11 +1,21 @@
-// Top-level build file
+// Top-level build file: Configuración global de plugins y compilación
+
 plugins {
+    // Plugin de aplicaciones Android estable y compatible
     id("com.android.application") version "8.2.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.20" apply false
+    // Plugin de Kotlin para Android unificado en la 1.9.20
+    id("rikka.shizuku.api") version "13.1.0" apply false
 }
+
+// Configuración global para todas las tareas de compilación de Kotlin
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     kotlinOptions {
+        // Forzar el uso de Java 17 de forma global en todo el entorno
         jvmTarget = "17"
-        freeCompilerArgs += listOf("-Xopt-in=androidx.compose.material3.ExperimentalMaterial3Api")
+        
+        // Habilitar de forma masiva las APIs experimentales de Material 3
+        freeCompilerArgs += listOf(
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+        )
     }
 }

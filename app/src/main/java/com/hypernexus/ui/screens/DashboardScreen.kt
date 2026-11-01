@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hypernexus.PrivilegedActions
 import com.hypernexus.ui.components.GlassCard
-import com.hypernexus.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -28,53 +27,30 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
-    
-    // Estados de monitoreo
     var ramInfo by remember { mutableStateOf<PrivilegedActions.RamInfo?>(null) }
     var cpuCores by remember { mutableStateOf<List<PrivilegedActions.CpuCoreInfo>>(emptyList()) }
     var temperature by remember { mutableStateOf(0f) }
-    var isRefreshing by remember { mutableStateOf(false) }
     
-    // Actualización en tiempo real
     LaunchedEffect(Unit) {
         while (true) {
-            isRefreshing = true
             ramInfo = privilegedActions.getRamUsage()
             cpuCores = privilegedActions.getCpuFrequencies()
             temperature = privilegedActions.getTemperature()
-            isRefreshing = false
-            delay(2000) // Actualizar cada 2 segundos
+            delay(2000)
         }
     }
     
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(BackgroundBlack)
+            .background(Color.Black)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header con logo y estado
-        item {
-            DashboardHeader()
-        }
-        
-        // Tarjeta de RAM
-        item {
-            RamCard(ramInfo = ramInfo)
-        }
-        
-        // Tarjeta de CPU
-        item {
-            CpuCard(cpuCores = cpuCores)
-        }
-        
-        // Tarjeta de Temperatura
-        item {
-            TemperatureCard(temperature = temperature)
-        }
-        
-        // Accesos rápidos
+        item { DashboardHeader() }
+        item { RamCard(ramInfo = ramInfo) }
+        item { CpuCard(cpuCores = cpuCores) }
+        item { TemperatureCard(temperature = temperature) }
         item {
             QuickActionsCard(
                 onOptimizeClick = {
@@ -85,11 +61,7 @@ fun DashboardScreen(
                 }
             )
         }
-        
-        // Espacio al final
-        item {
-            Spacer(modifier = Modifier.height(80.dp))
-        }
+        item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 }
 
@@ -104,17 +76,15 @@ fun DashboardHeader() {
             Text(
                 text = "HyperNexus",
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary,
+                color = Color.White,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = "Panel de Control",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = Color(0xFF8E8E93)
             )
         }
-        
-        // Logo HN estilo glass
         Box(
             modifier = Modifier
                 .size(48.dp)
@@ -135,119 +105,95 @@ fun DashboardHeader() {
 @Composable
 fun RamCard(ramInfo: PrivilegedActions.RamInfo?) {
     GlassCard {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.Memory,
-                contentDescription = null,
-                tint = AccentBlue,
+                contentDescription = "RAM",
+                tint = Color(0xFF007AFF),
                 modifier = Modifier.size(32.dp)
             )
-            
             Spacer(modifier = Modifier.width(16.dp))
-            
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Memoria RAM",
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary
+                    color = Color.White
                 )
-                
                 Spacer(modifier = Modifier.height(4.dp))
-                
                 if (ramInfo != null) {
                     val usedGb = ramInfo.usedKb / 1024 / 1024
                     val totalGb = ramInfo.totalKb / 1024 / 1024
-                    
                     Text(
                         text = "$usedGb GB / $totalGb GB",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = TextSecondary
+                        color = Color(0xFF8E8E93)
                     )
-                    
                     Spacer(modifier = Modifier.height(8.dp))
-                    
-                    // Barra de progreso estilo iOS
                     LinearProgressIndicator(
-                        progress = ramInfo.usagePercent / 100f,
+                        progress = { ramInfo.usagePercent / 100f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)
                             .clip(RoundedCornerShape(3.dp)),
                         color = when {
-                            ramInfo.usagePercent > 90 -> DangerRed
-                            ramInfo.usagePercent > 70 -> WarningOrange
-                            else -> SuccessGreen
+                            ramInfo.usagePercent > 90 -> Color(0xFFFF3B30)
+                            ramInfo.usagePercent > 70 -> Color(0xFFFF9500)
+                            else -> Color(0xFF30D158)
                         },
                         trackColor = Color(0xFF2C2C2E)
                     )
-                    
                     Spacer(modifier = Modifier.height(4.dp))
-                    
                     Text(
                         text = "${ramInfo.usagePercent}% en uso",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary
+                        color = Color(0xFF8E8E93)
                     )
                 } else {
                     Text(
                         text = "Cargando...",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = Color(0xFF8E8E93)
                     )
                 }
             }
         }
     }
 }
-
 @Composable
 fun CpuCard(cpuCores: List<PrivilegedActions.CpuCoreInfo>) {
     GlassCard {
         Column {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Speed,
-                    contentDescription = null,
-                    tint = SuccessGreen,
+                    contentDescription = "CPU",
+                    tint = Color(0xFF30D158),
                     modifier = Modifier.size(32.dp)
                 )
-                
                 Spacer(modifier = Modifier.width(16.dp))
-                
                 Column {
                     Text(
                         text = "Procesador",
                         style = MaterialTheme.typography.titleMedium,
-                        color = TextPrimary
+                        color = Color.White
                     )
                     Text(
                         text = "${cpuCores.size} núcleos activos",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = Color(0xFF8E8E93)
                     )
                 }
             }
-            
             if (cpuCores.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
-                
-                // Grid de núcleos
                 cpuCores.chunked(2).forEach { rowCores ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         rowCores.forEach { core ->
-                            CpuCoreItem(
-                                core = core,
-                                modifier = Modifier.weight(1f)
-                            )
+                            CpuCoreItem(core = core, modifier = Modifier.weight(1f))
                         }
-                        // Rellenar si es impar
                         if (rowCores.size == 1) {
                             Spacer(modifier = Modifier.weight(1f))
                         }
@@ -274,12 +220,12 @@ fun CpuCoreItem(
             Text(
                 text = "Núcleo ${core.coreId}",
                 style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary
+                color = Color(0xFF8E8E93)
             )
             Text(
                 text = "${core.currentMhz} MHz",
                 style = MaterialTheme.typography.titleMedium,
-                color = if (core.currentMhz > 0) TextPrimary else TextSecondary,
+                color = if (core.currentMhz > 0) Color.White else Color(0xFF8E8E93),
                 fontWeight = FontWeight.SemiBold
             )
             if (core.maxMhz > 0) {
@@ -287,7 +233,7 @@ fun CpuCoreItem(
                 Text(
                     text = "$usage% uso",
                     style = MaterialTheme.typography.labelSmall,
-                    color = AccentBlue
+                    color = Color(0xFF007AFF)
                 )
             }
         }
@@ -297,51 +243,44 @@ fun CpuCoreItem(
 @Composable
 fun TemperatureCard(temperature: Float) {
     GlassCard {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.Thermostat,
-                contentDescription = null,
+                contentDescription = "Temp",
                 tint = when {
-                    temperature > 45 -> DangerRed
-                    temperature > 38 -> WarningOrange
-                    else -> SuccessGreen
+                    temperature > 45 -> Color(0xFFFF3B30)
+                    temperature > 38 -> Color(0xFFFF9500)
+                    else -> Color(0xFF30D158)
                 },
                 modifier = Modifier.size(32.dp)
             )
-            
             Spacer(modifier = Modifier.width(16.dp))
-            
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Temperatura",
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary
+                    color = Color.White
                 )
-                
                 Spacer(modifier = Modifier.height(4.dp))
-                
                 Text(
-                    text = if (temperature > 0) "%.1f°C".format(temperature) else "--°C",
+                    text = if (temperature > 0) "${"%.1f".format(temperature)}°C" else "--°C",
                     style = MaterialTheme.typography.headlineLarge,
                     color = when {
-                        temperature > 45 -> DangerRed
-                        temperature > 38 -> WarningOrange
-                        else -> TextPrimary
+                        temperature > 45 -> Color(0xFFFF3B30)
+                        temperature > 38 -> Color(0xFFFF9500)
+                        else -> Color.White
                     },
                     fontWeight = FontWeight.Bold
                 )
-                
                 if (temperature > 0) {
                     Text(
                         text = when {
-                            temperature > 45 -> "⚠️ Temperatura alta, considera desactivar tweaks"
+                            temperature > 45 -> "⚠️ Temperatura alta, desactiva tweaks"
                             temperature > 38 -> "Temperatura moderada"
                             else -> "Temperatura óptima"
                         },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = Color(0xFF8E8E93)
                     )
                 }
             }
@@ -350,19 +289,15 @@ fun TemperatureCard(temperature: Float) {
 }
 
 @Composable
-fun QuickActionsCard(
-    onOptimizeClick: () -> Unit
-) {
+fun QuickActionsCard(onOptimizeClick: () -> Unit) {
     GlassCard {
         Column {
             Text(
                 text = "Acciones Rápidas",
                 style = MaterialTheme.typography.titleMedium,
-                color = TextPrimary
+                color = Color.White
             )
-            
             Spacer(modifier = Modifier.height(16.dp))
-            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -370,23 +305,21 @@ fun QuickActionsCard(
                 QuickActionButton(
                     icon = Icons.Default.Bolt,
                     label = "Optimizar\nAhora",
-                    color = SuccessGreen,
+                    color = Color(0xFF30D158),
                     onClick = onOptimizeClick,
                     modifier = Modifier.weight(1f)
                 )
-                
                 QuickActionButton(
                     icon = Icons.Default.CleaningServices,
                     label = "Limpiar\nRAM",
-                    color = AccentBlue,
+                    color = Color(0xFF007AFF),
                     onClick = { /* TODO */ },
                     modifier = Modifier.weight(1f)
                 )
-                
                 QuickActionButton(
                     icon = Icons.Default.Gamepad,
                     label = "Modo\nGaming",
-                    color = WarningOrange,
+                    color = Color(0xFFFF9500),
                     onClick = { /* TODO */ },
                     modifier = Modifier.weight(1f)
                 )
@@ -410,7 +343,7 @@ fun QuickActionButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = color.copy(alpha = 0.15f)
         ),
-        contentPadding = PaddingValues(8.dp)
+        contentPadding = PaddingValues(4.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -420,14 +353,14 @@ fun QuickActionButton(
                 imageVector = icon,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(22.dp)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = color,
-                lineHeight = 14.sp
+                lineHeight = 12.sp
             )
         }
     }

@@ -1,16 +1,12 @@
 package com.hypernexus
 
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.IBinder
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import rikka.shizuku.Shizuku
-import rikka.shizuku.ShizukuBinderWrapper
-import rikka.shizuku.ShizukuService
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 class ShizukuBridge(private val context: Context) {
     
@@ -18,117 +14,138 @@ class ShizukuBridge(private val context: Context) {
         private const val TAG = "ShizukuBridge"
     }
     
-    // Estados de conexión
+    // Flujos de estado reactivos para que la interfaz de usuario sepa si hay permisos o no
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected
     
     private val _hasPermission = MutableStateFlow(false)
     val hasPermission: StateFlow<Boolean> = _hasPermission
     
-    private var serviceBinder: IBinder? = null
-    
-    // Listener para cambios de permiso
+    // Listener que se dispara cuando el usuario acepta o rechaza el diálogo de Shizuku
     private val permissionListener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
         if (requestCode == 0) {
             _hasPermission.value = grantResult == Shizuku.PERMISSION_GRANTED
+            if (grantResult == Shizuku.PERMISSION_GRANTED) {
+                bindService()
+            }
         }
     }
     
-    // Listener para servicio muerto
+    // Listener que detecta si el servicio de Shizuku se muere en segundo plano
     private val binderDeadListener = Shizuku.OnBinderDeadListener {
-        Log.w(TAG, "Shizuku binder died")
+        Log.w(TAG, "El binder de Shizuku ha muerto de forma inesperada.")
         _isConnected.value = false
-        serviceBinder = null
+        _hasPermission.value = false
     }
     
     init {
-        // Verificar estado inicial
-        _hasPermission.value = Shizuku.checkSelfPermission() == Shizuku.PERMISSION_GRANTED
-        
-        // Registrar listeners
-        Shizuku.addRequestPermissionResultListener(permissionListener)
-        Shizuku.addBinderDeadListener(binderDeadListener)
-    }
-    
-    fun requestPermission() {
         try {
-            Shizuku.requestPermission(0)
+            // Verificar si Shizuku está disponible y si ya cuenta con permisos asignados
+            if (Shizuku.pingBinder()) {
+                _hasPermission.value = Shizuku.checkSelfPermission() == Shizuku.PERMISSION_GRANTED
+                Shizuku.addRequestPermissionResultListener(permissionListener)
+                Shizuku.addBinderDeadListener(binderDeadListener)
+                
+                if (_hasPermission.value) {
+                    bindService()
+                }
+            } else {
+                Log.w(TAG, "Shizuku no esta corriendo en el dispositivo.")
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error requesting permission", e)
+            Log.e(TAG, "Error al inicializar los listeners de Shizuku", e)
         }
     }
     
+    // Solicita de forma nativa los privilegios mostrando el diálogo flotante del sistema
+    fun requestPermission() {
+        try {
+            if (Shizuku.pingBinder()) {
+                Shizuku.requestPermission(0)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al solicitar permisos a Shizuku", e)
+        }
+    }
+    
+    // Establece de forma lógica el puente de conexión
     fun bindService() {
         try {
-            if (Shizuku.checkSelfPermission() != Shizuku.PERMISSION_GRANTED) {
-                Log.w(TAG, "No permission, requesting...")
-                requestPermission()
+            if (!Shizuku.pingBinder()) {
+                _isConnected.value = false
                 return
             }
             
-            // Obtener binder de Shizuku
-            val binder = Shizuku.getBinder()
-            if (binder != null) {
-                serviceBinder = ShizukuBinderWrapper(binder)
+            if (Shizuku.checkSelfPermission() == Shizuku.PERMISSION_GRANTED) {
                 _isConnected.value = true
-                Log.i(TAG, "Connected to Shizuku")
+                _hasPermission.value = true
+                Log.i(TAG, "Conectado exitosamente al puente privilegiado de Shizuku")
             } else {
-                Log.e(TAG, "Shizuku binder is null")
                 _isConnected.value = false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error binding to Shizuku", e)
+            Log.e(TAG, "Error al enlazar el servicio de Shizuku", e)
             _isConnected.value = false
         }
     }
     
     fun unbindService() {
-        serviceBinder = null
         _isConnected.value = false
     }
     
     /**
-     * Ejecuta comando shell con privilegios de Shizuku
-     * Retorna Pair(codigoSalida, salidaCompleta)
+     * EJECUCIÓN PRIVILEGIADA REAL: Inyecta comandos en la Shell del sistema 
+     * utilizando el proceso nativo de Shizuku (con permisos ADB/Root).
+     * Retorna un Pair con: (CodigoDeSalida, TextoDeRespuesta)
      */
     fun executeShellCommand(command: String): Pair<Int, String> {
-        if (!_isConnected.value || serviceBinder == null) {
-            return -1 to "No conectado a Shizuku"
+        if (!_isConnected.value || !Shizuku.pingBinder()) {
+            return -1 to "Error: No conectado a Shizuku o el servicio esta apagado"
         }
         
         return try {
-            // Usar ShizukuService para ejecutar comandos
-            val result = ShizukuService.newInstance(serviceBinder!!, command)
-            // Nota: La API real puede variar, esto es pseudocódigo conceptual
-            // En implementación real usaríamos UserService o transacciones AIDL directas
+            // OPTIMIZACIÓN: Se levanta un proceso remoto directamente en el espacio de Shizuku
+            // Esto garantiza que el comando corra como ADB/Root y no con los límites de tu APK.
+            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
             
-            // Alternativa más directa (si tenemos acceso):
-            val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
-            val output = process.inputStream.bufferedReader().readText()
-            val error = process.errorStream.bufferedReader().readText()
+            val outputReader = BufferedReader(InputStreamReader(process.inputStream))
+            val errorReader = BufferedReader(InputStreamReader(process.errorStream))
+            
+            val output = outputReader.readText()
+            val error = errorReader.readText()
+            
+            // Espera a que termine la ejecución del comando para obtener el código de salida (0 = Éxito)
             val exitCode = process.waitFor()
             
-            exitCode to (output + error)
+            outputReader.close()
+            errorReader.close()
+            
+            exitCode to (output + error).trim()
         } catch (e: Exception) {
-            Log.e(TAG, "Error executing command: $command", e)
-            -1 to "Error: ${e.message}"
+            Log.e(TAG, "Fallo critico al ejecutar el comando: $command", e)
+            -1 to "Error de ejecucion: ${e.message}"
         }
     }
     
     /**
-     * Ejecuta múltiples comandos en secuencia (para scripts)
+     * Ejecuta multiples comandos secuenciales en bloque de forma segura
      */
     fun executeScript(commands: List<String>): List<Pair<Int, String>> {
         return commands.map { cmd ->
             val result = executeShellCommand(cmd)
-            Log.d(TAG, "Executed: $cmd -> ${result.first}")
+            Log.d(TAG, "Comando ejecutado: $cmd -> Codigo de salida: ${result.first}")
             result
         }
     }
     
+    // Limpieza de memoria al destruir el servicio para evitar fugas de memoria (Memory Leaks)
     fun cleanup() {
-        Shizuku.removeRequestPermissionResultListener(permissionListener)
-        Shizuku.removeBinderDeadListener(binderDeadListener)
+        try {
+            Shizuku.removeRequestPermissionResultListener(permissionListener)
+            Shizuku.removeBinderDeadListener(binderDeadListener)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error durante el cleanup de Shizuku", e)
+        }
         unbindService()
     }
 }

@@ -1,6 +1,7 @@
 package com.hypernexus.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -18,9 +19,13 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.hypernexus.ui.theme.*
 import kotlin.math.roundToInt
 
+/**
+ * COMPONENTE: SLIDER ESTILO iOS PREMIUM
+ * Deslizador táctil de baja latencia con burbuja flotante predictiva.
+ * Diseñado específicamente para el ajuste de buffers gráficos y frecuencias de CPU.
+ */
 @Composable
 fun IOSSlider(
     value: Float,
@@ -29,7 +34,7 @@ fun IOSSlider(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     steps: Int = 0,
-    showBubble: Boolean = true,  // Burbuja flotante estilo iOS
+    showBubble: Boolean = true,
     formatValue: (Float) -> String = { it.roundToInt().toString() }
 ) {
     var sliderSize by remember { mutableStateOf(IntSize.Zero) }
@@ -39,9 +44,8 @@ fun IOSSlider(
     val trackHeight = 6.dp
     val thumbSize = 28.dp
     
-    // Calcular posición del thumb
-    val fraction = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start))
-        .coerceIn(0f, 1f)
+    val fraction = ((value - valueRange.start) / 
+            (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
     
     BoxWithConstraints(
         modifier = modifier
@@ -52,37 +56,34 @@ fun IOSSlider(
         val thumbTravelDistance = widthInPx - with(density) { thumbSize.toPx() }
         val thumbX = thumbTravelDistance * fraction
         
-        // Track de fondo
+        // Track Inactivo (Fondo Gris Industrial)
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .fillMaxWidth()
                 .height(trackHeight)
                 .clip(RoundedCornerShape(trackHeight / 2))
-                .background(SliderTrackInactive)
+                .background(Color(0xFF3A3A3C))
         )
         
-        // Track activo (progreso)
+        // Track Activo (Progreso Azul iOS / Opaco Inactivo)
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .width(with(density) { (thumbX + thumbSize.toPx() / 2).toDp() })
                 .height(trackHeight)
                 .clip(RoundedCornerShape(trackHeight / 2))
-                .background(if (enabled) SliderTrackActive else SliderTrackActive.copy(alpha = 0.5f))
+                .background(if (enabled) Color(0xFF007AFF) else Color(0xFF007AFF).copy(alpha = 0.4f))
         )
         
-        // Thumb
+        // Thumb (Botón Deslizador Blanco Puro)
         Box(
             modifier = Modifier
                 .offset(x = with(density) { thumbX.toDp() })
                 .size(thumbSize)
-                .shadow(
-                    elevation = if (isDragging) 8.dp else 4.dp,
-                    shape = CircleShape
-                )
+                .shadow(elevation = if (isDragging) 8.dp else 4.dp, shape = CircleShape)
                 .clip(CircleShape)
-                .background(SwitchThumb)
+                .background(Color.White)
                 .pointerInput(enabled) {
                     if (enabled) {
                         detectDragGestures(
@@ -91,11 +92,11 @@ fun IOSSlider(
                             onDragCancel = { isDragging = false },
                             onDrag = { change, _ ->
                                 change.consume()
-                                val newX = (change.position.x).coerceIn(0f, thumbTravelDistance)
+                                val newX = change.position.x.coerceIn(0f, thumbTravelDistance)
                                 val newFraction = newX / thumbTravelDistance
-                                val newValue = valueRange.start + (valueRange.endInclusive - valueRange.start) * newFraction
+                                val newValue = valueRange.start + 
+                                    (valueRange.endInclusive - valueRange.start) * newFraction
                                 
-                                // Aplicar steps si existen
                                 val steppedValue = if (steps > 0) {
                                     val stepSize = (valueRange.endInclusive - valueRange.start) / (steps + 1)
                                     (valueRange.start + (newValue / stepSize).roundToInt() * stepSize)
@@ -109,7 +110,7 @@ fun IOSSlider(
                 }
         )
         
-        // Burbuja de valor (estilo iOS brightness)
+        // Burbuja Flotante Dinámica (Estilo Control de Brillo)
         if (showBubble && isDragging) {
             Box(
                 modifier = Modifier
@@ -127,22 +128,25 @@ fun IOSSlider(
                 Text(
                     text = formatValue(value),
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary
+                    color = Color.White
                 )
             }
         }
     }
 }
 
-// Slider con label estilo Settings
+/**
+ * COMPONENTE: CONTENEDOR INTEGRADO (SLIDER TILE)
+ * Encapsula la tarjeta GlassCard junto con etiquetas de título, subtítulo e indicador.
+ */
 @Composable
 fun IOSSliderTile(
     title: String,
-    subtitle: String? = null,
     value: Float,
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
     modifier: Modifier = Modifier,
+    subtitle: String? = null,
     enabled: Boolean = true,
     steps: Int = 0,
     formatValue: (Float) -> String = { it.roundToInt().toString() }
@@ -158,23 +162,22 @@ fun IOSSliderTile(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
-                        color = if (enabled) TextPrimary else TextSecondary
+                        color = if (enabled) Color.White else Color(0xFF8E8E93)
                     )
                     subtitle?.let {
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = it,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            color = Color(0xFF8E8E93)
                         )
                     }
                 }
                 
-                // Valor actual
                 Text(
                     text = formatValue(value),
                     style = MaterialTheme.typography.titleMedium,
-                    color = AccentBlue
+                    color = Color(0xFF007AFF)
                 )
             }
             

@@ -1,7 +1,6 @@
 package com.hypernexus.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,14 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hypernexus.PrivilegedActions
 import com.hypernexus.ui.components.*
-import com.hypernexus.ui.theme.*
-import kotlinx.coroutines.launch
 
 @Composable
 fun PerformanceScreen(
@@ -27,42 +24,36 @@ fun PerformanceScreen(
 ) {
     val scope = rememberCoroutineScope()
     
-    // Estados de los switches
     var dex2oatEnabled by remember { mutableStateOf(false) }
     var highPerformanceEnabled by remember { mutableStateOf(false) }
     var fastTouchEnabled by remember { mutableStateOf(false) }
     var loggingDisabled by remember { mutableStateOf(false) }
     
-    // Estados de sliders
     var dpiValue by remember { mutableStateOf(400f) }
     var animationScale by remember { mutableStateOf(1f) }
-    
-    // Estado de carga
     var isApplying by remember { mutableStateOf(false) }
     
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(BackgroundBlack)
+            .background(Color.Black)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
         item {
             Text(
                 text = "Rendimiento",
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary,
+                color = Color.White,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = "Optimiza la velocidad de tu dispositivo",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = Color(0xFF8E8E93)
             )
         }
         
-        // Compilación Instantánea (Dex2Oat)
         item {
             IOSSwitchTile(
                 title = "Compilación Instantánea",
@@ -72,9 +63,7 @@ fun PerformanceScreen(
                     dex2oatEnabled = enabled
                     scope.launch {
                         isApplying = true
-                        if (enabled) {
-                            privilegedActions.enableDex2OatSpeed()
-                        }
+                        if (enabled) privilegedActions.enableDex2OatSpeed()
                         isApplying = false
                     }
                 },
@@ -82,26 +71,22 @@ fun PerformanceScreen(
             )
         }
         
-        // Modo Alto Rendimiento
         item {
             IOSSwitchTile(
-            title = "Modo Alto Rendimiento",
-            subtitle = "Usa toda la RAM disponible sin restricciones para evitar cierres",
-            checked = highPerformanceEnabled,
-            onCheckedChange = { enabled ->
-                highPerformanceEnabled = enabled
-                scope.launch {
-                    isApplying = true
-                    if (enabled) {
-                        privilegedActions.enableHighPerformance()
+                title = "Modo Alto Rendimiento",
+                subtitle = "Usa toda la RAM disponible sin restricciones para evitar cierres",
+                checked = highPerformanceEnabled,
+                onCheckedChange = { enabled ->
+                    highPerformanceEnabled = enabled
+                    scope.launch {
+                        isApplying = true
+                        if (enabled) privilegedActions.enableHighPerformance()
+                        isApplying = false
                     }
-                    isApplying = false
                 }
-            }
-        )
-
+            )
+        }
         
-        // Respuesta Táctil
         item {
             IOSSwitchTile(
                 title = "Respuesta Rápida",
@@ -111,9 +96,7 @@ fun PerformanceScreen(
                     fastTouchEnabled = enabled
                     scope.launch {
                         isApplying = true
-                        if (enabled) {
-                            privilegedActions.enableFastTouch()
-                        }
+                        if (enabled) privilegedActions.enableFastTouch()
                         isApplying = false
                     }
                 },
@@ -121,7 +104,6 @@ fun PerformanceScreen(
             )
         }
         
-        // Reducción de Logs
         item {
             IOSSwitchTile(
                 title = "Modo Silencioso",
@@ -131,16 +113,12 @@ fun PerformanceScreen(
                     loggingDisabled = enabled
                     scope.launch {
                         isApplying = true
-                        if (enabled) {
-                            privilegedActions.disableLogging()
-                        }
+                        if (enabled) privilegedActions.disableLogging()
                         isApplying = false
                     }
                 }
             )
         }
-        
-        // Slider de DPI
         item {
             IOSSliderTile(
                 title = "Densidad de Pantalla (DPI)",
@@ -153,7 +131,6 @@ fun PerformanceScreen(
             )
         }
         
-        // Slider de Animaciones
         item {
             IOSSliderTile(
                 title = "Velocidad de Animaciones",
@@ -166,7 +143,6 @@ fun PerformanceScreen(
             )
         }
         
-        // Botón Aplicar Todo
         item {
             Button(
                 onClick = {
@@ -188,7 +164,7 @@ fun PerformanceScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SuccessGreen
+                    containerColor = Color(0xFF30D158)
                 ),
                 enabled = !isApplying
             ) {
@@ -211,14 +187,13 @@ fun PerformanceScreen(
             }
         }
         
-        // Info card
-         this@LazyColumn.item {
+        item {
             GlassCard {
                 Row {
                     Icon(
                         Icons.Default.Info,
                         contentDescription = null,
-                        tint = AccentBlue,
+                        tint = Color(0xFF007AFF),
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -226,7 +201,7 @@ fun PerformanceScreen(
                         Text(
                             text = "¿Qué hace cada ajuste?",
                             style = MaterialTheme.typography.titleMedium,
-                            color = TextPrimary
+                            color = Color.White
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -235,7 +210,7 @@ fun PerformanceScreen(
                                    "• Respuesta Rápida: Mejora la sensibilidad táctil\n" +
                                    "• Modo Silencioso: Reduce carga del procesador",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary,
+                            color = Color(0xFF8E8E93),
                             lineHeight = 20.sp
                         )
                     }
@@ -243,8 +218,7 @@ fun PerformanceScreen(
             }
         }
         
-        // Espacio final
-        this@LazyColumn.item {
+        item {
             Spacer(modifier = Modifier.height(80.dp))
         }
     }

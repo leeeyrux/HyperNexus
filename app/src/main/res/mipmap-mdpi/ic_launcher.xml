@@ -1,9 +1,5 @@
-<vector xmlns:android="http://android.com"
-    android:width="100dp"
-    android:height="100dp"
-    android:viewportWidth="100"
-    android:viewportHeight="100">
-  <path
-      android:fillColor="#FF6200EE"
-      android:pathData="M10,10H90V90H10Z"/>
-</vector>
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://android.com">
+    <background android:drawable="@color/background_dark" />
+    <foreground android:drawable="@drawable/ic_launcher" />
+</adaptive-icon>

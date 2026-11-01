@@ -1,18 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://android.com"
+    xmlns:tools="http://android.com">
 
-    <!-- Permisos básicos -->
+    <!-- 1. PERMISOS DE CONECTIVIDAD BÁSICA -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
-    <!-- Para overlay de FPS -->
+    <!-- 2. PERMISOS ESPECIALES DE RENDIMIENTO Y PRIVILEGIOS -->
+    <!-- Requerido para pintar el contador o caja de FPS flotante sobre otras apps -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     
-    <!-- Para Shizuku -->
+    <!-- Requerido para que el servicio de monitoreo no sea destruido por el sistema -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     
-    <!-- Queries para Shizuku -->
+    <!-- REQUERIDO PARA ANDROID 14 (SDK 34): Permiso específico para uso especial del servicio -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    
+    <!-- 3. VISIBILIDAD DE PAQUETES (QUERIES) -->
+    <!-- Permite a HyperNexus detectar e interactuar con el gestor oficial de Shizuku -->
     <queries>
         <package android:name="moe.shizuku.privileged.api" />
     </queries>
@@ -25,7 +30,8 @@
         android:supportsRtl="true"
         tools:targetApi="34">
 
-        <!-- Shizuku Provider REQUERIDO -->
+        <!-- 4. COMPONENTES DE ENLAZADO EXTERNO (SHIZUKU) -->
+        <!-- Proveedor obligatorio para establecer el puente IPC seguro con Shizuku -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -34,6 +40,7 @@
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
+        <!-- 5. ACTIVIDAD PRINCIPAL (PUNTO DE ENTRADA GRÁFICO) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -45,11 +52,18 @@
             </intent-filter>
         </activity>
 
-        <!-- Servicio para overlay FPS -->
+        <!-- 6. SERVICIOS EN SEGUNDO PLANO -->
+        <!-- Servicio encargado de calcular y renderizar el contador de FPS en tiempo real -->
+        <!-- BLINDAJE: Añadido foregroundServiceType para evitar cierres inmediatos en Android 14 -->
         <service
             android:name=".services.FpsOverlayService"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property 
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" 
+                android:value="Contador y monitor de FPS en tiempo real para optimizacion de videojuegos." />
+        </service>
 
     </application>
 </manifest>

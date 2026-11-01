@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -15,29 +14,33 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.hypernexus.ui.theme.*
 
+/**
+ * COMPONENTE BASE: CONTENEDOR ESTILO NEOMÓRFICO / GLASSMOPHISM
+ * Diseña tarjetas con efecto de desenfoque traslúcido para la API 31+. 
+ * Incluye un fallback matemático con gradientes oscuros para sistemas antiguos.
+ */
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 24.dp,
     blurRadius: Dp = 20.dp,
-    backgroundColor: Color = CardGlass,
+    // Fallback directo a un gris traslúcido premium si no encuentra el token del tema
+    backgroundColor: Color = Color(0xFF1C1C1E).copy(alpha = 0.7f),
     borderColor: Color = Color.White.copy(alpha = 0.1f),
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(cornerRadius)
     
     Box(
-        modifier = modifier
-            .shadow(
-                elevation = 8.dp,
-                shape = shape,
-                ambientColor = Color.Black.copy(alpha = 0.3f),
-                spotColor = Color.Black.copy(alpha = 0.5f)
-            )
+        modifier = modifier.shadow(
+            elevation = 8.dp,
+            shape = shape,
+            ambientColor = Color.Black.copy(alpha = 0.3f),
+            spotColor = Color.Black.copy(alpha = 0.5f)
+        )
     ) {
-        // Blur effect (API 31+) o fallback
+        // RENDERIZADO DINÁMICO DEL EFECTO DE DESENFOQUE (BLUR FUSED ANCHOR)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             Box(
                 modifier = Modifier
@@ -47,7 +50,7 @@ fun GlassCard(
                     .background(backgroundColor)
             )
         } else {
-            // Fallback para Android < 12: gradiente simulado
+            // PROCESAMIENTO PARA ANDROID < 12: GRADIENTE DE OPACIDAD SIMULADO
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -63,7 +66,7 @@ fun GlassCard(
             )
         }
         
-        // Borde sutil estilo glass
+        // BORDE METALIZADO ULTRA FINO (GLASS BORDER EFFECT)
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -75,7 +78,7 @@ fun GlassCard(
                 )
         )
         
-        // Contenido
+        // INYECCIÓN DE CONTENIDO MODULAR
         Column(
             modifier = Modifier
                 .padding(20.dp)

@@ -9,13 +9,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.lifecycleScope
 import com.hypernexus.ui.theme.HyperNexusTheme
 import com.hypernexus.ui.screens.*
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     
@@ -25,7 +24,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Inicializar Shizuku
         shizukuBridge = ShizukuBridge(this)
         privilegedActions = PrivilegedActions(shizukuBridge)
         
@@ -70,14 +68,14 @@ fun HyperNexusApp(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            "HyperNexus",
+                            text = "HyperNexus",
                             style = MaterialTheme.typography.titleLarge,
                             color = Color.White
                         )
                         Text(
-                            if (isConnected) "● Conectado" else "○ Desconectado",
+                            text = if (isConnected) "● Conectado" else "○ Desconectado",
                             style = MaterialTheme.typography.labelSmall,
                             color = if (isConnected) Color(0xFF30D158) else Color(0xFFFF9500)
                         )
@@ -96,7 +94,7 @@ fun HyperNexusApp(
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.Dashboard, null) },
+                    icon = { Icon(Icons.Default.Dashboard, "Panel") },
                     label = { Text("Panel") },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color(0xFF007AFF),
@@ -106,7 +104,7 @@ fun HyperNexusApp(
                 NavigationBarItem(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Default.Speed, null) },
+                    icon = { Icon(Icons.Default.Speed, "Rendimiento") },
                     label = { Text("Rendimiento") },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color(0xFF007AFF),
@@ -116,7 +114,7 @@ fun HyperNexusApp(
                 NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.VideogameAsset, null) },
+                    icon = { Icon(Icons.Default.VideogameAsset, "Gráficos") },
                     label = { Text("Gráficos") },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color(0xFF007AFF),
@@ -126,7 +124,7 @@ fun HyperNexusApp(
                 NavigationBarItem(
                     selected = selectedTab == 3,
                     onClick = { selectedTab = 3 },
-                    icon = { Icon(Icons.Default.Science, null) },
+                    icon = { Icon(Icons.Default.Science, "Experimental") },
                     label = { Text("Experimental") },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color(0xFF007AFF),
@@ -149,11 +147,10 @@ fun HyperNexusApp(
                 3 -> ExperimentalScreen(privilegedActions)
             }
             
-            // Banner de permiso si no está concedido
             if (!hasPermission) {
                 PermissionBanner(
                     onRequestPermission = { shizukuBridge.requestPermission() },
-                    modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter)
+                    modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
         }
@@ -174,16 +171,16 @@ fun PermissionBanner(
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "Permiso Shizuku requerido",
+                    text = "Permiso Shizuku requerido",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White
                 )
                 Text(
-                    "Para aplicar tweaks de rendimiento",
+                    text = "Para aplicar tweaks de rendimiento",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF8E8E93)
                 )

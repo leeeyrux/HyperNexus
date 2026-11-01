@@ -1,5 +1,4 @@
 package com.hypernexus.ui.screens
-import androidx.compose.ui.unit.sp
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -11,14 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hypernexus.PrivilegedActions
 import com.hypernexus.ui.components.*
-import com.hypernexus.ui.theme.*
-import kotlinx.coroutines.launch
 
 @Composable
 fun GraphicsScreen(
@@ -27,39 +24,35 @@ fun GraphicsScreen(
 ) {
     val scope = rememberCoroutineScope()
     
-    // Estados
     var vsyncDisabled by remember { mutableStateOf(false) }
     var dirtyRegionsDisabled by remember { mutableStateOf(false) }
     var showDirtyRegions by remember { mutableStateOf(false) }
     var antialiasingEnabled by remember { mutableStateOf(false) }
     var hwuiCacheOptimized by remember { mutableStateOf(false) }
     var gpuRenderingForced by remember { mutableStateOf(false) }
-    
     var isApplying by remember { mutableStateOf(false) }
     
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(BackgroundBlack)
+            .background(Color.Black)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
         item {
             Text(
                 text = "Gráficos",
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary,
+                color = Color.White,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = "Desbloquea el potencial visual de tu dispositivo",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = Color(0xFF8E8E93)
             )
         }
         
-        // VSYNC (La joya de la corona)
         item {
             IOSSwitchTile(
                 title = "Desbloqueo de FPS",
@@ -69,9 +62,7 @@ fun GraphicsScreen(
                     vsyncDisabled = enabled
                     scope.launch {
                         isApplying = true
-                        if (enabled) {
-                            privilegedActions.disableVsync()
-                        }
+                        if (enabled) privilegedActions.disableVsync()
                         isApplying = false
                     }
                 },
@@ -79,7 +70,6 @@ fun GraphicsScreen(
             )
         }
         
-        // Renderizado Completo
         item {
             IOSSwitchTile(
                 title = "Renderizado Completo",
@@ -89,9 +79,7 @@ fun GraphicsScreen(
                     dirtyRegionsDisabled = enabled
                     scope.launch {
                         isApplying = true
-                        if (enabled) {
-                            privilegedActions.disableDirtyRegions()
-                        }
+                        if (enabled) privilegedActions.disableDirtyRegions()
                         isApplying = false
                     }
                 },
@@ -99,7 +87,6 @@ fun GraphicsScreen(
             )
         }
         
-        // Mostrar Dirty Regions (Debug)
         item {
             IOSSwitchTile(
                 title = "Modo Debug Visual",
@@ -113,8 +100,6 @@ fun GraphicsScreen(
                 }
             )
         }
-        
-        // Antialiasing
         item {
             IOSSwitchTile(
                 title = "Antialiasing Controlado",
@@ -129,7 +114,6 @@ fun GraphicsScreen(
             )
         }
         
-        // GPU Rendering Forzado
         item {
             IOSSwitchTile(
                 title = "Aceleración Gráfica Forzada",
@@ -138,14 +122,12 @@ fun GraphicsScreen(
                 onCheckedChange = { enabled ->
                     gpuRenderingForced = enabled
                     scope.launch {
-                        // TODO: Implementar en PrivilegedActions
-                        // privilegedActions.forceGpuRendering(enabled)
+                        // TODO: Implementar forceGpuRendering en PrivilegedActions
                     }
                 }
             )
         }
         
-        // HWUI Cache (Riesgoso)
         item {
             IOSSwitchTile(
                 title = "Optimización de Caché Gráfico",
@@ -154,16 +136,13 @@ fun GraphicsScreen(
                 onCheckedChange = { enabled ->
                     hwuiCacheOptimized = enabled
                     scope.launch {
-                        if (enabled) {
-                            privilegedActions.optimizeHwuiCache()
-                        }
+                        if (enabled) privilegedActions.optimizeHwuiCache()
                     }
                 },
                 warningText = "⚠️ Experimental: Puede causar inestabilidad en algunos dispositivos"
             )
         }
         
-        // Sección de explicación
         item {
             GlassCard {
                 Column {
@@ -171,38 +150,33 @@ fun GraphicsScreen(
                         Icon(
                             Icons.Default.VideogameAsset,
                             contentDescription = null,
-                            tint = SuccessGreen,
+                            tint = Color(0xFF30D158),
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = "Para Gamers",
                             style = MaterialTheme.typography.titleMedium,
-                            color = TextPrimary
+                            color = Color.White
                         )
                     }
-                    
                     Spacer(modifier = Modifier.height(12.dp))
-                    
                     Text(
                         text = "El Desbloqueo de FPS (VSYNC) es el ajuste más importante para juegos competitivos. Permite que la pantalla muestre más de 60 cuadros por segundo, reduciendo el input lag y haciendo que los tiros se sientan más precisos.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = Color(0xFF8E8E93),
                         lineHeight = 20.sp
                     )
-                    
                     Spacer(modifier = Modifier.height(8.dp))
-                    
                     Text(
                         text = "Recomendado para: Free Fire, PUBG, Call of Duty Mobile, Genshin Impact",
                         style = MaterialTheme.typography.labelMedium,
-                        color = AccentBlue
+                        color = Color(0xFF007AFF)
                     )
                 }
             }
         }
         
-        // Espacio final
         item {
             Spacer(modifier = Modifier.height(80.dp))
         }

@@ -5,8 +5,8 @@ import androidx.compose.ui.graphics.Color
 // iOS 26 Liquid Glass Colors
 val BackgroundBlack = Color(0xFF000000)
 val BackgroundDarkGray = Color(0xFF0A0A0A)
-val CardGlass = Color(0xCC1C1C1E)  // 80% opacity
-val CardGlassLight = Color(0x991C1C1E)  // 60% opacity
+val CardGlass = Color(0xCC1C1C1E)
+val CardGlassLight = Color(0x991C1C1E)
 
 val AccentBlue = Color(0xFF007AFF)
 val SuccessGreen = Color(0xFF30D158)

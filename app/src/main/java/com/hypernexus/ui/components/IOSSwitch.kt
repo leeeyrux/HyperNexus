@@ -1,7 +1,6 @@
 package com.hypernexus.ui.components
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 
+import androidx.animation.core.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,7 +9,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,8 +19,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.hypernexus.ui.theme.*
 
+/**
+ * COMPONENTE: INTERRUPTOR ANIMADO ESTILO iOS (SWITCH)
+ * Renderiza un conmutador con amortiguación elástica bouncie en su física lateral.
+ */
 @Composable
 fun IOSSwitch(
     checked: Boolean,
@@ -33,7 +36,6 @@ fun IOSSwitch(
     val thumbSize = height - 4.dp
     val thumbTravelDistance = width - thumbSize - 4.dp
     
-    // Animación del thumb
     val thumbPosition by animateDpAsState(
         targetValue = if (checked) thumbTravelDistance else 2.dp,
         animationSpec = spring(
@@ -43,12 +45,11 @@ fun IOSSwitch(
         label = "thumbPosition"
     )
     
-    // Animación del color de fondo
     val backgroundColor by animateColorAsState(
         targetValue = when {
-            !enabled -> SwitchGray.copy(alpha = 0.5f)
-            checked -> SwitchGreen
-            else -> SwitchGray
+            !enabled -> Color(0xFF3A3A3C).copy(alpha = 0.5f)
+            checked -> Color(0xFF30D158)
+            else -> Color(0xFF3A3A3C)
         },
         animationSpec = tween(durationMillis = 200),
         label = "backgroundColor"
@@ -73,7 +74,6 @@ fun IOSSwitch(
             ),
         contentAlignment = Alignment.CenterStart
     ) {
-        // Thumb (círculo blanco)
         Box(
             modifier = Modifier
                 .offset(x = thumbPosition)
@@ -85,21 +85,25 @@ fun IOSSwitch(
                     spotColor = Color.Black.copy(alpha = 0.3f)
                 )
                 .clip(CircleShape)
-                .background(SwitchThumb)
+                .background(Color.White)
         )
     }
 }
 
-// Versión con label integrado estilo iOS Settings
+/**
+ * COMPONENTE: CELDA INTEGRADA (SWITCH TILE)
+ * Embebe el interruptor dentro de una GlassCard estructurando títulos, descripciones
+ * y alertas visuales para avisos térmicos o consumo energético.
+ */
 @Composable
 fun IOSSwitchTile(
     title: String,
-    subtitle: String? = null,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    subtitle: String? = null,
     enabled: Boolean = true,
-    warningText: String? = null  // Para advertencias como "Puede aumentar temperatura"
+    warningText: String? = null
 ) {
     GlassCard(modifier = modifier) {
         Row(
@@ -111,7 +115,7 @@ fun IOSSwitchTile(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = if (enabled) TextPrimary else TextSecondary
+                    color = if (enabled) Color.White else Color(0xFF8E8E93)
                 )
                 
                 subtitle?.let {
@@ -119,11 +123,10 @@ fun IOSSwitchTile(
                     Text(
                         text = it,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = Color(0xFF8E8E93)
                     )
                 }
                 
-                // Advertencia opcional
                 warningText?.let {
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -135,7 +138,7 @@ fun IOSSwitchTile(
                         Text(
                             text = it,
                             style = MaterialTheme.typography.labelSmall,
-                            color = WarningOrange
+                            color = Color(0xFFFF9500)
                         )
                     }
                 }
