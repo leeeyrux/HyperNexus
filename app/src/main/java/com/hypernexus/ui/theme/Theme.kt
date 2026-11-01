@@ -11,7 +11,7 @@ private val ThemeWarningOrange = Color(0xFFFF9500)
 private val ThemeDangerRed = Color(0xFFFF3B30)
 private val ThemeBackgroundBlack = Color(0xFF000000)
 private val ThemeCardGlass = Color(0xFF1C1C1E)
-private val ThemeTextPrimary = Color(0xFFWhite.value) // Fallback seguro a Blanco Puro
+private val ThemeTextPrimary = Color(0xFFFFFFFF) // Fallback seguro a Blanco Puro
 private val ThemeTextSecondary = Color(0xFF8E8E93)
 
 private val DarkColorScheme = darkColorScheme(
