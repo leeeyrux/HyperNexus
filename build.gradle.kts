@@ -3,6 +3,8 @@
 plugins {
     // Plugin de aplicaciones Android estable y compatible
     id("com.android.application") version "8.2.0" apply false
+    // Plugin de Kotlin indispensable para que el compilador entienda las tareas de compilación
+    id("org.jetbrains.kotlin.android") version "1.9.20" apply false
 }
 
 // Configuración global para todas las tareas de compilación de Kotlin
