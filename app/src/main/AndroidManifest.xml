@@ -1,17 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://android.com"
-    xmlns:tools="http://android.com">
 
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 1. PERMISOS DE LA APLICACIÓN -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    
+
+    <!-- 2. CONSULTAS A OTRAS APPS -->
     <queries>
         <package android:name="moe.shizuku.privileged.api" />
     </queries>
 
+    <!-- 3. CONFIGURACIÓN DE LA APLICACIÓN -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -20,6 +24,7 @@
         android:supportsRtl="true"
         tools:targetApi="34">
 
+        <!-- 4. SHIZUKU -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -28,25 +33,31 @@
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
+        <!-- ACTIVIDAD PRINCIPAL -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.HyperNexus"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
 
+        <!-- SERVICIO DE FPS -->
         <service
             android:name=".services.FpsOverlayService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
-            <property 
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" 
+
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Contador de FPS" />
+
         </service>
 
     </application>
