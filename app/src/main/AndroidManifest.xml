@@ -1,9 +1,8 @@
-
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 1. PERMISOS DE LA APLICACIÓN -->
+    <!-- 1. PERMISOS DE LA APLICACION -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -15,7 +14,7 @@
         <package android:name="moe.shizuku.privileged.api" />
     </queries>
 
-    <!-- 3. CONFIGURACIÓN DE LA APLICACIÓN -->
+    <!-- 3. CONFIGURACION DE LA APLICACION -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
