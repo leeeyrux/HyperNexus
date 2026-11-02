@@ -54,6 +54,13 @@ class HyperNexusViewModel(
         }
     }
 
+    fun applyScreenResolution(width: Int, height: Int) {
+        viewModelScope.launch {
+            val cmd = if (width <= 0 || height <= 0) "wm size reset" else "wm size ${width}x${height}"
+            privilegedActions.bridge.executeShellCommand(cmd)
+        }
+    }
+
     fun toggleVsync(enabled: Boolean) {
         viewModelScope.launch {
             repository.updateVsync(enabled)
@@ -134,6 +141,12 @@ class HyperNexusViewModel(
     fun setFpsOverlay(active: Boolean) {
         viewModelScope.launch {
             repository.updateFpsOverlay(active)
+        }
+    }
+
+    fun toggleFavoriteCommand(cmd: String) {
+        viewModelScope.launch {
+            repository.toggleFavoriteCommand(cmd)
         }
     }
 }

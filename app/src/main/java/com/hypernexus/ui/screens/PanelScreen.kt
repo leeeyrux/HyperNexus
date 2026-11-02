@@ -36,7 +36,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun DashboardScreen(
+fun PanelScreen(
     viewModel: HyperNexusViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -62,7 +62,7 @@ fun DashboardScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ENCABEZADO CON BRANDING OFICIAL
+        // ENCABEZADO CON LOGO OFICIAL INLINE
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),

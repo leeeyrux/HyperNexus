@@ -31,7 +31,6 @@ class AppFilterManager(
         val ownPackage = context.packageName
         val packageNames = mutableSetOf<String>()
 
-        // 1. Consulta nativa de lanzadores
         try {
             val launcherIntent = Intent(Intent.ACTION_MAIN, null).apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
@@ -45,7 +44,6 @@ class AppFilterManager(
             resolveInfos.forEach { packageNames.add(it.activityInfo.packageName) }
         } catch (_: Exception) {}
 
-        // 2. Consulta privilegiada Shizuku (rompe el sandbox de Android 11+)
         if (shizukuBridge != null && shizukuBridge.isConnected.value) {
             try {
                 val shellOut = shizukuBridge.executeShellCommand("pm list packages -3")
@@ -76,7 +74,6 @@ class AppFilterManager(
                     (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
                 }
 
-                // Filtrar bloatware no-juego de Google
                 val isExcluded = pkg == "com.android.vending" ||
                         pkg.startsWith("com.google.android.gms") ||
                         pkg.startsWith("com.google.android.feedback")

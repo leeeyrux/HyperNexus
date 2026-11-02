@@ -87,30 +87,59 @@ fun HyperNexusApp(
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = Color(0xFF1C1C1E), tonalElevation = 0.dp) {
+            NavigationBar(
+                containerColor = Color(0xFF1C1C1E),
+                tonalElevation = 0.dp
+            ) {
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     icon = { Icon(Icons.Default.Dashboard, "Panel") },
-                    label = { Text("Panel") }
+                    label = { Text("Panel") },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF007AFF),
+                        unselectedIconColor = Color(0xFF8E8E93)
+                    )
                 )
                 NavigationBarItem(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     icon = { Icon(Icons.Default.Speed, "Rendimiento") },
-                    label = { Text("Rendimiento") }
+                    label = { Text("Rendimiento") },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF007AFF),
+                        unselectedIconColor = Color(0xFF8E8E93)
+                    )
                 )
                 NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
                     icon = { Icon(Icons.Default.VideogameAsset, "Gráficos") },
-                    label = { Text("Gráficos") }
+                    label = { Text("Gráficos") },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF007AFF),
+                        unselectedIconColor = Color(0xFF8E8E93)
+                    )
                 )
                 NavigationBarItem(
                     selected = selectedTab == 3,
                     onClick = { selectedTab = 3 },
+                    icon = { Icon(Icons.Default.Terminal, "Terminal") },
+                    label = { Text("Terminal") },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF007AFF),
+                        unselectedIconColor = Color(0xFF8E8E93)
+                    )
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 4,
+                    onClick = { selectedTab = 4 },
                     icon = { Icon(Icons.Default.Science, "Experimental") },
-                    label = { Text("Experimental") }
+                    label = { Text("Experimental") },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF007AFF),
+                        unselectedIconColor = Color(0xFF8E8E93)
+                    )
                 )
             }
         }
@@ -122,10 +151,11 @@ fun HyperNexusApp(
                 .background(Color.Black)
         ) {
             when (selectedTab) {
-                0 -> DashboardScreen(viewModel = viewModel)
-                1 -> PerformanceScreen(viewModel = viewModel)
+                0 -> PanelScreen(viewModel = viewModel)
+                1 -> RendimientoScreen(viewModel = viewModel)
                 2 -> GraphicsScreen(viewModel = viewModel)
-                3 -> ExperimentalScreen(viewModel = viewModel)
+                3 -> TerminalScreen(viewModel = viewModel)
+                4 -> ExperimentalScreen(viewModel = viewModel)
             }
 
             if (!hasPermission) {

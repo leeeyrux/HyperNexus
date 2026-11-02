@@ -23,10 +23,11 @@ data class NexusSettings(
     val highPerformance: Boolean = false,
     val fastTouch: Boolean = false,
     val silentLogging: Boolean = false,
-    val displayDpi: Int = 400,
+    val displayDpi: Int = 410,
     val animationScale: Float = 1.0f,
     val graphicsRenderer: String = "skiagl",
-    val fpsOverlayActive: Boolean = false
+    val fpsOverlayActive: Boolean = false,
+    val favoriteCommands: Set<String> = emptySet()
 )
 
 class PreferencesRepository(private val context: Context) {
@@ -47,6 +48,7 @@ class PreferencesRepository(private val context: Context) {
         val ANIMATION_SCALE = floatPreferencesKey("animation_scale")
         val GRAPHICS_RENDERER = stringPreferencesKey("graphics_renderer")
         val FPS_OVERLAY_ACTIVE = booleanPreferencesKey("fps_overlay_active")
+        val FAVORITE_COMMANDS = stringSetPreferencesKey("favorite_commands")
     }
 
     val settingsFlow: Flow<NexusSettings> = context.dataStore.data
@@ -66,10 +68,11 @@ class PreferencesRepository(private val context: Context) {
                 highPerformance = prefs[Keys.HIGH_PERFORMANCE] ?: false,
                 fastTouch = prefs[Keys.FAST_TOUCH] ?: false,
                 silentLogging = prefs[Keys.SILENT_LOGGING] ?: false,
-                displayDpi = prefs[Keys.DISPLAY_DPI] ?: 400,
+                displayDpi = prefs[Keys.DISPLAY_DPI] ?: 410,
                 animationScale = prefs[Keys.ANIMATION_SCALE] ?: 1.0f,
                 graphicsRenderer = prefs[Keys.GRAPHICS_RENDERER] ?: "skiagl",
-                fpsOverlayActive = prefs[Keys.FPS_OVERLAY_ACTIVE] ?: false
+                fpsOverlayActive = prefs[Keys.FPS_OVERLAY_ACTIVE] ?: false,
+                favoriteCommands = prefs[Keys.FAVORITE_COMMANDS] ?: emptySet()
             )
         }
 
@@ -92,4 +95,12 @@ class PreferencesRepository(private val context: Context) {
     suspend fun updateSilentLogging(v: Boolean) = set(Keys.SILENT_LOGGING, v)
     suspend fun updateRenderer(renderer: String) = set(Keys.GRAPHICS_RENDERER, renderer)
     suspend fun updateFpsOverlay(active: Boolean) = set(Keys.FPS_OVERLAY_ACTIVE, active)
+
+    suspend fun toggleFavoriteCommand(cmd: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.FAVORITE_COMMANDS] ?: emptySet()
+            val updated = if (current.contains(cmd)) current - cmd else current + cmd
+            prefs[Keys.FAVORITE_COMMANDS] = updated
+        }
+    }
 }

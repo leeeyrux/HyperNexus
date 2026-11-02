@@ -107,10 +107,10 @@ fun IOSSlider(
             Box(
                 modifier = Modifier
                     .offset(
-                        x = (with(density) { (thumbX + thumbSize.toPx() / 2).toDp() } - 40.dp).coerceAtLeast(0.dp),
+                        x = (with(density) { (thumbX + thumbSize.toPx() / 2).toDp() } - 42.dp).coerceAtLeast(0.dp),
                         y = (-50).dp
                     )
-                    .size(width = 80.dp, height = 38.dp)
+                    .size(width = 84.dp, height = 38.dp)
                     .shadow(8.dp, RoundedCornerShape(12.dp))
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xE61C1C1E))

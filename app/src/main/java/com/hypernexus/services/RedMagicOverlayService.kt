@@ -36,7 +36,6 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
     private var rootContainer: LinearLayout? = null
     private var windowParams: WindowManager.LayoutParams? = null
 
-    // Vistas del HUD
     private lateinit var fpsText: TextView
     private lateinit var timeText: TextView
     private lateinit var pingText: TextView
@@ -154,7 +153,7 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
 
     private fun createRedMagicBackground(): GradientDrawable {
         return GradientDrawable().apply {
-            // #D9262626: Fondo gris oscuro traslúcido Red Magic (85% opacidad)
+            // #D9262626: Contenedor gris oscuro Red Magic (#262626 al 85% de alpha)
             setColor(Color.parseColor("#D9262626"))
             cornerRadius = dpToPx(18).toFloat()
             setStroke(dpToPx(1), Color.parseColor("#4DFFFFFF"))
@@ -199,7 +198,7 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
         container.removeAllViews()
 
         if (expanded) {
-            // Modo Expandido: [ HH:MM | FPS | Ping | Temp | Batería ]
+            // Modo Expandido: [ Hora | FPS | Ping | Temp | Batería ]
             container.addView(timeText)
             container.addView(sep1)
             container.addView(fpsText)
