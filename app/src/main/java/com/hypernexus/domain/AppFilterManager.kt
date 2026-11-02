@@ -25,12 +25,18 @@ class AppFilterManager(
     private val context: Context,
     private val shizukuBridge: ShizukuBridge? = null
 ) {
+    private val gameKeywords = listOf(
+        "freefire", "max", "dts", "cod", "pubg", "supercell", "game", "gaming",
+        "mobile", "garena", "riotgames", "epicgames", "ea", "roblox", "tencent",
+        "genshin", "honkai", "craft", "brawl", "clash", "fifa", "warzone", "league"
+    )
 
     suspend fun getInstalledUserApplications(): List<GameTargetApp> = withContext(Dispatchers.IO) {
         val pm = context.packageManager
         val ownPackage = context.packageName
         val packageNames = mutableSetOf<String>()
 
+        // 1. Consulta nativa ilimitada de launchers
         try {
             val launcherIntent = Intent(Intent.ACTION_MAIN, null).apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
@@ -44,6 +50,7 @@ class AppFilterManager(
             resolveInfos.forEach { packageNames.add(it.activityInfo.packageName) }
         } catch (_: Exception) {}
 
+        // 2. Consulta de respaldo privilegiada con Shizuku
         if (shizukuBridge != null && shizukuBridge.isConnected.value) {
             try {
                 val shellOut = shizukuBridge.executeShellCommand("pm list packages -3")
@@ -66,7 +73,9 @@ class AppFilterManager(
                 val isUserInstalled = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0 ||
                         (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
 
-                val isGame = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val appLabel = pm.getApplicationLabel(appInfo).toString()
+
+                val isGameCategory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     appInfo.category == ApplicationInfo.CATEGORY_GAME ||
                             (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
                 } else {
@@ -74,12 +83,19 @@ class AppFilterManager(
                     (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
                 }
 
-                val isExcluded = pkg == "com.android.vending" ||
-                        pkg.startsWith("com.google.android.gms") ||
-                        pkg.startsWith("com.google.android.feedback")
+                // Detección heurística por palabras clave
+                val hasGameKeyword = gameKeywords.any { kw ->
+                    pkg.contains(kw, ignoreCase = true) || appLabel.contains(kw, ignoreCase = true)
+                }
 
-                if ((isUserInstalled && !isExcluded) || isGame) {
-                    val appLabel = pm.getApplicationLabel(appInfo).toString()
+                val isGame = isGameCategory || hasGameKeyword
+
+                // Filtrar utilerías de servicios de Google que no sean juegos
+                val isExcluded = (pkg == "com.android.vending" ||
+                        pkg.startsWith("com.google.android.gms") ||
+                        pkg.startsWith("com.google.android.feedback")) && !isGame
+
+                if (isUserInstalled && !isExcluded) {
                     val iconDrawable = try { pm.getApplicationIcon(appInfo) } catch (_: Exception) { null }
                     val imageBitmap = drawableToImageBitmap(iconDrawable)
 
@@ -95,7 +111,12 @@ class AppFilterManager(
             } catch (_: Exception) {}
         }
 
-        resultList.sortedWith(compareByDescending<GameTargetApp> { it.isGame }.thenBy { it.appName.lowercase() })
+        // ALGORITMO DE PRIORIZACIÓN: Todos los juegos arriba, apps generales debajo en orden alfabético
+        resultList.sortWith(
+            compareByDescending<GameTargetApp> { it.isGame }
+                .thenBy { it.appName.lowercase() }
+        )
+        resultList
     }
 
     private fun drawableToImageBitmap(drawable: Drawable?): ImageBitmap? {

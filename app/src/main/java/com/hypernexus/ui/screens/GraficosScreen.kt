@@ -32,6 +32,10 @@ fun GraficosScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
+    // INICIALIZACIÓN NULL-STATE: Ningún selector marcado por defecto en la carga
+    var selectedRendererChoice by remember { mutableStateOf<String?>(null) }
+    var selectedCompositionChoice by remember { mutableStateOf<String?>(null) }
+
     val renderers = listOf(
         "vulkan_booster" to "Vulkan Booster (Star Feature para Juegos Pesados)",
         "vulkan" to "Vulkan (Alto Desempeño)",
@@ -54,7 +58,7 @@ fun GraficosScreen(
             Text("Controladores de bajo nivel Magic Tuner & Vexiro Engine", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
         }
 
-        // SWITCH DEL CONTADOR RED MAGIC MULTI-INFO (INTEGRADO AQUÍ)
+        // SWITCH DEL CONTADOR RED MAGIC MULTI-INFO
         item {
             IOSSwitchTile(
                 title = "Contador Red Magic Multi-Info",
@@ -78,15 +82,18 @@ fun GraficosScreen(
             )
         }
 
-        // MOTOR DE RENDERIZADO SKIA
+        // MOTOR DE RENDERIZADO (NULL-STATE)
         item {
             GlassCard {
                 Column {
-                    Text("Configurar Renderizador de GPU", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Configurar Renderizador de GPU", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(selectedRendererChoice ?: "Sin Seleccionar", color = Color(0xFF007AFF), fontSize = 12.sp)
+                    }
                     Spacer(modifier = Modifier.height(10.dp))
 
                     renderers.forEach { (key, label) ->
-                        val isSelected = uiState.graphicsRenderer.equals(key, ignoreCase = true)
+                        val isSelected = selectedRendererChoice == key
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -94,6 +101,7 @@ fun GraficosScreen(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(if (isSelected) Color(0xFF007AFF).copy(alpha = 0.15f) else Color(0xFF1C1C1E))
                                 .clickable {
+                                    selectedRendererChoice = key
                                     viewModel.setGraphicsRenderer(key)
                                     Toast.makeText(context, "Pipeline: $key", Toast.LENGTH_SHORT).show()
                                 }
@@ -102,7 +110,10 @@ fun GraficosScreen(
                         ) {
                             RadioButton(
                                 selected = isSelected,
-                                onClick = { viewModel.setGraphicsRenderer(key) },
+                                onClick = {
+                                    selectedRendererChoice = key
+                                    viewModel.setGraphicsRenderer(key)
+                                },
                                 colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF007AFF))
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -118,24 +129,31 @@ fun GraficosScreen(
             }
         }
 
-        // COMPOSICIÓN DE PANTALLA
+        // COMPOSICIÓN DE PANTALLA (NULL-STATE)
         item {
             GlassCard {
                 Column {
-                    Text("Composición de Pantalla", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Composición de Pantalla", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(selectedCompositionChoice ?: "Sin Seleccionar", color = Color(0xFF007AFF), fontSize = 12.sp)
+                    }
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         compositions.forEach { comp ->
-                            val isSelected = uiState.compositionType.equals(comp, ignoreCase = true)
+                            val isSelected = selectedCompositionChoice == comp
                             Button(
-                                onClick = { viewModel.setCompositionType(comp) },
+                                onClick = {
+                                    selectedCompositionChoice = comp
+                                    viewModel.setCompositionType(comp)
+                                    Toast.makeText(context, "Composición: $comp", Toast.LENGTH_SHORT).show()
+                                },
                                 modifier = Modifier.weight(1f).height(40.dp),
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (isSelected) Color(0xFF007AFF) else Color(0xFF2C2C2E)
                                 )
                             ) {
-                                Text(comp, fontWeight = FontWeight.Bold)
+                                Text(comp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
                             }
                         }
                     }

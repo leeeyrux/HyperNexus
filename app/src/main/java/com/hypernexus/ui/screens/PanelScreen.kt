@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -45,7 +46,6 @@ fun PanelScreen(
     var batteryData by remember { mutableStateOf<BatteryTelemetry?>(null) }
     var networkData by remember { mutableStateOf<NetworkTelemetry?>(null) }
 
-    // Bucle seguro: si cualquier sensor falla, no tumba la aplicación
     LaunchedEffect(Unit) {
         while (true) {
             try {
@@ -64,7 +64,7 @@ fun PanelScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. HEADER CON LOGO OFICIAL INMUNE A NOT_FOUND_EXCEPTION
+        // 1. HEADER CON LOGO OFICIAL BLINDADO
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -98,38 +98,38 @@ fun PanelScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                        Text("Hub de Telemetría Operativa", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                        Text("Hub de Telemetría v1.1.9", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                     }
                 }
             }
         }
 
-        // 2. DISCRETE SOCIAL MEDIA BRANDING CARD
+        // 2. DISCRETE SOCIAL MEDIA SUPPORT CARD (ENLACES OFICIALES)
         item {
             GlassCard {
                 Column {
-                    Text("Canales Oficiales del Desarrollador", style = MaterialTheme.typography.labelMedium, color = Color(0xFF8E8E93))
+                    Text("Canales Oficiales y Soporte", style = MaterialTheme.typography.labelMedium, color = Color(0xFF8E8E93))
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        SocialBadge(label = "Instagram", handle = "@leeeyru.btw", color = Color(0xFFE1306C)) {
-                            uriHandler.openUri("https://www.instagram.com/leeeyru.btw?xtok=dG9ib3Fpb21lcHZl")
+                        SocialBadge(label = "Instagram", icon = Icons.Default.CameraAlt, color = Color(0xFFE1306C), modifier = Modifier.weight(1f)) {
+                            uriHandler.openUri("https://instagram.com")
                         }
-                        SocialBadge(label = "TikTok", handle = "@leeeyrux", color = Color.White) {
+                        SocialBadge(label = "TikTok", icon = Icons.Default.MusicNote, color = Color.White, modifier = Modifier.weight(1f)) {
                             uriHandler.openUri("https://tiktok.com")
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        SocialBadge(label = "YouTube", handle = "@Leeeyrux", color = Color(0xFFFF003C)) {
+                        SocialBadge(label = "YouTube", icon = Icons.Default.PlayArrow, color = Color(0xFFFF003C), modifier = Modifier.weight(1f)) {
                             uriHandler.openUri("https://youtube.com")
                         }
-                        SocialBadge(label = "Telegram", handle = "@Leeeyrux_Nexus", color = Color(0xFF007AFF)) {
+                        SocialBadge(label = "Telegram", icon = Icons.Default.Send, color = Color(0xFF007AFF), modifier = Modifier.weight(1f)) {
                             uriHandler.openUri("https://t.me")
                         }
                     }
@@ -206,7 +206,7 @@ fun PanelScreen(
             }
         }
 
-        // 6. MEMORIA RAM & FRECUENCIAS CPU
+        // 6. MEMORIA RAM & PROCESADOR
         item {
             GlassCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -264,7 +264,7 @@ fun PanelScreen(
             }
         }
 
-        // 7. FILA DE ACCIONES RÁPIDAS
+        // 7. FILA DE ACCIONES RÁPIDAS (EXCLUSIVAMENTE 3)
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
@@ -316,19 +316,19 @@ fun PanelScreen(
 }
 
 @Composable
-private fun SocialBadge(label: String, handle: String, color: Color, onClick: () -> Unit) {
+private fun SocialBadge(label: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0xFF2C2C2E))
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
-        Text("●", color = color, fontSize = 10.sp)
+        Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(14.dp))
         Spacer(modifier = Modifier.width(6.dp))
-        Text("$label: ", color = Color(0xFF8E8E93), fontSize = 11.sp)
-        Text(handle, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }
 

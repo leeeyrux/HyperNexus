@@ -1,5 +1,6 @@
 package com.hypernexus
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -33,6 +34,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // OPTIMIZACIÓN: Fijación del target de renderizado a 60Hz para eliminar micro-jitter
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                val params = window.attributes
+                params.preferredRefreshRate = 60f
+                window.attributes = params
+            } catch (_: Exception) {}
+        }
 
         shizukuBridge = ShizukuBridge(this)
         privilegedActions = PrivilegedActions(shizukuBridge)

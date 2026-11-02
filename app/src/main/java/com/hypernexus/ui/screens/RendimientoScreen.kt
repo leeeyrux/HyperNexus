@@ -1,6 +1,5 @@
 package com.hypernexus.ui.screens
 
-import android.content.res.Resources
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -30,7 +29,6 @@ import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitchTile
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 @Composable
 fun RendimientoScreen(
@@ -41,28 +39,24 @@ fun RendimientoScreen(
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
 
-    // Opciones discretas de pasos de 20 para DPI
+    // INICIALIZACIÓN NULL-STATE: Ningún chip seleccionado en la carga inicial
+    var activeDpiChoice by remember { mutableStateOf<Int?>(null) }
+    var activeTransitionScale by remember { mutableStateOf<Float?>(null) }
+    var activeAnimatorScale by remember { mutableStateOf<Float?>(null) }
+    var activeWindowScale by remember { mutableStateOf<Float?>(null) }
+
     val dpiOptions = remember { listOf(320, 340, 360, 380, 400, 420, 440, 460, 480, 500) }
-
-    // Multiplicadores discretos para animaciones
     val scaleOptions = remember { listOf(0.0f, 0.5f, 1.0f, 1.5f, 2.0f) }
-
-    // Frecuencias de refresco reubicadas
     val refreshRates = remember { listOf(0 to "Auto", 60 to "60Hz", 90 to "90Hz", 120 to "120Hz", 144 to "144Hz") }
 
-    // Escalador de Resolución
-    val displayMetrics = Resources.getSystem().displayMetrics
-    val nativeWidth = displayMetrics.widthPixels.coerceAtLeast(720)
-    val nativeHeight = displayMetrics.heightPixels.coerceAtLeast(1280)
-    val aspectRatio = nativeHeight.toFloat() / nativeWidth.toFloat()
-
-    val resolutions = remember(nativeWidth, nativeHeight) {
+    // MATRIZ DE ESCALADO BASADA EN RATIO 720x1600 (20:9 ESTÁNDAR)
+    // Previene rotura de la barra de estado y los gestos inferiores
+    val safeAspectResolutions = remember {
         listOf(
-            "Nativa (${nativeWidth}x${nativeHeight})" to (nativeWidth to nativeHeight),
-            "1080p (${1080}x${(1080 * aspectRatio).roundToInt()})" to (1080 to (1080 * aspectRatio).roundToInt()),
-            "720p (${720}x${(720 * aspectRatio).roundToInt()})" to (720 to (720 * aspectRatio).roundToInt()),
-            "540p (${540}x${(540 * aspectRatio).roundToInt()})" to (540 to (540 * aspectRatio).roundToInt()),
-            "Restablecer a Original (Reset)" to (0 to 0)
+            "Nativa (Restablecer)" to (0 to 0),
+            "1080p (1080x2400)" to (1080 to 2400),
+            "720p (720x1600 - Base)" to (720 to 1600),
+            "540p (540x1200)" to (540 to 1200)
         )
     }
 
@@ -81,7 +75,7 @@ fun RendimientoScreen(
             Text("Ajustes por pasos seguros sin deslizamiento errático", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
         }
 
-        // CONTROL DE HERZIOS REUBICADO DESDE PANEL
+        // CONTROL DE HERZIOS
         item {
             GlassCard {
                 Column {
@@ -94,7 +88,7 @@ fun RendimientoScreen(
 
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         refreshRates.forEach { (rate, label) ->
-                            val isSelected = uiState.refreshRate == rate
+                            val isSelected = uiState.refreshRate == rate && uiState.refreshRate != 0
                             Button(
                                 onClick = {
                                     viewModel.setRefreshRate(context, rate)
@@ -115,13 +109,13 @@ fun RendimientoScreen(
             }
         }
 
-        // 1. DENSIDAD DE PANTALLA (DPI) EN PASOS DE 20
+        // 1. DENSIDAD DE PANTALLA (DPI EN PASOS DE 20, NULL-STATE INICIAL)
         item {
             GlassCard {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Densidad de Pantalla (DPI)", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                        Text("${uiState.displayDpi} DPI", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+                        Text(activeDpiChoice?.let { "$it DPI" } ?: "-- DPI", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
                     }
                     Text("Selecciona un valor predeterminado seguro", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
                     Spacer(modifier = Modifier.height(12.dp))
@@ -131,12 +125,13 @@ fun RendimientoScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         dpiOptions.forEach { dpi ->
-                            val isSelected = uiState.displayDpi == dpi
+                            val isSelected = activeDpiChoice == dpi
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(if (isSelected) Color(0xFF007AFF) else Color(0xFF2C2C2E))
                                     .clickable {
+                                        activeDpiChoice = dpi
                                         viewModel.setDisplayDpi(dpi)
                                         Toast.makeText(context, "DPI: $dpi", Toast.LENGTH_SHORT).show()
                                     }
@@ -150,63 +145,66 @@ fun RendimientoScreen(
             }
         }
 
-        // 2. ESCALA DE TRANSICIÓN
+        // 2. ESCALA DE TRANSICIÓN (NULL-STATE)
         item {
             StepOptionCard(
                 title = "Escala de Transición",
-                currentValue = uiState.transitionScale,
+                selectedValue = activeTransitionScale,
                 options = scaleOptions,
                 onSelected = {
+                    activeTransitionScale = it
                     viewModel.setTransitionScale(it)
                     Toast.makeText(context, "Transición: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
                 }
             )
         }
 
-        // 3. ESCALA DE ANIMACIÓN / DURACIÓN
+        // 3. ESCALA DE ANIMACIÓN / DURACIÓN (NULL-STATE)
         item {
             StepOptionCard(
                 title = "Escala de Animación / Duración",
-                currentValue = uiState.animatorScale,
+                selectedValue = activeAnimatorScale,
                 options = scaleOptions,
                 onSelected = {
+                    activeAnimatorScale = it
                     viewModel.setAnimatorScale(it)
                     Toast.makeText(context, "Duración: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
                 }
             )
         }
 
-        // 4. ESCALA DE VENTANA
+        // 4. ESCALA DE VENTANA (NULL-STATE)
         item {
             StepOptionCard(
                 title = "Escala de Ventana",
-                currentValue = uiState.windowScale,
+                selectedValue = activeWindowScale,
                 options = scaleOptions,
                 onSelected = {
+                    activeWindowScale = it
                     viewModel.setWindowScale(it)
                     Toast.makeText(context, "Ventana: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
                 }
             )
         }
 
-        // ESCALADOR DE RESOLUCIÓN ANTI-CURIOSO
+        // ESCALADOR DE RESOLUCIÓN RECALIBRADO (720x1600 BASE)
         item {
             GlassCard {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.AspectRatio, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text("Escalador de Resolución Dinámico", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                        Text("Escalador de Resolución (Ratio Fijo 20:9)", style = MaterialTheme.typography.titleMedium, color = Color.White)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Reduce la resolución manteniendo la relación de aspecto nativa para ganar FPS.",
+                        text = "Calibrado al estándar 720x1600 para preservar gestos táctiles y barra superior.",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF8E8E93)
                     )
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    resolutions.forEach { (label, target) ->
+                    safeAspectResolutions.forEach { (label, target) ->
                         Button(
                             onClick = {
                                 selectedResolutionTarget = target
@@ -225,7 +223,7 @@ fun RendimientoScreen(
             }
         }
 
-        // NUEVAS OPCIONES DE PERFIL DE BAJO NIVEL
+        // PERFILES DE BAJO NIVEL
         item {
             IOSSwitchTile(
                 title = "Disable HW Overlays",
@@ -293,6 +291,9 @@ fun RendimientoScreen(
             Button(
                 onClick = {
                     scope.launch {
+                        activeTransitionScale = 0f
+                        activeAnimatorScale = 0f
+                        activeWindowScale = 0f
                         viewModel.setTransitionScale(0f)
                         viewModel.setAnimatorScale(0f)
                         viewModel.setWindowScale(0f)
@@ -315,7 +316,7 @@ fun RendimientoScreen(
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 
-    // DIÁLOGO CRIMSON ANTI-CURIOSO
+    // DIÁLOGO ANTI-CURIOSO
     if (showAntiCuriosoDialog && selectedResolutionTarget != null) {
         AlertDialog(
             onDismissRequest = {
@@ -376,7 +377,7 @@ fun RendimientoScreen(
 @Composable
 private fun StepOptionCard(
     title: String,
-    currentValue: Float,
+    selectedValue: Float?,
     options: List<Float>,
     onSelected: (Float) -> Unit
 ) {
@@ -384,12 +385,12 @@ private fun StepOptionCard(
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(title, style = MaterialTheme.typography.titleMedium, color = Color.White)
-                Text(formatScale(currentValue), color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+                Text(selectedValue?.let { formatScale(it) } ?: "--", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 options.forEach { opt ->
-                    val isSelected = currentValue == opt
+                    val isSelected = selectedValue == opt
                     Box(
                         modifier = Modifier
                             .weight(1f)
