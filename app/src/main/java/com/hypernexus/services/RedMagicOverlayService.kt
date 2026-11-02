@@ -146,7 +146,7 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
         }
 
         buildHudViews()
-        applyModeLayout(isExpanded = false)
+        applyModeLayout(false)
         attachTouchHandler()
 
         windowManager?.addView(rootContainer, windowParams)
@@ -294,7 +294,6 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
     }
 
     private fun startMetricsCollectors() {
-        // Tarea 1: Hora y Batería cada 1 segundo
         serviceScope.launch {
             while (isActive) {
                 if (isExpanded) {
@@ -318,7 +317,6 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
             }
         }
 
-        // Tarea 2: Medición de Ping Real (ms) y Temperatura en hilo IO cada 2.5s
         serviceScope.launch(Dispatchers.IO) {
             while (isActive) {
                 if (isExpanded) {
