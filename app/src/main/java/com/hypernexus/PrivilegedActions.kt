@@ -5,7 +5,7 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class PrivilegedActions(private val bridge: ShizukuBridge) {
+class PrivilegedActions(val bridge: ShizukuBridge) {
 
     companion object {
         private const val TAG = "PrivilegedActions"

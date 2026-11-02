@@ -1,6 +1,7 @@
 package com.hypernexus.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -33,7 +34,9 @@ fun ExperimentalScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val appFilterManager = remember { AppFilterManager(context) }
+    val appFilterManager = remember {
+        AppFilterManager(context, viewModel.privilegedActions.bridge)
+    }
 
     var appList by remember { mutableStateOf<List<GameTargetApp>>(emptyList()) }
     var selectedApp by remember { mutableStateOf<GameTargetApp?>(null) }
@@ -66,7 +69,7 @@ fun ExperimentalScreen(
         item {
             GlassCard {
                 Column {
-                    Text("Selecciona una App o Juego (${appList.size} detectadas)", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    Text("Selecciona una App o Juego (${appList.size} títulos)", style = MaterialTheme.typography.titleMedium, color = Color.White)
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Box(
@@ -75,26 +78,36 @@ fun ExperimentalScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color(0xFF2C2C2E))
                             .clickable { expanded = !expanded }
-                            .padding(16.dp)
+                            .padding(12.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = selectedApp?.let { "${if (it.isGame) "🎮 " else "📱 "}${it.appName}" } ?: "Cargando apps...",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color.White,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                selectedApp?.icon?.let { bmp ->
+                                    Image(
+                                        bitmap = bmp,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(34.dp).clip(RoundedCornerShape(8.dp))
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                }
+                                Text(
+                                    text = selectedApp?.appName ?: "Cargando apps...",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                             Icon(Icons.Default.ArrowDropDown, null, tint = Color.White)
                         }
                     }
 
                     if (expanded && appList.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Column(modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp)) {
+                        Column(modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp)) {
                             appList.forEach { app ->
                                 Row(
                                     modifier = Modifier
@@ -105,11 +118,21 @@ fun ExperimentalScreen(
                                             selectedApp = app
                                             expanded = false
                                         }
-                                        .padding(10.dp),
+                                        .padding(8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    if (app.icon != null) {
+                                        Image(
+                                            bitmap = app.icon,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(28.dp).clip(RoundedCornerShape(6.dp))
+                                        )
+                                    } else {
+                                        Text(if (app.isGame) "🎮" else "📱", fontSize = 18.sp)
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
                                     Text(
-                                        text = "${if (app.isGame) "🎮 " else "📱 "}${app.appName}",
+                                        text = app.appName,
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = if (app.isGame) Color(0xFF30D158) else Color.White
                                     )

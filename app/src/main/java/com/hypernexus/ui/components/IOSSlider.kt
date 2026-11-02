@@ -15,9 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
@@ -37,17 +35,17 @@ fun IOSSlider(
     val density = LocalDensity.current
     val trackHeight = 6.dp
     val thumbSize = 28.dp
-    
-    val fraction = ((value - valueRange.start) / 
+
+    val fraction = ((value - valueRange.start) /
             (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
-    
+
     BoxWithConstraints(
         modifier = modifier.height(40.dp)
     ) {
         val widthInPx = constraints.maxWidth.toFloat()
-        val thumbTravelDistance = widthInPx - with(density) { thumbSize.toPx() }
+        val thumbTravelDistance = (widthInPx - with(density) { thumbSize.toPx() }).coerceAtLeast(1f)
         val thumbX = thumbTravelDistance * fraction
-        
+
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -56,7 +54,7 @@ fun IOSSlider(
                 .clip(RoundedCornerShape(trackHeight / 2))
                 .background(Color(0xFF3A3A3C))
         )
-        
+
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -65,7 +63,7 @@ fun IOSSlider(
                 .clip(RoundedCornerShape(trackHeight / 2))
                 .background(if (enabled) Color(0xFF007AFF) else Color(0xFF007AFF).copy(alpha = 0.4f))
         )
-        
+
         Box(
             modifier = Modifier
                 .offset(x = with(density) { thumbX.toDp() })
@@ -73,16 +71,16 @@ fun IOSSlider(
                 .shadow(elevation = if (isDragging) 8.dp else 4.dp, shape = CircleShape)
                 .clip(CircleShape)
                 .background(Color.White)
-                .pointerInput(enabled) {
+                .pointerInput(enabled, steps, valueRange) {
                     if (enabled) {
                         detectDragGestures(
                             onDragStart = { isDragging = true },
-                            onDragEnd = { 
-                                isDragging = false 
+                            onDragEnd = {
+                                isDragging = false
                                 onValueChangeFinished?.invoke()
                             },
-                            onDragCancel = { 
-                                isDragging = false 
+                            onDragCancel = {
+                                isDragging = false
                                 onValueChangeFinished?.invoke()
                             },
                             onDrag = { change, _ ->
@@ -90,28 +88,29 @@ fun IOSSlider(
                                 val newX = change.position.x.coerceIn(0f, thumbTravelDistance)
                                 val newFraction = newX / thumbTravelDistance
                                 val rawValue = valueRange.start + (valueRange.endInclusive - valueRange.start) * newFraction
-                                
-                                val finalValue = if (steps > 0) {
-                                    val stepSize = (valueRange.endInclusive - valueRange.start) / (steps + 1)
-                                    (valueRange.start + (rawValue / stepSize).roundToInt() * stepSize)
-                                        .coerceIn(valueRange.start, valueRange.endInclusive)
+
+                                val snappedValue = if (steps > 0) {
+                                    val stepCount = steps + 1
+                                    val stepSize = (valueRange.endInclusive - valueRange.start) / stepCount
+                                    val stepIndex = ((rawValue - valueRange.start) / stepSize).roundToInt()
+                                    (valueRange.start + stepIndex * stepSize).coerceIn(valueRange.start, valueRange.endInclusive)
                                 } else rawValue
-                                
-                                onValueChange(finalValue)
+
+                                onValueChange(snappedValue)
                             }
                         )
                     }
                 }
         )
-        
+
         if (showBubble && isDragging) {
             Box(
                 modifier = Modifier
                     .offset(
-                        x = with(density) { (thumbX + thumbSize.toPx() / 2).toDp() } - 30.dp,
+                        x = (with(density) { (thumbX + thumbSize.toPx() / 2).toDp() } - 40.dp).coerceAtLeast(0.dp),
                         y = (-50).dp
                     )
-                    .size(width = 70.dp, height = 40.dp)
+                    .size(width = 80.dp, height = 38.dp)
                     .shadow(8.dp, RoundedCornerShape(12.dp))
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xE61C1C1E))
@@ -163,16 +162,16 @@ fun IOSSliderTile(
                         )
                     }
                 }
-                
+
                 Text(
                     text = formatValue(value),
                     style = MaterialTheme.typography.titleMedium,
                     color = Color(0xFF007AFF)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             IOSSlider(
                 value = value,
                 onValueChange = onValueChange,

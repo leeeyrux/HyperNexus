@@ -18,6 +18,7 @@ import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.IOSSliderTile
 import com.hypernexus.ui.components.IOSSwitchTile
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun PerformanceScreen(
@@ -28,8 +29,13 @@ fun PerformanceScreen(
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
 
-    var localDpi by remember(uiState.displayDpi) { mutableStateOf(uiState.displayDpi.toFloat()) }
-    var localAnim by remember(uiState.animationScale) { mutableStateOf(uiState.animationScale) }
+    // 1. Rango DPI Seguro: 320 a 500 en pasos exactos de 15
+    val safeDpi = uiState.displayDpi.toFloat().coerceIn(320f, 500f)
+    var localDpi by remember(uiState.displayDpi) { mutableStateOf(safeDpi) }
+
+    // 2. Multiplicadores de Animación: 0x, 0.5x, 1x, 1.5x, 2x
+    val safeAnim = uiState.animationScale.coerceIn(0f, 2.0f)
+    var localAnim by remember(uiState.animationScale) { mutableStateOf(safeAnim) }
 
     LazyColumn(
         modifier = modifier
@@ -40,38 +46,51 @@ fun PerformanceScreen(
     ) {
         item {
             Text("Rendimiento", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-            Text("Ajuste milimétrico de respuesta y velocidad", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+            Text("Ajustes protegidos contra bloqueos de pantalla", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
         }
 
+        // SLIDER DPI: Rango 320..500 con 11 steps intermedios = intervalos exactos de 15 DPI
         item {
             IOSSliderTile(
-                title = "Densidad de Pantalla (DPI)",
-                subtitle = "Desliza suavemente. Se aplica al soltar el dedo.",
+                title = "Densidad de Pantalla (DPI Seguro)",
+                subtitle = "Intervalos de 15 DPI (320 - 500). Seguro contra soft-bricks.",
                 value = localDpi,
-                onValueChange = { localDpi = it },
-                onValueChangeFinished = {
-                    viewModel.setDisplayDpi(localDpi.toInt())
-                    Toast.makeText(context, "DPI: ${localDpi.toInt()}", Toast.LENGTH_SHORT).show()
+                onValueChange = {
+                    val stepIndex = ((it - 320f) / 15f).roundToInt()
+                    localDpi = (320f + stepIndex * 15f).coerceIn(320f, 500f)
                 },
-                valueRange = 320f..540f,
+                onValueChangeFinished = {
+                    val finalDpi = localDpi.roundToInt()
+                    viewModel.setDisplayDpi(finalDpi)
+                    Toast.makeText(context, "DPI Aplicado: $finalDpi", Toast.LENGTH_SHORT).show()
+                },
+                valueRange = 320f..500f,
                 steps = 11,
-                formatValue = { "${it.toInt()} DPI" }
+                formatValue = { "${it.roundToInt()} DPI" }
             )
         }
 
+        // SLIDER ANIMACIONES: Rango 0.0..2.0 con 3 steps = 0x, 0.5x, 1.0x, 1.5x, 2.0x
         item {
             IOSSliderTile(
                 title = "Escala de Animaciones",
-                subtitle = "Bájala a 0x para velocidad de respuesta instantánea.",
+                subtitle = "Multiplicadores del sistema (0x, 0.5x, 1x, 1.5x, 2x)",
                 value = localAnim,
-                onValueChange = { localAnim = it },
-                onValueChangeFinished = {
-                    viewModel.setAnimationScale(localAnim)
-                    Toast.makeText(context, "Animaciones: ${localAnim}x", Toast.LENGTH_SHORT).show()
+                onValueChange = {
+                    val stepIndex = (it / 0.5f).roundToInt()
+                    localAnim = (stepIndex * 0.5f).coerceIn(0f, 2.0f)
                 },
-                valueRange = 0.0f..1.5f,
-                steps = 6,
-                formatValue = { if (it == 0f) "0x (Apagadas)" else "${"%.2f".format(it)}x" }
+                onValueChangeFinished = {
+                    val finalScale = (localAnim * 2).roundToInt() / 2.0f
+                    viewModel.setAnimationScale(finalScale)
+                    Toast.makeText(context, "Animaciones a ${finalScale}x", Toast.LENGTH_SHORT).show()
+                },
+                valueRange = 0.0f..2.0f,
+                steps = 3,
+                formatValue = {
+                    val rounded = (it * 2).roundToInt() / 2.0f
+                    if (rounded == 0f) "0x (Apagadas)" else "${rounded}x"
+                }
             )
         }
 
