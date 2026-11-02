@@ -88,6 +88,19 @@ class ShizukuBridge(private val context: Context) {
     fun unbindService() {
         _isConnected.value = false
     }
+
+    private fun createShizukuProcess(cmd: Array<String>): Process {
+        // En Shizuku 13.x newProcess es package-private, se accede limpiamente por reflexión
+        val method = Shizuku::class.java.getDeclaredMethod(
+            "newProcess",
+            Array<String>::class.java,
+            Array<String>::class.java,
+            String::class.java
+        )
+        method.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        return method.invoke(null, cmd, null, null) as Process
+    }
     
     fun executeShellCommand(command: String): Pair<Int, String> {
         if (!_isConnected.value || !Shizuku.pingBinder()) {
@@ -95,8 +108,7 @@ class ShizukuBridge(private val context: Context) {
         }
         
         return try {
-            // Ejecución remota nativa con privilegios ADB/System vía Shizuku
-            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+            val process = createShizukuProcess(arrayOf("sh", "-c", command))
             
             val outputReader = BufferedReader(InputStreamReader(process.inputStream))
             val errorReader = BufferedReader(InputStreamReader(process.errorStream))
