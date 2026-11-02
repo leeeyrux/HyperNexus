@@ -1,14 +1,9 @@
 package com.hypernexus.ui.screens
 
-import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.content.Context
-import android.content.Intent
-import android.net.VpnService
 import android.provider.Settings
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -28,7 +23,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -52,6 +46,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SeguridadScreen(
     viewModel: HyperNexusViewModel,
+    onRequestVpnStart: (String) -> Unit,
+    onRequestVpnStop: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -81,18 +77,7 @@ fun SeguridadScreen(
         }
     }
 
-    val vpnPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            selectedTargetGame?.let { game ->
-                viewModel.toggleVpnTunnel(context, game.packageName, true)
-                Toast.makeText(context, "Gaming VPN Activado: ${game.appName}", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            Toast.makeText(context, "Permiso VPN rechazado por el usuario", Toast.LENGTH_SHORT).show()
-        }
-    }
+    val isTunnelRunning = uiState.vpnActive || HyperNexusVpnService.isRunning
 
     val infiniteTransition = rememberInfiniteTransition(label = "cyberGlow")
     val pulseGlowAlpha by infiniteTransition.animateFloat(
@@ -102,7 +87,6 @@ fun SeguridadScreen(
         label = "pulseAlpha"
     )
 
-    val isTunnelRunning = uiState.vpnActive || HyperNexusVpnService.isRunning
     val activeBorderColor by animateColorAsState(
         targetValue = if (isTunnelRunning) Color(0xFF00E676) else Color(0xFF00E5FF).copy(alpha = 0.35f),
         label = "borderGlow"
@@ -132,7 +116,7 @@ fun SeguridadScreen(
             Text("Split Tunneling por socket con optimización de MTU y DNS", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
         }
 
-        // MASTERPIECE WIDGET: SCI-FI GAMING VPN TUNNEL
+        // MASTER WIDGET: SCI-FI GAMING VPN TUNNEL
         item {
             Box(
                 modifier = Modifier
@@ -180,20 +164,10 @@ fun SeguridadScreen(
                             checked = isTunnelRunning,
                             onCheckedChange = { enable ->
                                 if (enable) {
-                                    val prepIntent = VpnService.prepare(context)
-                                    if (prepIntent != null) {
-                                        vpnPermissionLauncher.launch(prepIntent)
-                                    } else {
-                                        selectedTargetGame?.let { game ->
-                                            viewModel.toggleVpnTunnel(context, game.packageName, true)
-                                            Toast.makeText(context, "Gaming VPN Conectado", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
+                                    val targetPkg = selectedTargetGame?.packageName ?: ""
+                                    onRequestVpnStart(targetPkg)
                                 } else {
-                                    selectedTargetGame?.let { game ->
-                                        viewModel.toggleVpnTunnel(context, game.packageName, false)
-                                        Toast.makeText(context, "Túnel VPN Desconectado", Toast.LENGTH_SHORT).show()
-                                    }
+                                    onRequestVpnStop()
                                 }
                             }
                         )
@@ -288,7 +262,7 @@ fun SeguridadScreen(
             }
         }
 
-        // 1. ANILLO GRÁFICO DE PROTECCIÓN
+        // ANILLO DE PROTECCIÓN
         item {
             Box(
                 modifier = Modifier
@@ -327,7 +301,7 @@ fun SeguridadScreen(
             }
         }
 
-        // 2. HYPER CLEANER ENGINE
+        // HYPER CLEANER ENGINE
         item {
             GlassCard {
                 Column {
@@ -391,7 +365,7 @@ fun SeguridadScreen(
             }
         }
 
-        // 3. SETTINGS CHECKER AUDIT LIST
+        // SETTINGS CHECKER AUDIT LIST
         item {
             GlassCard {
                 Column {
@@ -422,7 +396,7 @@ fun SeguridadScreen(
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 
-    // MODAL LISTA ILIMITADA DE JUEGOS
+    // MODAL CON KEY ESTABLE PARA CERO-LAG AL SCROLLEAR
     if (showGamePickerModal) {
         AlertDialog(
             onDismissRequest = { showGamePickerModal = false },
@@ -441,7 +415,10 @@ fun SeguridadScreen(
                     modifier = Modifier.fillMaxWidth().heightIn(max = 350.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(installedGames) { game ->
+                    items(
+                        items = installedGames,
+                        key = { it.packageName }
+                    ) { game ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()

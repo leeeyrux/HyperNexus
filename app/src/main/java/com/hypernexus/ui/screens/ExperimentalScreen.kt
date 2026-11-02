@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -46,9 +47,10 @@ fun ExperimentalScreen(
     var expanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        appList = appFilterManager.getInstalledUserApplications()
-        if (appList.isNotEmpty() && selectedApp == null) {
-            selectedApp = appList.firstOrNull { it.isGame } ?: appList.first()
+        val apps = appFilterManager.getInstalledUserApplications()
+        appList = apps
+        if (apps.isNotEmpty() && selectedApp == null) {
+            selectedApp = apps.firstOrNull { it.isGame } ?: apps.first()
         }
     }
 
@@ -62,14 +64,14 @@ fun ExperimentalScreen(
         item {
             Column {
                 Text("Game Tuner & DEX2OAT", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
-                Text("Motor de optimización por aplicación estilo Magic Tuner", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                Text("Motor de optimización por aplicación con priorización gaming", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
             }
         }
 
         item {
             GlassCard {
                 Column {
-                    Text("Selecciona una App o Juego (${appList.size} títulos)", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    Text("Selecciona una App o Juego (${appList.size} detectados)", style = MaterialTheme.typography.titleMedium, color = Color.White)
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Box(
@@ -95,7 +97,7 @@ fun ExperimentalScreen(
                                     Spacer(modifier = Modifier.width(10.dp))
                                 }
                                 Text(
-                                    text = selectedApp?.appName ?: "Cargando apps...",
+                                    text = selectedApp?.appName ?: "Cargando aplicaciones...",
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = Color.White,
                                     fontWeight = FontWeight.SemiBold
@@ -107,13 +109,19 @@ fun ExperimentalScreen(
 
                     if (expanded && appList.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Column(modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp)) {
-                            appList.forEach { app ->
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(
+                                items = appList,
+                                key = { it.packageName }
+                            ) { app ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(if (selectedApp == app) Color(0xFF007AFF).copy(alpha = 0.2f) else Color.Transparent)
+                                        .background(if (selectedApp?.packageName == app.packageName) Color(0xFF007AFF).copy(alpha = 0.2f) else Color.Transparent)
                                         .clickable {
                                             selectedApp = app
                                             expanded = false

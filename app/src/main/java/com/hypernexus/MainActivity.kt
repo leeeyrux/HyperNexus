@@ -1,9 +1,15 @@
 package com.hypernexus
 
+import android.app.Activity
+import android.content.Intent
+import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hypernexus.data.PreferencesRepository
+import com.hypernexus.services.HyperNexusVpnService
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.screens.*
 import com.hypernexus.ui.theme.HyperNexusTheme
@@ -32,10 +39,24 @@ class MainActivity : ComponentActivity() {
     private lateinit var privilegedActions: PrivilegedActions
     private lateinit var viewModel: HyperNexusViewModel
 
+    private var pendingVpnTargetPackage: String? = null
+
+    // Contrato oficial para interceptar la autorización del sistema VpnService sin caídas
+    private val vpnPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val target = pendingVpnTargetPackage ?: ""
+            executeVpnStart(target)
+        } else {
+            Toast.makeText(this, "Permiso de túnel VPN cancelado", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // OPTIMIZACIÓN: Fijación del target de renderizado a 60Hz para eliminar micro-jitter
+        // Fijación a 60Hz para evitar vibraciones en recomposiciones
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 val params = window.attributes
@@ -53,9 +74,44 @@ class MainActivity : ComponentActivity() {
             HyperNexusTheme {
                 HyperNexusApp(
                     shizukuBridge = shizukuBridge,
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    onRequestVpnStart = { pkg -> requestVpnActivation(pkg) },
+                    onRequestVpnStop = { executeVpnStop() }
                 )
             }
+        }
+    }
+
+    private fun requestVpnActivation(targetPackage: String) {
+        pendingVpnTargetPackage = targetPackage
+        try {
+            val prepareIntent = VpnService.prepare(this)
+            if (prepareIntent != null) {
+                vpnPermissionLauncher.launch(prepareIntent)
+            } else {
+                executeVpnStart(targetPackage)
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error al preparar VpnService", e)
+            executeVpnStart(targetPackage)
+        }
+    }
+
+    private fun executeVpnStart(targetPackage: String) {
+        try {
+            viewModel.toggleVpnTunnel(this, targetPackage, true)
+            Toast.makeText(this, "Gaming VPN Conectado", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error al iniciar servicio VPN", e)
+        }
+    }
+
+    private fun executeVpnStop() {
+        try {
+            viewModel.toggleVpnTunnel(this, "", false)
+            Toast.makeText(this, "Túnel VPN Desconectado", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error al detener servicio VPN", e)
         }
     }
 
@@ -79,7 +135,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HyperNexusApp(
     shizukuBridge: ShizukuBridge,
-    viewModel: HyperNexusViewModel
+    viewModel: HyperNexusViewModel,
+    onRequestVpnStart: (String) -> Unit,
+    onRequestVpnStop: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     val isConnected by shizukuBridge.isConnected.collectAsState()
@@ -166,7 +224,11 @@ fun HyperNexusApp(
                 0 -> PanelScreen(viewModel = viewModel)
                 1 -> RendimientoScreen(viewModel = viewModel)
                 2 -> GraficosScreen(viewModel = viewModel)
-                3 -> SeguridadScreen(viewModel = viewModel)
+                3 -> SeguridadScreen(
+                    viewModel = viewModel,
+                    onRequestVpnStart = onRequestVpnStart,
+                    onRequestVpnStop = onRequestVpnStop
+                )
                 4 -> ModulosScreen(viewModel = viewModel)
                 5 -> TerminalScreen(viewModel = viewModel)
                 6 -> ExperimentalScreen(viewModel = viewModel)

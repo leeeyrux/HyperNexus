@@ -1,11 +1,12 @@
 package com.hypernexus.services
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
@@ -35,6 +36,12 @@ class HyperNexusVpnService : VpnService() {
     private var tunnelJob: Job? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        createNotificationChannel()
+
+        // Enlace inmediato a primer plano para evitar bloqueos del sistema
+        val initialNotification = buildNotification("Inicializando túnel seguro...")
+        attachForeground(initialNotification)
+
         when (intent?.action) {
             ACTION_STOP -> {
                 stopTunnel()
@@ -49,28 +56,33 @@ class HyperNexusVpnService : VpnService() {
         return START_STICKY
     }
 
+    private fun attachForeground(notification: Notification) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } catch (_: Exception) {
+            try {
+                startForeground(NOTIFICATION_ID, notification)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al adjuntar servicio en primer plano", e)
+            }
+        }
+    }
+
     private fun startTunnel(targetPackage: String?) {
-        stopTunnel()
-        createNotificationChannel()
-
-        val notifyIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, notifyIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("HyperNexus Gaming Tunnel")
-            .setContentText(
-                if (!targetPackage.isNullOrBlank()) "Enrutando sockets para: $targetPackage"
-                else "Túnel de Baja Latencia Activo"
-            )
-            .setSmallIcon(android.R.drawable.ic_menu_share)
-            .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .build()
-
-        startForeground(NOTIFICATION_ID, notification)
+        val notifyText = if (!targetPackage.isNullOrBlank()) {
+            "Enrutando sockets para: $targetPackage"
+        } else {
+            "Túnel de Baja Latencia Activo"
+        }
+        attachForeground(buildNotification(notifyText))
 
         try {
             val builder = Builder()
@@ -81,30 +93,29 @@ class HyperNexusVpnService : VpnService() {
                 .addDnsServer("1.0.0.1")
                 .addRoute("0.0.0.0", 0)
 
-            // Dynamic Split Tunneling: enrutar exclusivamente el socket del juego objetivo
+            // Split Tunneling por paquete sin límites
             if (!targetPackage.isNullOrBlank()) {
                 try {
                     builder.addAllowedApplication(targetPackage)
                     activeTargetPackage = targetPackage
-                    Log.i(TAG, "Split-tunneling activo para el paquete: $targetPackage")
+                    Log.i(TAG, "Split-tunneling activo para: $targetPackage")
                 } catch (e: PackageManager.NameNotFoundException) {
-                    Log.e(TAG, "No se encontró el paquete objetivo en el sistema", e)
+                    Log.e(TAG, "Paquete objetivo no disponible", e)
                 }
             }
 
             vpnInterface = builder.establish()
             isRunning = true
-
-            // Loopback de paquetes sin sobrecarga de buffers
             startPacketDrainLoop()
         } catch (e: Exception) {
-            Log.e(TAG, "Error fatal al inicializar el descriptor TUN del VPN", e)
+            Log.e(TAG, "Fallo al crear descriptor TUN", e)
             stopTunnel()
             stopSelf()
         }
     }
 
     private fun startPacketDrainLoop() {
+        tunnelJob?.cancel()
         tunnelJob = serviceScope.launch {
             val fd = vpnInterface?.fileDescriptor ?: return@launch
             val inputStream = FileInputStream(fd)
@@ -137,10 +148,27 @@ class HyperNexusVpnService : VpnService() {
         try {
             vpnInterface?.close()
         } catch (e: Exception) {
-            Log.e(TAG, "Error al cerrar ParcelFileDescriptor", e)
+            Log.e(TAG, "Error al cerrar interface VPN", e)
         }
         vpnInterface = null
         stopForeground(STOP_FOREGROUND_REMOVE)
+    }
+
+    private fun buildNotification(contentText: String): Notification {
+        val notifyIntent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, notifyIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("HyperNexus Gaming Tunnel")
+            .setContentText(contentText)
+            .setSmallIcon(android.R.drawable.ic_menu_share)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
     }
 
     private fun createNotificationChannel() {

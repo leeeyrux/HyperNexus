@@ -1,8 +1,8 @@
 package com.hypernexus.domain
 
 import android.content.Context
-import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -25,105 +25,88 @@ class AppFilterManager(
     private val context: Context,
     private val shizukuBridge: ShizukuBridge? = null
 ) {
-    private val gameKeywords = listOf(
-        "freefire", "max", "dts", "cod", "pubg", "supercell", "game", "gaming",
-        "mobile", "garena", "riotgames", "epicgames", "ea", "roblox", "tencent",
-        "genshin", "honkai", "craft", "brawl", "clash", "fifa", "warzone", "league"
+    // Palabras clave estrictas de títulos y publishers gaming reconocidos
+    private val strictGameKeywords = listOf(
+        "freefire", "max", "dts", "cod", "pubg", "supercell", 
+        "activision", "garena", "tencent", "epicgames"
     )
 
     suspend fun getInstalledUserApplications(): List<GameTargetApp> = withContext(Dispatchers.IO) {
         val pm = context.packageManager
         val ownPackage = context.packageName
-        val packageNames = mutableSetOf<String>()
 
-        // 1. Consulta nativa ilimitada de launchers
-        try {
-            val launcherIntent = Intent(Intent.ACTION_MAIN, null).apply {
-                addCategory(Intent.CATEGORY_LAUNCHER)
-            }
-            val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                pm.queryIntentActivities(launcherIntent, PackageManager.ResolveInfoFlags.of(0L))
+        val packages: List<PackageInfo> = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(PackageManager.GET_META_DATA.toLong()))
             } else {
                 @Suppress("DEPRECATION")
-                pm.queryIntentActivities(launcherIntent, 0)
+                pm.getInstalledPackages(PackageManager.GET_META_DATA)
             }
-            resolveInfos.forEach { packageNames.add(it.activityInfo.packageName) }
-        } catch (_: Exception) {}
-
-        // 2. Consulta de respaldo privilegiada con Shizuku
-        if (shizukuBridge != null && shizukuBridge.isConnected.value) {
-            try {
-                val shellOut = shizukuBridge.executeShellCommand("pm list packages -3")
-                if (shellOut.first == 0) {
-                    shellOut.second.lines().forEach { line ->
-                        val clean = line.removePrefix("package:").trim()
-                        if (clean.isNotBlank()) packageNames.add(clean)
-                    }
-                }
-            } catch (_: Exception) {}
+        } catch (_: Exception) {
+            emptyList()
         }
 
-        val resultList = mutableListOf<GameTargetApp>()
+        val listAGames = mutableListOf<GameTargetApp>()
+        val listBOtherApps = mutableListOf<GameTargetApp>()
 
-        for (pkg in packageNames) {
-            if (pkg == ownPackage || pkg == "moe.shizuku.privileged.api") continue
+        for (pkg in packages) {
+            val pkgName = pkg.packageName
+            val appInfo = pkg.applicationInfo ?: continue
 
-            try {
-                val appInfo = pm.getApplicationInfo(pkg, 0)
-                val isUserInstalled = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0 ||
-                        (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+            // Excluir la app propia y la API de Shizuku
+            if (pkgName == ownPackage || pkgName == "moe.shizuku.privileged.api") continue
 
-                val appLabel = pm.getApplicationLabel(appInfo).toString()
+            val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+            val isUpdatedSystem = (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
 
-                val isGameCategory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    appInfo.category == ApplicationInfo.CATEGORY_GAME ||
-                            (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
-                } else {
-                    @Suppress("DEPRECATION")
-                    (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
-                }
+            // Filtrar servicios internos que no sean de usuario ni actualizados
+            if (isSystem && !isUpdatedSystem) continue
 
-                // Detección heurística por palabras clave
-                val hasGameKeyword = gameKeywords.any { kw ->
-                    pkg.contains(kw, ignoreCase = true) || appLabel.contains(kw, ignoreCase = true)
-                }
+            val pkgLower = pkgName.lowercase()
+            val appLabel = try { pm.getApplicationLabel(appInfo).toString() } catch (_: Exception) { pkgName }
 
-                val isGame = isGameCategory || hasGameKeyword
+            // Validación rigurosa de categoría juego
+            val isGameCategory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                appInfo.category == ApplicationInfo.CATEGORY_GAME ||
+                        (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
+            } else {
+                @Suppress("DEPRECATION")
+                (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
+            }
 
-                // Filtrar utilerías de servicios de Google que no sean juegos
-                val isExcluded = (pkg == "com.android.vending" ||
-                        pkg.startsWith("com.google.android.gms") ||
-                        pkg.startsWith("com.google.android.feedback")) && !isGame
+            val matchesKeyword = strictGameKeywords.any { kw -> pkgLower.contains(kw) }
+            val isVerifiedGame = isGameCategory || matchesKeyword
 
-                if (isUserInstalled && !isExcluded) {
-                    val iconDrawable = try { pm.getApplicationIcon(appInfo) } catch (_: Exception) { null }
-                    val imageBitmap = drawableToImageBitmap(iconDrawable)
+            val iconDrawable = try { pm.getApplicationIcon(appInfo) } catch (_: Exception) { null }
+            val imageBitmap = drawableToImageBitmap(iconDrawable)
 
-                    resultList.add(
-                        GameTargetApp(
-                            packageName = pkg,
-                            appName = appLabel,
-                            isGame = isGame,
-                            icon = imageBitmap
-                        )
-                    )
-                }
-            } catch (_: Exception) {}
+            val appItem = GameTargetApp(
+                packageName = pkgName,
+                appName = appLabel,
+                isGame = isVerifiedGame,
+                icon = imageBitmap
+            )
+
+            if (isVerifiedGame) {
+                listAGames.add(appItem)
+            } else {
+                listBOtherApps.add(appItem)
+            }
         }
 
-        // ALGORITMO DE PRIORIZACIÓN: Todos los juegos arriba, apps generales debajo en orden alfabético
-        resultList.sortWith(
-            compareByDescending<GameTargetApp> { it.isGame }
-                .thenBy { it.appName.lowercase() }
-        )
-        resultList
+        // Ordenamiento alfabético individual
+        listAGames.sortBy { it.appName.lowercase() }
+        listBOtherApps.sortBy { it.appName.lowercase() }
+
+        // Fusión: Lista A (Juegos) al tope absoluto, Lista B (Resto de apps) abajo
+        listAGames + listBOtherApps
     }
 
     private fun drawableToImageBitmap(drawable: Drawable?): ImageBitmap? {
         if (drawable == null) return null
         return try {
-            val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth.coerceIn(48, 128) else 96
-            val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight.coerceIn(48, 128) else 96
+            val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth.coerceIn(48, 110) else 96
+            val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight.coerceIn(48, 110) else 96
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             drawable.setBounds(0, 0, canvas.width, canvas.height)

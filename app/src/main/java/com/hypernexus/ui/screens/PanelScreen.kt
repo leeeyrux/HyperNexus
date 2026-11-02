@@ -1,5 +1,7 @@
 package com.hypernexus.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,7 +20,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,7 +39,6 @@ fun PanelScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val uriHandler = LocalUriHandler.current
     val hardwareMonitor = remember { HardwareMonitor(context) }
     val specs = remember { hardwareMonitor.getStaticSpecs() }
 
@@ -57,6 +57,17 @@ fun PanelScreen(
         }
     }
 
+    fun openBrowserUrl(url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            Toast.makeText(context, "No se encontró navegador para abrir el enlace", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -64,7 +75,7 @@ fun PanelScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. HEADER CON LOGO OFICIAL BLINDADO
+        // HEADER CON LOGO OFICIAL
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -98,13 +109,13 @@ fun PanelScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                        Text("Hub de Telemetría v1.1.9", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                        Text("Hub de Telemetría v1.2.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                     }
                 }
             }
         }
 
-        // 2. DISCRETE SOCIAL MEDIA SUPPORT CARD (ENLACES OFICIALES)
+        // REDES SOCIALES OFICIALES CON ENLACES EXACTOS
         item {
             GlassCard {
                 Column {
@@ -115,10 +126,10 @@ fun PanelScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         SocialBadge(label = "Instagram", icon = Icons.Default.CameraAlt, color = Color(0xFFE1306C), modifier = Modifier.weight(1f)) {
-                            uriHandler.openUri("https://instagram.com")
+                            openBrowserUrl("https://www.instagram.com/leeeyru.btw?mdxt=dG9ib3Fpb21lcHZl")
                         }
                         SocialBadge(label = "TikTok", icon = Icons.Default.MusicNote, color = Color.White, modifier = Modifier.weight(1f)) {
-                            uriHandler.openUri("https://tiktok.com")
+                            openBrowserUrl("https://www.tiktok.com/@leeeyrux?_r=1&_t=ZS-9B55y4Oskpo")
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -127,20 +138,20 @@ fun PanelScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         SocialBadge(label = "YouTube", icon = Icons.Default.PlayArrow, color = Color(0xFFFF003C), modifier = Modifier.weight(1f)) {
-                            uriHandler.openUri("https://youtube.com")
+                            openBrowserUrl("https://youtube.com/@leeeyrux?si=IWXQrNuLM5Xasv2D")
                         }
                         SocialBadge(label = "Telegram", icon = Icons.Default.Send, color = Color(0xFF007AFF), modifier = Modifier.weight(1f)) {
-                            uriHandler.openUri("https://t.me")
+                            openBrowserUrl("https://t.me/Leeeyrux_Nexus")
                         }
                     }
                 }
             }
         }
 
-        // 3. SPECS GENERALES
+        // ESPECIFICACIONES GENERALES
         item { DeviceSpecsCard(specs = specs) }
 
-        // 4. TELEMETRÍA DE RED EN VIVO
+        // TELEMETRÍA DE RED EN VIVO
         item {
             GlassCard {
                 Column {
@@ -175,7 +186,7 @@ fun PanelScreen(
             }
         }
 
-        // 5. TELEMETRÍA DE BATERÍA MASIVA
+        // TELEMETRÍA DE BATERÍA
         item {
             GlassCard {
                 Column {
@@ -206,7 +217,7 @@ fun PanelScreen(
             }
         }
 
-        // 6. MEMORIA RAM & PROCESADOR
+        // MEMORIA RAM & CPU
         item {
             GlassCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -264,7 +275,7 @@ fun PanelScreen(
             }
         }
 
-        // 7. FILA DE ACCIONES RÁPIDAS (EXCLUSIVAMENTE 3)
+        // ACCIONES RÁPIDAS
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
