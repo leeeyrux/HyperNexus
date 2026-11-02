@@ -18,6 +18,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -64,7 +65,6 @@ fun SeguridadScreen(
     var cleaningSpeedMbSec by remember { mutableStateOf(0) }
     var cleanedSuccess by remember { mutableStateOf(false) }
 
-    // GESTIÓN DINÁMICA DE JUEGOS SIN LÍMITE (5 A 500+)
     var installedGames by remember { mutableStateOf<List<GameTargetApp>>(emptyList()) }
     var selectedTargetGame by remember { mutableStateOf<GameTargetApp?>(null) }
     var showGamePickerModal by remember { mutableStateOf(false) }
@@ -81,7 +81,6 @@ fun SeguridadScreen(
         }
     }
 
-    // MANEJO DE INTENT DE PREPARACIÓN DE VPNSERVICE
     val vpnPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -95,7 +94,6 @@ fun SeguridadScreen(
         }
     }
 
-    // ANIMACIÓN SCI-FI GLOW NEON PULSE
     val infiniteTransition = rememberInfiniteTransition(label = "cyberGlow")
     val pulseGlowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.35f,
@@ -110,7 +108,6 @@ fun SeguridadScreen(
         label = "borderGlow"
     )
 
-    // AUDITORÍA DE SEGURIDAD
     val auditChecks = remember {
         val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager
         val isDev = Settings.Global.getInt(context.contentResolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1
@@ -135,9 +132,7 @@ fun SeguridadScreen(
             Text("Split Tunneling por socket con optimización de MTU y DNS", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
         }
 
-        // ====================================================================
         // MASTERPIECE WIDGET: SCI-FI GAMING VPN TUNNEL
-        // ====================================================================
         item {
             Box(
                 modifier = Modifier
@@ -181,7 +176,6 @@ fun SeguridadScreen(
                             }
                         }
 
-                        // MASTER VPN SWITCH
                         IOSSwitch(
                             checked = isTunnelRunning,
                             onCheckedChange = { enable ->
@@ -207,7 +201,6 @@ fun SeguridadScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // GLOWING STATUS INDICATOR
                     if (isTunnelRunning) {
                         Row(
                             modifier = Modifier
@@ -235,7 +228,6 @@ fun SeguridadScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    // FUTURISTIC CIRCULAR FRAMING BADGE PARA EL JUEGO SELECCIONADO
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -430,7 +422,7 @@ fun SeguridadScreen(
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 
-    // MODAL LISTA ILIMITADA DE JUEGOS (5 A 500+)
+    // MODAL LISTA ILIMITADA DE JUEGOS
     if (showGamePickerModal) {
         AlertDialog(
             onDismissRequest = { showGamePickerModal = false },
