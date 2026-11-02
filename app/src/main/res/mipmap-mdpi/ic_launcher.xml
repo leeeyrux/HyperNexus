@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://android.com">
-    <background android:drawable="@color/background_dark" />
-    <foreground android:drawable="@drawable/ic_launcher" />
-</adaptive-icon>
