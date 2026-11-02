@@ -37,13 +37,21 @@ class PrivilegedActions(val bridge: ShizukuBridge) {
 
     suspend fun configureGpuRenderer(type: String): Result<Unit> = withContext(Dispatchers.IO) {
         val commands = when (type.lowercase()) {
+            "vulkan_booster" -> listOf(
+                "setprop debug.hwui.renderer skiavk",
+                "setprop renderthread.skia.pipeline SkiaVulkan",
+                "setprop debug.renderengine.backend 2",
+                "setprop debug.hwui.use_buffer_age true",
+                "setprop debug.hwui.texture_cache_size 72",
+                "setprop debug.hwui.r_buffer_cache_size 16"
+            )
             "vulkan" -> listOf(
-                "setprop debug.hwui.renderer vulkan",
+                "setprop debug.hwui.renderer skiavk",
                 "setprop renderthread.skia.pipeline SkiaVulkan",
                 "setprop debug.renderengine.backend 2"
             )
             "vulkan_lite" -> listOf(
-                "setprop debug.hwui.renderer vulkan",
+                "setprop debug.hwui.renderer skiavk",
                 "setprop debug.hwui.texture_cache_size 16",
                 "setprop debug.renderengine.backend 2"
             )
@@ -60,6 +68,132 @@ class PrivilegedActions(val bridge: ShizukuBridge) {
             else -> listOf("setprop debug.hwui.renderer skiagl")
         }
         executeScriptWithValidation(commands, "GPU Renderer: $type")
+    }
+
+    // --- NUEVAS EXTENSIONES MAGIC TUNER & VEXIRO ---
+    suspend fun setFluidGraphics(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val v = if (enable) "1" else "0"
+        val commands = listOf(
+            "setprop debug.sf.latch_unsignaled $v",
+            "setprop debug.sf.disable_client_composition_cache $v",
+            "setprop debug.sf.enable_gl_backpressure $v"
+        )
+        executeScriptWithValidation(commands, "Fluid Graphics: $enable")
+    }
+
+    suspend fun setSfHardwareAcceleration(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val v = if (enable) "1" else "0"
+        val commands = listOf(
+            "setprop debug.sf.hw $v",
+            "setprop debug.sf.disable_hw_overlays $v",
+            "setprop persist.sys.composition.type ${if (enable) "gpu" else "dyn"}"
+        )
+        executeScriptWithValidation(commands, "SF HW Acceleration: $enable")
+    }
+
+    suspend fun setGpuPacingControl(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = if (enable) {
+            listOf(
+                "setprop debug.sf.early_phase_offset_ns 500000",
+                "setprop debug.sf.early_gl_phase_offset_ns 3000000",
+                "setprop debug.sf.high_fps_early_phase_offset_ns 500000",
+                "setprop debug.sf.high_fps_early_gl_phase_offset_ns 3000000"
+            )
+        } else {
+            listOf(
+                "setprop debug.sf.early_phase_offset_ns 0",
+                "setprop debug.sf.early_gl_phase_offset_ns 0"
+            )
+        }
+        executeScriptWithValidation(commands, "GPU Pacing: $enable")
+    }
+
+    suspend fun setCompositionType(type: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val mode = when (type.lowercase()) {
+            "cpu" -> "c2d"
+            "gpu" -> "gpu"
+            else -> "dyn"
+        }
+        val commands = listOf(
+            "setprop persist.sys.composition.type $mode",
+            "setprop debug.composition.type $mode"
+        )
+        executeScriptWithValidation(commands, "Composition Type: $mode")
+    }
+
+    suspend fun setThermalController(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val v = if (enable) "1" else "0"
+        val commands = listOf(
+            "setprop debug.thermal.bypass $v",
+            "setprop persist.sys.thermal.mitigation ${if (enable) "disabled" else "enabled"}",
+            "settings put global thermal_limit_refresh $v",
+            "cmd power set-mode ${if (enable) "0" else "1"}"
+        )
+        executeScriptWithValidation(commands, "Thermal Controller: $enable")
+    }
+
+    suspend fun setTouchscreenOptimized(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = if (enable) {
+            listOf(
+                "setprop persist.sys.Touchscreen.tap_response_time 0.005",
+                "setprop persist.sys.enable.fast_rendering 1",
+                "setprop touch.pressure.scale 0.001",
+                "setprop view.touch_slop 2"
+            )
+        } else {
+            listOf(
+                "setprop persist.sys.Touchscreen.tap_response_time 0.02",
+                "setprop view.touch_slop 8"
+            )
+        }
+        executeScriptWithValidation(commands, "Touchscreen Optimized: $enable")
+    }
+
+    suspend fun setBoosterRenderSkiaGl(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val v = if (enable) "1" else "0"
+        val commands = listOf(
+            "setprop debug.hwui.renderer skiagl",
+            "setprop renderthread.skia.pipeline SkiaGL",
+            "setprop debug.hwui.render_dirty_regions false",
+            "setprop debug.egl.swapinterval $v"
+        )
+        executeScriptWithValidation(commands, "Booster SkiaGL: $enable")
+    }
+
+    suspend fun setBoosterRenderVulkan(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = if (enable) {
+            listOf(
+                "setprop debug.hwui.renderer skiavk",
+                "setprop renderthread.skia.pipeline SkiaVulkan",
+                "setprop debug.renderengine.backend 2",
+                "setprop debug.hwui.texture_cache_size 88"
+            )
+        } else {
+            listOf(
+                "setprop debug.hwui.renderer skiagl"
+            )
+        }
+        executeScriptWithValidation(commands, "Booster Vulkan: $enable")
+    }
+
+    suspend fun cleanHyperEngine(): Pair<Int, String> = withContext(Dispatchers.IO) {
+        val commands = listOf(
+            "pm trim-caches 999G",
+            "fstrim -v /data",
+            "am kill-all",
+            "rm -rf /data/local/tmp/* 2>/dev/null",
+            "echo 3 > /proc/sys/vm/drop_caches"
+        )
+        val out = mutableListOf<String>()
+        commands.forEach { cmd ->
+            val res = bridge.executeShellCommand(cmd)
+            if (res.second.isNotBlank()) out.add(res.second)
+        }
+        0 to if (out.isEmpty()) "Limpieza Hyper terminada" else out.joinToString("\n")
+    }
+
+    suspend fun executeScriptRaw(content: String): Pair<Int, String> = withContext(Dispatchers.IO) {
+        bridge.executeShellCommand(content)
     }
 
     suspend fun setAnimationScales(scale: Float): Result<Unit> = withContext(Dispatchers.IO) {

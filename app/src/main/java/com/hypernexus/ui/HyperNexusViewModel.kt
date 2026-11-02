@@ -61,6 +61,85 @@ class HyperNexusViewModel(
         }
     }
 
+    // --- NUEVAS ACCIONES MAGIC TUNER / VEXIRO ---
+    fun toggleFluidGraphics(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateFluidGraphics(enable)
+            privilegedActions.setFluidGraphics(enable)
+        }
+    }
+
+    fun toggleSfHardwareAccel(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateSfHardwareAccel(enable)
+            privilegedActions.setSfHardwareAcceleration(enable)
+        }
+    }
+
+    fun toggleGpuPacing(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateGpuPacing(enable)
+            privilegedActions.setGpuPacingControl(enable)
+        }
+    }
+
+    fun setCompositionType(type: String) {
+        viewModelScope.launch {
+            repository.updateCompositionType(type)
+            privilegedActions.setCompositionType(type)
+        }
+    }
+
+    fun toggleThermalController(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateThermalController(enable)
+            privilegedActions.setThermalController(enable)
+        }
+    }
+
+    fun toggleTouchscreenOptimized(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateTouchscreenOptimized(enable)
+            privilegedActions.setTouchscreenOptimized(enable)
+        }
+    }
+
+    fun toggleBoosterSkiaGl(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateBoosterSkiaGl(enable)
+            privilegedActions.setBoosterRenderSkiaGl(enable)
+        }
+    }
+
+    fun toggleBoosterVulkan(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateBoosterVulkan(enable)
+            privilegedActions.setBoosterRenderVulkan(enable)
+        }
+    }
+
+    fun toggleModule(id: String, scriptPayload: String) {
+        viewModelScope.launch {
+            val isNowActive = !uiState.value.activeModules.contains(id)
+            repository.toggleModuleActive(id)
+            if (isNowActive) {
+                privilegedActions.executeScriptRaw(scriptPayload)
+            }
+        }
+    }
+
+    fun installCustomModule(path: String) {
+        viewModelScope.launch {
+            repository.addInstalledModule(path)
+        }
+    }
+
+    fun removeCustomModule(path: String) {
+        viewModelScope.launch {
+            repository.removeInstalledModule(path)
+        }
+    }
+
     fun toggleVsync(enabled: Boolean) {
         viewModelScope.launch {
             repository.updateVsync(enabled)

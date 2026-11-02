@@ -9,15 +9,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hypernexus.data.PreferencesRepository
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.screens.*
 import com.hypernexus.ui.theme.HyperNexusTheme
+
+data class NavItem(val title: String, val icon: ImageVector)
 
 class MainActivity : ComponentActivity() {
 
@@ -69,6 +75,18 @@ fun HyperNexusApp(
     val isConnected by shizukuBridge.isConnected.collectAsState()
     val hasPermission by shizukuBridge.hasPermission.collectAsState()
 
+    val navTabs = remember {
+        listOf(
+            NavItem("Panel", Icons.Default.Dashboard),
+            NavItem("Rendimiento", Icons.Default.Speed),
+            NavItem("Gráficos", Icons.Default.VideogameAsset),
+            NavItem("Seguridad", Icons.Default.Shield),
+            NavItem("Módulos", Icons.Default.Extension),
+            NavItem("Terminal", Icons.Default.Terminal),
+            NavItem("Experimental", Icons.Default.Science)
+        )
+    }
+
     Scaffold(
         containerColor = Color.Black,
         topBar = {
@@ -87,60 +105,42 @@ fun HyperNexusApp(
             )
         },
         bottomBar = {
-            NavigationBar(
-                containerColor = Color(0xFF1C1C1E),
-                tonalElevation = 0.dp
+            ScrollableTabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = Color(0xFF141416),
+                contentColor = Color(0xFF007AFF),
+                edgePadding = 12.dp,
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = Color(0xFF007AFF),
+                        height = 3.dp
+                    )
+                },
+                divider = {}
             ) {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.Dashboard, "Panel") },
-                    label = { Text("Panel") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF007AFF),
-                        unselectedIconColor = Color(0xFF8E8E93)
+                navTabs.forEachIndexed { index, tab ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = {
+                            Text(
+                                text = tab.title,
+                                fontSize = 11.sp,
+                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                            )
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = tab.title,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        selectedContentColor = Color(0xFF007AFF),
+                        unselectedContentColor = Color(0xFF8E8E93)
                     )
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Default.Speed, "Rendimiento") },
-                    label = { Text("Rendimiento") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF007AFF),
-                        unselectedIconColor = Color(0xFF8E8E93)
-                    )
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.VideogameAsset, "Gráficos") },
-                    label = { Text("Gráficos") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF007AFF),
-                        unselectedIconColor = Color(0xFF8E8E93)
-                    )
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 3,
-                    onClick = { selectedTab = 3 },
-                    icon = { Icon(Icons.Default.Terminal, "Terminal") },
-                    label = { Text("Terminal") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF007AFF),
-                        unselectedIconColor = Color(0xFF8E8E93)
-                    )
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 4,
-                    onClick = { selectedTab = 4 },
-                    icon = { Icon(Icons.Default.Science, "Experimental") },
-                    label = { Text("Experimental") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF007AFF),
-                        unselectedIconColor = Color(0xFF8E8E93)
-                    )
-                )
+                }
             }
         }
     ) { padding ->
@@ -153,9 +153,11 @@ fun HyperNexusApp(
             when (selectedTab) {
                 0 -> PanelScreen(viewModel = viewModel)
                 1 -> RendimientoScreen(viewModel = viewModel)
-                2 -> GraphicsScreen(viewModel = viewModel)
-                3 -> TerminalScreen(viewModel = viewModel)
-                4 -> ExperimentalScreen(viewModel = viewModel)
+                2 -> GraficosScreen(viewModel = viewModel)
+                3 -> SeguridadScreen(viewModel = viewModel)
+                4 -> ModulosScreen(viewModel = viewModel)
+                5 -> TerminalScreen(viewModel = viewModel)
+                6 -> ExperimentalScreen(viewModel = viewModel)
             }
 
             if (!hasPermission) {

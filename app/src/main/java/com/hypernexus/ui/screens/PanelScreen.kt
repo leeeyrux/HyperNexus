@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ fun PanelScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
     val uiState by viewModel.uiState.collectAsState()
     val hardwareMonitor = remember { HardwareMonitor(context) }
     val specs = remember { hardwareMonitor.getStaticSpecs() }
@@ -87,7 +89,7 @@ fun PanelScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Panel de Rendimiento",
+                            text = "Core Engine v1.0",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF8E8E93)
                         )
@@ -97,6 +99,58 @@ fun PanelScreen(
         }
 
         item { DeviceSpecsCard(specs = specs) }
+
+        // TARJETA DE COMUNIDAD Y REDES SOCIALES
+        item {
+            GlassCard {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Share, null, tint = Color(0xFF007AFF), modifier = Modifier.size(22.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Comunidad Oficial & Soporte", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Sigue al desarrollador para módulos exclusivos, soporte de scripts y nuevas optimizaciones de bajo nivel.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF8E8E93)
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { uriHandler.openUri("https://www.tiktok.com/@leeeyrux?_r=1&_t=ZS-9B4eTu4uldd") },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1C1C1E))
+                        ) {
+                            Text("TikTok", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+
+                        Button(
+                            onClick = { uriHandler.openUri("https://youtube.com/@leeeyrux?si=opFIeoEvtiCChxFI") },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF003C).copy(alpha = 0.2f))
+                        ) {
+                            Text("YouTube", color = Color(0xFFFF003C), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = { uriHandler.openUri("https://t.me/Leeeyrux_Nexus") },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF).copy(alpha = 0.2f))
+                        ) {
+                            Text("Telegram", color = Color(0xFF007AFF), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
 
         item {
             GlassCard {
