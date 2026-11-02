@@ -7,7 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -39,13 +38,19 @@ fun TerminalScreen(
     var consoleLogs by remember { mutableStateOf("HyperNexus ADB Shell v1.0 [Shizuku Protocol]\nEscriba un comando o seleccione uno predefinido.\n") }
     var isExecuting by remember { mutableStateOf(false) }
 
+    // 10 ACCIONES NATIVAS PRECONSTRUIDAS (5 ORIGINALES + 5 NUEVAS)
     val presetCommands = remember {
         listOf(
-            "Forzar Modo Doze Extremo" to "dumpsys deviceidle force-idle",
-            "Optimizar Batería (Deep Sleep)" to "cmd deviceidle conserve enabled 1",
-            "Limpiar Caché del Sistema" to "pm trim-caches 999G",
-            "Liberar Memoria RAM" to "am kill-all",
-            "Verificar Estado de Superficie Gráfica" to "dumpsys surfaceflinger"
+            "1. Forzar Modo Doze Extremo" to "dumpsys deviceidle force-idle",
+            "2. Optimizar Batería (Deep Sleep)" to "cmd deviceidle conserve enabled 1",
+            "3. Limpiar Caché del Sistema" to "pm trim-caches 999G",
+            "4. Liberar Memoria RAM" to "am kill-all",
+            "5. Verificar Estado de Superficie Gráfica" to "dumpsys surfaceflinger",
+            "6. Habilitar Modo Rendimiento Máximo" to "cmd power set-mode 1",
+            "7. Desactivar Límite de Procesos de Fondo" to "device_config put activity_manager max_phantom_processes 2147483647",
+            "8. Forzar Compilación Speed en Todo el Sistema" to "cmd package compile -m speed -a",
+            "9. Auditar Logs de Errores Críticos (Logcat)" to "logcat -b crash -d",
+            "10. Verificar Estado de Frecuencia Térmica de CPU" to "dumpsys hardware_properties"
         )
     }
 
@@ -73,7 +78,7 @@ fun TerminalScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. BANNER ANTI-CURIOSO CARMESÍ
+        // BANNER DE SEGURIDAD CARMESÍ ANTI-CURIOSO
         item {
             Box(
                 modifier = Modifier
@@ -105,7 +110,7 @@ fun TerminalScreen(
             }
         }
 
-        // 2. CONSOLA DE SALIDA INTERACTIVA
+        // CONSOLA INTERACTIVA
         item {
             GlassCard {
                 Column {
@@ -141,7 +146,7 @@ fun TerminalScreen(
             }
         }
 
-        // 3. CAMPO DE ENTRADA Y ACCIONES
+        // CAMPO DE ENTRADA CON BOTÓN DE FAVORITOS (BOOKMARK)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -206,7 +211,7 @@ fun TerminalScreen(
             }
         }
 
-        // 4. FAVORITOS GUARDADOS
+        // LISTA DE COMANDOS FAVORITOS GUARDADOS
         if (uiState.favoriteCommands.isNotEmpty()) {
             item {
                 Text("Comandos Guardados", style = MaterialTheme.typography.titleMedium, color = Color.White)
@@ -234,7 +239,7 @@ fun TerminalScreen(
             }
         }
 
-        // 5. PRESETS POPULARES
+        // 10 PRESETS RECOMENDADOS
         item {
             Text("Comandos Útiles Predefinidos", style = MaterialTheme.typography.titleMedium, color = Color.White)
         }

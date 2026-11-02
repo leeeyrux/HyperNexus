@@ -40,6 +40,13 @@ class HyperNexusViewModel(
         }
     }
 
+    fun optimizePing(onSuccess: (String) -> Unit) {
+        viewModelScope.launch {
+            val res = privilegedActions.optimizePing()
+            onSuccess(res.second)
+        }
+    }
+
     fun setDisplayDpi(dpi: Int) {
         viewModelScope.launch {
             repository.updateDpi(dpi)
@@ -47,10 +54,24 @@ class HyperNexusViewModel(
         }
     }
 
-    fun setAnimationScale(scale: Float) {
+    fun setTransitionScale(scale: Float) {
         viewModelScope.launch {
-            repository.updateAnimationScale(scale)
-            privilegedActions.setAnimationScales(scale)
+            repository.updateTransitionScale(scale)
+            privilegedActions.setTransitionScale(scale)
+        }
+    }
+
+    fun setAnimatorScale(scale: Float) {
+        viewModelScope.launch {
+            repository.updateAnimatorScale(scale)
+            privilegedActions.setAnimatorScale(scale)
+        }
+    }
+
+    fun setWindowScale(scale: Float) {
+        viewModelScope.launch {
+            repository.updateWindowScale(scale)
+            privilegedActions.setWindowScale(scale)
         }
     }
 
@@ -61,7 +82,34 @@ class HyperNexusViewModel(
         }
     }
 
-    // --- NUEVAS ACCIONES MAGIC TUNER / VEXIRO ---
+    fun toggleDisableHwOverlays(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateDisableHwOverlays(enable)
+            privilegedActions.setDisableHwOverlays(enable)
+        }
+    }
+
+    fun toggleForced4xMsaa(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateMsaa4x(enable)
+            privilegedActions.setForced4xMsaa(enable)
+        }
+    }
+
+    fun togglePerfGovernor(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updatePerfGovernor(enable)
+            privilegedActions.setPerformanceGovernor(enable)
+        }
+    }
+
+    fun toggleHighPriorityDex2oat(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateHighPriorityDex2oat(enable)
+            privilegedActions.setHighPriorityDex2oat(enable)
+        }
+    }
+
     fun toggleFluidGraphics(enable: Boolean) {
         viewModelScope.launch {
             repository.updateFluidGraphics(enable)
@@ -165,13 +213,6 @@ class HyperNexusViewModel(
         viewModelScope.launch {
             repository.updateForceGpu(enabled)
             privilegedActions.forceGpuRendering(enabled)
-        }
-    }
-
-    fun toggleMsaa4x(enabled: Boolean) {
-        viewModelScope.launch {
-            repository.updateMsaa4x(enabled)
-            privilegedActions.configureAntialiasing(enabled)
         }
     }
 

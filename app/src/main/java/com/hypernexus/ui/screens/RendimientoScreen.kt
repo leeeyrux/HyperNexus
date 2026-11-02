@@ -5,12 +5,16 @@ import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.GlassCard
-import com.hypernexus.ui.components.IOSSliderTile
 import com.hypernexus.ui.components.IOSSwitchTile
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -38,12 +41,14 @@ fun RendimientoScreen(
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
 
-    // Sliders con estado local desacoplado (Fluidez total, persistencia al soltar)
-    val safeDpi = uiState.displayDpi.toFloat().coerceIn(320f, 500f)
-    var localDpi by remember(uiState.displayDpi) { mutableStateOf(safeDpi) }
+    // Opciones discretas de pasos de 20 para DPI
+    val dpiOptions = remember { listOf(320, 340, 360, 380, 400, 420, 440, 460, 480, 500) }
 
-    val safeAnim = uiState.animationScale.coerceIn(0f, 2.0f)
-    var localAnim by remember(uiState.animationScale) { mutableStateOf(safeAnim) }
+    // Multiplicadores discretos para animaciones
+    val scaleOptions = remember { listOf(0.0f, 0.5f, 1.0f, 1.5f, 2.0f) }
+
+    // Frecuencias de refresco reubicadas
+    val refreshRates = remember { listOf(0 to "Auto", 60 to "60Hz", 90 to "90Hz", 120 to "120Hz", 144 to "144Hz") }
 
     // Escalador de Resolución
     val displayMetrics = Resources.getSystem().displayMetrics
@@ -73,55 +78,118 @@ fun RendimientoScreen(
     ) {
         item {
             Text("Rendimiento", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-            Text("Ajustes protegidos contra bloqueos de pantalla", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+            Text("Ajustes por pasos seguros sin deslizamiento errático", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
         }
 
-        // SLIDER DPI: Rango 320..500 con pasos de 15
+        // CONTROL DE HERZIOS REUBICADO DESDE PANEL
         item {
-            IOSSliderTile(
-                title = "Densidad de Pantalla (DPI Seguro)",
-                subtitle = "Intervalos de 15 DPI (320 - 500). Seguro contra soft-bricks.",
-                value = localDpi,
-                onValueChange = {
-                    val stepIndex = ((it - 320f) / 15f).roundToInt()
-                    localDpi = (320f + stepIndex * 15f).coerceIn(320f, 500f)
-                },
-                onValueChangeFinished = {
-                    val finalDpi = localDpi.roundToInt()
-                    viewModel.setDisplayDpi(finalDpi)
-                    Toast.makeText(context, "DPI Aplicado: $finalDpi", Toast.LENGTH_SHORT).show()
-                },
-                valueRange = 320f..500f,
-                steps = 11,
-                formatValue = { "${it.roundToInt()} DPI" }
-            )
+            GlassCard {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Speed, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Forzar Tasa de Refresco Global", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        refreshRates.forEach { (rate, label) ->
+                            val isSelected = uiState.refreshRate == rate
+                            Button(
+                                onClick = {
+                                    viewModel.setRefreshRate(context, rate)
+                                    Toast.makeText(context, "Frecuencia: $label", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.weight(1f).height(38.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(0.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSelected) Color(0xFF007AFF) else Color(0xFF2C2C2E)
+                                )
+                            ) {
+                                Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        // SLIDER ANIMACIONES: 0x, 0.5x, 1x, 1.5x, 2x
+        // 1. DENSIDAD DE PANTALLA (DPI) EN PASOS DE 20
         item {
-            IOSSliderTile(
-                title = "Escala de Animaciones",
-                subtitle = "Multiplicadores del sistema (0x, 0.5x, 1x, 1.5x, 2x)",
-                value = localAnim,
-                onValueChange = {
-                    val stepIndex = (it / 0.5f).roundToInt()
-                    localAnim = (stepIndex * 0.5f).coerceIn(0f, 2.0f)
-                },
-                onValueChangeFinished = {
-                    val finalScale = (localAnim * 2).roundToInt() / 2.0f
-                    viewModel.setAnimationScale(finalScale)
-                    Toast.makeText(context, "Animaciones a ${finalScale}x", Toast.LENGTH_SHORT).show()
-                },
-                valueRange = 0.0f..2.0f,
-                steps = 3,
-                formatValue = {
-                    val rounded = (it * 2).roundToInt() / 2.0f
-                    if (rounded == 0f) "0x (Apagadas)" else "${rounded}x"
+            GlassCard {
+                Column {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Densidad de Pantalla (DPI)", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                        Text("${uiState.displayDpi} DPI", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+                    }
+                    Text("Selecciona un valor predeterminado seguro", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        dpiOptions.forEach { dpi ->
+                            val isSelected = uiState.displayDpi == dpi
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (isSelected) Color(0xFF007AFF) else Color(0xFF2C2C2E))
+                                    .clickable {
+                                        viewModel.setDisplayDpi(dpi)
+                                        Toast.makeText(context, "DPI: $dpi", Toast.LENGTH_SHORT).show()
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                            ) {
+                                Text("$dpi", color = Color.White, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. ESCALA DE TRANSICIÓN
+        item {
+            StepOptionCard(
+                title = "Escala de Transición",
+                currentValue = uiState.transitionScale,
+                options = scaleOptions,
+                onSelected = {
+                    viewModel.setTransitionScale(it)
+                    Toast.makeText(context, "Transición: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
                 }
             )
         }
 
-        // ESCALADOR DE RESOLUCIÓN CON BLOQUEO ANTI-CURIOSO
+        // 3. ESCALA DE ANIMACIÓN / DURACIÓN
+        item {
+            StepOptionCard(
+                title = "Escala de Animación / Duración",
+                currentValue = uiState.animatorScale,
+                options = scaleOptions,
+                onSelected = {
+                    viewModel.setAnimatorScale(it)
+                    Toast.makeText(context, "Duración: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        // 4. ESCALA DE VENTANA
+        item {
+            StepOptionCard(
+                title = "Escala de Ventana",
+                currentValue = uiState.windowScale,
+                options = scaleOptions,
+                onSelected = {
+                    viewModel.setWindowScale(it)
+                    Toast.makeText(context, "Ventana: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        // ESCALADOR DE RESOLUCIÓN ANTI-CURIOSO
         item {
             GlassCard {
                 Column {
@@ -132,7 +200,7 @@ fun RendimientoScreen(
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Reduce la resolución para duplicar FPS en juegos pesados manteniendo el formato nativo.",
+                        text = "Reduce la resolución manteniendo la relación de aspecto nativa para ganar FPS.",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF8E8E93)
                     )
@@ -144,9 +212,7 @@ fun RendimientoScreen(
                                 selectedResolutionTarget = target
                                 showAntiCuriosoDialog = true
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 3.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (target.first == 0) Color(0xFF2C2C2E) else Color(0xFF007AFF).copy(alpha = 0.15f)
@@ -159,12 +225,40 @@ fun RendimientoScreen(
             }
         }
 
+        // NUEVAS OPCIONES DE PERFIL DE BAJO NIVEL
         item {
             IOSSwitchTile(
-                title = "Compilación AOT Instantánea",
-                subtitle = "Reorganiza el código de las aplicaciones para acelerar arranques",
-                checked = uiState.dex2oatEnabled,
-                onCheckedChange = { viewModel.toggleDex2oat(it) }
+                title = "Disable HW Overlays",
+                subtitle = "Fuerza composición directa por GPU en SurfaceFlinger",
+                checked = uiState.disableHwOverlays,
+                onCheckedChange = { viewModel.toggleDisableHwOverlays(it) }
+            )
+        }
+
+        item {
+            IOSSwitchTile(
+                title = "Enable Forced 4x MSAA",
+                subtitle = "Inyección global de anti-aliasing OpenGL ES 2.0+",
+                checked = uiState.msaa4x,
+                onCheckedChange = { viewModel.toggleForced4xMsaa(it) }
+            )
+        }
+
+        item {
+            IOSSwitchTile(
+                title = "Performance Governor Scheduler",
+                subtitle = "Fuerza frecuencia máxima en todos los clústeres del CPU",
+                checked = uiState.perfGovernor,
+                onCheckedChange = { viewModel.togglePerfGovernor(it) }
+            )
+        }
+
+        item {
+            IOSSwitchTile(
+                title = "Force High-Priority Dex2oat",
+                subtitle = "Asigna 8 hilos dedicados para compilación de paquetes AOT",
+                checked = uiState.highPriorityDex2oat,
+                onCheckedChange = { viewModel.toggleHighPriorityDex2oat(it) }
             )
         }
 
@@ -189,7 +283,7 @@ fun RendimientoScreen(
         item {
             IOSSwitchTile(
                 title = "Modo Silencioso de Registros",
-                subtitle = "Desactiva los logs del sistema para liberar ciclos del CPU",
+                subtitle = "Desactiva logs del sistema para liberar ciclos de CPU",
                 checked = uiState.silentLogging,
                 onCheckedChange = { viewModel.toggleSilentLogging(it) }
             )
@@ -199,12 +293,13 @@ fun RendimientoScreen(
             Button(
                 onClick = {
                     scope.launch {
-                        viewModel.toggleDex2oat(true)
+                        viewModel.setTransitionScale(0f)
+                        viewModel.setAnimatorScale(0f)
+                        viewModel.setWindowScale(0f)
                         viewModel.toggleHighPerformance(true)
                         viewModel.toggleFastTouch(true)
-                        viewModel.toggleSilentLogging(true)
-                        viewModel.setAnimationScale(0.0f)
-                        Toast.makeText(context, "Máximo Rendimiento (0x) Aplicado", Toast.LENGTH_SHORT).show()
+                        viewModel.toggleDisableHwOverlays(true)
+                        Toast.makeText(context, "Perfil de Máxima Velocidad Aplicado", Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -213,7 +308,7 @@ fun RendimientoScreen(
             ) {
                 Icon(Icons.Default.Bolt, null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Activar Perfil Extremo (Animaciones 0x)", fontWeight = FontWeight.Bold)
+                Text("Activar Perfil Extremo (0x Todo)", fontWeight = FontWeight.Bold)
             }
         }
 
@@ -277,3 +372,39 @@ fun RendimientoScreen(
         )
     }
 }
+
+@Composable
+private fun StepOptionCard(
+    title: String,
+    currentValue: Float,
+    options: List<Float>,
+    onSelected: (Float) -> Unit
+) {
+    GlassCard {
+        Column {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(title, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Text(formatScale(currentValue), color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                options.forEach { opt ->
+                    val isSelected = currentValue == opt
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isSelected) Color(0xFF007AFF) else Color(0xFF2C2C2E))
+                            .clickable { onSelected(opt) }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(formatScale(opt), color = Color.White, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatScale(scale: Float): String = if (scale == 0f) "0x" else "${scale}x"

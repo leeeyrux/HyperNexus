@@ -5,25 +5,22 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitch
@@ -45,31 +42,56 @@ fun ModulosScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
+    // 8 PRESETS TOTALES (4 ORIGINALES + 4 NUEVOS AVANZADOS)
     val presetModules = remember {
         listOf(
             PresetModule(
                 id = "fps_stabilizer",
-                title = "FPS Stabilizer Tweak",
+                title = "1. FPS Stabilizer Tweak",
                 description = "Fuerza tasa de cuadros uniforme y bloquea caídas de sincronización vertical.",
                 script = "setprop persist.sys.stable.fps.enable true; setprop debug.hwui.render_dirty_regions false; setprop debug.sf.showupdates 0; setprop debug.sf.showcpu 0"
             ),
             PresetModule(
                 id = "touch_booster",
-                title = "Touch Response Booster",
+                title = "2. Touch Response Booster",
                 description = "Minimiza la fricción táctil a 0.01ms e incrementa el muestreo digital.",
                 script = "setprop persist.sys.Touchscreen.tap_response_time 0.01; setprop persist.sys.enable.fast_rendering 1; setprop touch.pressure.scale 0.001"
             ),
             PresetModule(
                 id = "thermal_bypass",
-                title = "Thermal Throttling Bypass",
+                title = "3. Thermal Throttling Bypass",
                 description = "Modifica directivas de atenuación térmica del CPU para sesiones de juego prolongadas.",
                 script = "setprop debug.thermal.bypass 1; settings put global thermal_limit_refresh 0; cmd power set-mode 0"
             ),
             PresetModule(
                 id = "ping_optimizer",
-                title = "Network Ping Optimizer",
+                title = "4. Network Ping Optimizer",
                 description = "Limpia la caché de sockets DNS y agranda los búferes de recepción TCP WiFi.",
                 script = "ndc resolver flushdefaultif; setprop net.tcp.buffersize.wifi 524288,1048576,2097152,4096,262144,1048576; setprop persist.sys.wifi.low_latency true"
+            ),
+            PresetModule(
+                id = "ram_lmk_aggressive",
+                title = "5. RAM Management Aggressive Tweak",
+                description = "Modifica parámetros minfree de LMK y purgeable assets para multitarea pesada.",
+                script = "setprop persist.sys.purgeable_assets 1; echo '18432,23040,27648,32256,36864,46080' > /sys/module/lowmemorykiller/parameters/minfree 2>/dev/null; echo 100 > /proc/sys/vm/vfs_cache_pressure 2>/dev/null"
+            ),
+            PresetModule(
+                id = "gpu_sustained_clocks",
+                title = "6. GPU Performance Sustained Profiles",
+                description = "Previene la caída de reloj en GPUs Adreno y Mali bajo cargas continuadas.",
+                script = "setprop debug.hwui.fps_divisor 1; setprop persist.sys.power.profile performance; setprop debug.renderengine.backend 2; setprop debug.hwui.use_buffer_age true"
+            ),
+            PresetModule(
+                id = "kernel_entropy_multiplier",
+                title = "7. Kernel Entropy Multiplier",
+                description = "Aumenta umbrales de entropía del kernel reduciendo micro-tirones de entrada.",
+                script = "echo 4096 > /proc/sys/kernel/random/write_wakeup_threshold 2>/dev/null; echo 2048 > /proc/sys/kernel/random/read_wakeup_threshold 2>/dev/null"
+            ),
+            PresetModule(
+                id = "audio_bitrate_enhancer",
+                title = "8. System Audio Bitrate Enhancer",
+                description = "Optimiza la calidad de remuestreo del framework de audio de Android a 24/32 bits.",
+                script = "setprop af.resampler.quality 4; setprop persist.sys.audio.high_res 1; setprop persist.af.resampler.quality 4"
             )
         )
     }
@@ -158,7 +180,7 @@ fun ModulosScreen(
             }
         }
 
-        // PRESETS RECOMENDADOS (ESTILO MAGIC TUNER / VEXIRO)
+        // 8 PRESETS RECOMENDADOS
         item {
             Text("Sugerencias de Inyección Rápida", style = MaterialTheme.typography.titleMedium, color = Color.White)
         }

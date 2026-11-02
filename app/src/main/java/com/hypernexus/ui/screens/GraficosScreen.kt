@@ -1,5 +1,9 @@
 package com.hypernexus.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.hypernexus.services.RedMagicOverlayService
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitchTile
@@ -49,7 +54,31 @@ fun GraficosScreen(
             Text("Controladores de bajo nivel Magic Tuner & Vexiro Engine", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
         }
 
-        // MOTOR DE RENDERIZADO
+        // SWITCH DEL CONTADOR RED MAGIC MULTI-INFO (INTEGRADO AQUÍ)
+        item {
+            IOSSwitchTile(
+                title = "Contador Red Magic Multi-Info",
+                subtitle = "HUD flotante: Toca para alternar [FPS] o [Hora | FPS | Ping | Temp | Batería]",
+                checked = uiState.fpsOverlayActive,
+                onCheckedChange = { enabled ->
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+                        context.startActivity(intent)
+                    } else {
+                        viewModel.setFpsOverlay(enabled)
+                        val intent = Intent(context, RedMagicOverlayService::class.java)
+                        if (enabled) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent)
+                            else context.startService(intent)
+                        } else {
+                            context.stopService(intent)
+                        }
+                    }
+                }
+            )
+        }
+
+        // MOTOR DE RENDERIZADO SKIA
         item {
             GlassCard {
                 Column {
@@ -95,10 +124,7 @@ fun GraficosScreen(
                 Column {
                     Text("Composición de Pantalla", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         compositions.forEach { comp ->
                             val isSelected = uiState.compositionType.equals(comp, ignoreCase = true)
                             Button(
@@ -117,11 +143,11 @@ fun GraficosScreen(
             }
         }
 
-        // SWITCHES MAGIC TUNER
+        // SWITCHES DE BAJO NIVEL
         item {
             IOSSwitchTile(
                 title = "Modo de Gráficos Fluidos",
-                subtitle = "Optimización profunda de sincronización y mitigación de buffer de pantalla",
+                subtitle = "Optimización profunda de sincronización y buffer SurfaceFlinger",
                 checked = uiState.fluidGraphics,
                 onCheckedChange = { viewModel.toggleFluidGraphics(it) }
             )
@@ -130,7 +156,7 @@ fun GraficosScreen(
         item {
             IOSSwitchTile(
                 title = "Aceleración por Hardware de SF",
-                subtitle = "Prioridad absoluta de hardware para la composición de SurfaceFlinger",
+                subtitle = "Prioridad absoluta de hardware para la composición de pantalla",
                 checked = uiState.sfHardwareAccel,
                 onCheckedChange = { viewModel.toggleSfHardwareAccel(it) }
             )
@@ -139,7 +165,7 @@ fun GraficosScreen(
         item {
             IOSSwitchTile(
                 title = "Control de Intervalo de GPU",
-                subtitle = "Alineación de cadencia de frames en microsegundos para títulos competitivos",
+                subtitle = "Alineación de cadencia de frames en microsegundos",
                 checked = uiState.gpuPacingControl,
                 onCheckedChange = { viewModel.toggleGpuPacing(it) }
             )
@@ -147,18 +173,8 @@ fun GraficosScreen(
 
         item {
             IOSSwitchTile(
-                title = "Modo de Antialiasing Forzado (MSAA 4x)",
-                subtitle = "Suavizado forzado de bordes en títulos compatibles con EGL",
-                checked = uiState.msaa4x,
-                onCheckedChange = { viewModel.toggleMsaa4x(it) }
-            )
-        }
-
-        // PERFILES VEXIRO
-        item {
-            IOSSwitchTile(
                 title = "Thermal Controller (Vexiro Engine)",
-                subtitle = "Suprime el límite térmico que reduce el rendimiento durante partidas intensas",
+                subtitle = "Suprime el límite térmico que reduce el rendimiento en juegos",
                 checked = uiState.thermalController,
                 onCheckedChange = { viewModel.toggleThermalController(it) }
             )
@@ -197,6 +213,15 @@ fun GraficosScreen(
                 subtitle = "Permite superar los 60 FPS fijos del sistema",
                 checked = uiState.vsyncDisabled,
                 onCheckedChange = { viewModel.toggleVsync(it) }
+            )
+        }
+
+        item {
+            IOSSwitchTile(
+                title = "Forzar Renderizado GPU",
+                subtitle = "Obliga al procesador gráfico a mover capas 2D del sistema",
+                checked = uiState.forceGpuRendering,
+                onCheckedChange = { viewModel.toggleForceGpu(it) }
             )
         }
 

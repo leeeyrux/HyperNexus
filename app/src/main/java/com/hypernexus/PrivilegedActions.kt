@@ -35,6 +35,64 @@ class PrivilegedActions(val bridge: ShizukuBridge) {
         executeScriptWithValidation(commands, "Force Refresh Rate: $rate Hz")
     }
 
+    suspend fun optimizePing(): Pair<Int, String> = withContext(Dispatchers.IO) {
+        val commands = listOf(
+            "ndc resolver flushdefaultif",
+            "setprop net.dns1 1.1.1.1",
+            "setprop net.dns2 1.0.0.1",
+            "setprop net.tcp.buffersize.wifi 524288,1048576,2097152,4096,262144,1048576"
+        )
+        commands.forEach { bridge.executeShellCommand(it) }
+        0 to "DNS Flush ejecutado y Cloudflare DNS inyectado"
+    }
+
+    suspend fun setTransitionScale(scale: Float): Result<Unit> = withContext(Dispatchers.IO) {
+        executeScriptWithValidation(listOf("settings put global transition_animation_scale $scale"), "Transition Scale: $scale")
+    }
+
+    suspend fun setAnimatorScale(scale: Float): Result<Unit> = withContext(Dispatchers.IO) {
+        executeScriptWithValidation(listOf("settings put global animator_duration_scale $scale"), "Animator Scale: $scale")
+    }
+
+    suspend fun setWindowScale(scale: Float): Result<Unit> = withContext(Dispatchers.IO) {
+        executeScriptWithValidation(listOf("settings put global window_animation_scale $scale"), "Window Scale: $scale")
+    }
+
+    suspend fun changeDisplayDensity(dpi: Int): Result<Unit> = withContext(Dispatchers.IO) {
+        val cmd = if (dpi == 0) "wm density reset" else "wm density $dpi"
+        executeScriptWithValidation(listOf(cmd), "Change Density: $dpi")
+    }
+
+    suspend fun setDisableHwOverlays(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val v = if (enable) "1" else "0"
+        executeScriptWithValidation(listOf(
+            "setprop debug.sf.disable_hw_overlays $v",
+            "service call SurfaceFlinger 1008 i32 ${if (enable) 1 else 0}"
+        ), "Disable HW Overlays: $enable")
+    }
+
+    suspend fun setForced4xMsaa(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val v = if (enable) "4" else "0"
+        executeScriptWithValidation(listOf("setprop debug.egl.force_msaa $v"), "Force 4x MSAA: $enable")
+    }
+
+    suspend fun setPerformanceGovernor(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val gov = if (enable) "performance" else "schedutil"
+        val count = Runtime.getRuntime().availableProcessors()
+        val cmds = (0 until count).map { "echo $gov > /sys/devices/system/cpu/cpu$it/cpufreq/scaling_governor 2>/dev/null" }
+        executeScriptWithValidation(cmds, "Performance Governor: $gov")
+    }
+
+    suspend fun setHighPriorityDex2oat(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val threads = if (enable) "8" else "4"
+        val cmds = listOf(
+            "setprop dalvik.vm.dex2oat-threads $threads",
+            "setprop dalvik.vm.boot-dex2oat-threads $threads",
+            "setprop dalvik.vm.dex2oat-cpu-set 0,1,2,3,4,5,6,7"
+        )
+        executeScriptWithValidation(cmds, "High-Priority Dex2oat: $enable")
+    }
+
     suspend fun configureGpuRenderer(type: String): Result<Unit> = withContext(Dispatchers.IO) {
         val commands = when (type.lowercase()) {
             "vulkan_booster" -> listOf(
@@ -70,7 +128,6 @@ class PrivilegedActions(val bridge: ShizukuBridge) {
         executeScriptWithValidation(commands, "GPU Renderer: $type")
     }
 
-    // --- NUEVAS EXTENSIONES MAGIC TUNER & VEXIRO ---
     suspend fun setFluidGraphics(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
         val v = if (enable) "1" else "0"
         val commands = listOf(
@@ -169,9 +226,7 @@ class PrivilegedActions(val bridge: ShizukuBridge) {
                 "setprop debug.hwui.texture_cache_size 88"
             )
         } else {
-            listOf(
-                "setprop debug.hwui.renderer skiagl"
-            )
+            listOf("setprop debug.hwui.renderer skiagl")
         }
         executeScriptWithValidation(commands, "Booster Vulkan: $enable")
     }
@@ -184,30 +239,12 @@ class PrivilegedActions(val bridge: ShizukuBridge) {
             "rm -rf /data/local/tmp/* 2>/dev/null",
             "echo 3 > /proc/sys/vm/drop_caches"
         )
-        val out = mutableListOf<String>()
-        commands.forEach { cmd ->
-            val res = bridge.executeShellCommand(cmd)
-            if (res.second.isNotBlank()) out.add(res.second)
-        }
-        0 to if (out.isEmpty()) "Limpieza Hyper terminada" else out.joinToString("\n")
+        commands.forEach { bridge.executeShellCommand(it) }
+        0 to "Caché, búferes y memoria purgados correctamente"
     }
 
     suspend fun executeScriptRaw(content: String): Pair<Int, String> = withContext(Dispatchers.IO) {
         bridge.executeShellCommand(content)
-    }
-
-    suspend fun setAnimationScales(scale: Float): Result<Unit> = withContext(Dispatchers.IO) {
-        val commands = listOf(
-            "settings put global window_animation_scale $scale",
-            "settings put global transition_animation_scale $scale",
-            "settings put global animator_duration_scale $scale"
-        )
-        executeScriptWithValidation(commands, "Animation Scale: $scale")
-    }
-
-    suspend fun changeDisplayDensity(dpi: Int): Result<Unit> = withContext(Dispatchers.IO) {
-        val cmd = if (dpi == 0) "wm density reset" else "wm density $dpi"
-        executeScriptWithValidation(listOf(cmd), "Change Density: $dpi")
     }
 
     suspend fun enableDex2OatSpeed(): Result<Unit> = withContext(Dispatchers.IO) {
@@ -287,11 +324,6 @@ class PrivilegedActions(val bridge: ShizukuBridge) {
 
     suspend fun showDirtyRegions(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
         executeScriptWithValidation(listOf("setprop debug.hwui.show_dirty_regions ${if (enable) "true" else "false"}"), "Show Dirty Regions: $enable")
-    }
-
-    suspend fun configureAntialiasing(enabled: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
-        val v = if (enabled) "4" else "0"
-        executeScriptWithValidation(listOf("setprop debug.egl.force_msaa $v"), "Antialiasing: $enabled")
     }
 
     suspend fun optimizeHwuiCache(): Result<Unit> = withContext(Dispatchers.IO) {

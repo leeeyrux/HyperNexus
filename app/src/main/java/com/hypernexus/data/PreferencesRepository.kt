@@ -23,12 +23,16 @@ data class NexusSettings(
     val highPerformance: Boolean = false,
     val fastTouch: Boolean = false,
     val silentLogging: Boolean = false,
-    val displayDpi: Int = 410,
-    val animationScale: Float = 1.0f,
+    val displayDpi: Int = 400,
+    val transitionScale: Float = 1.0f,
+    val animatorScale: Float = 1.0f,
+    val windowScale: Float = 1.0f,
+    val disableHwOverlays: Boolean = false,
+    val perfGovernor: Boolean = false,
+    val highPriorityDex2oat: Boolean = false,
     val graphicsRenderer: String = "vulkan_booster",
     val fpsOverlayActive: Boolean = false,
     val favoriteCommands: Set<String> = emptySet(),
-    // Legacy Magic Tuner / Vexiro Extensions
     val fluidGraphics: Boolean = false,
     val sfHardwareAccel: Boolean = false,
     val gpuPacingControl: Boolean = false,
@@ -56,11 +60,15 @@ class PreferencesRepository(private val context: Context) {
         val FAST_TOUCH = booleanPreferencesKey("fast_touch")
         val SILENT_LOGGING = booleanPreferencesKey("silent_logging")
         val DISPLAY_DPI = intPreferencesKey("display_dpi")
-        val ANIMATION_SCALE = floatPreferencesKey("animation_scale")
+        val TRANSITION_SCALE = floatPreferencesKey("transition_scale")
+        val ANIMATOR_SCALE = floatPreferencesKey("animator_scale")
+        val WINDOW_SCALE = floatPreferencesKey("window_scale")
+        val DISABLE_HW_OVERLAYS = booleanPreferencesKey("disable_hw_overlays")
+        val PERF_GOVERNOR = booleanPreferencesKey("perf_governor")
+        val HIGH_PRIO_DEX2OAT = booleanPreferencesKey("high_prio_dex2oat")
         val GRAPHICS_RENDERER = stringPreferencesKey("graphics_renderer")
         val FPS_OVERLAY_ACTIVE = booleanPreferencesKey("fps_overlay_active")
         val FAVORITE_COMMANDS = stringSetPreferencesKey("favorite_commands")
-
         val FLUID_GRAPHICS = booleanPreferencesKey("fluid_graphics")
         val SF_HARDWARE_ACCEL = booleanPreferencesKey("sf_hardware_accel")
         val GPU_PACING = booleanPreferencesKey("gpu_pacing")
@@ -90,8 +98,13 @@ class PreferencesRepository(private val context: Context) {
                 highPerformance = prefs[Keys.HIGH_PERFORMANCE] ?: false,
                 fastTouch = prefs[Keys.FAST_TOUCH] ?: false,
                 silentLogging = prefs[Keys.SILENT_LOGGING] ?: false,
-                displayDpi = prefs[Keys.DISPLAY_DPI] ?: 410,
-                animationScale = prefs[Keys.ANIMATION_SCALE] ?: 1.0f,
+                displayDpi = prefs[Keys.DISPLAY_DPI] ?: 400,
+                transitionScale = prefs[Keys.TRANSITION_SCALE] ?: 1.0f,
+                animatorScale = prefs[Keys.ANIMATOR_SCALE] ?: 1.0f,
+                windowScale = prefs[Keys.WINDOW_SCALE] ?: 1.0f,
+                disableHwOverlays = prefs[Keys.DISABLE_HW_OVERLAYS] ?: false,
+                perfGovernor = prefs[Keys.PERF_GOVERNOR] ?: false,
+                highPriorityDex2oat = prefs[Keys.HIGH_PRIO_DEX2OAT] ?: false,
                 graphicsRenderer = prefs[Keys.GRAPHICS_RENDERER] ?: "vulkan_booster",
                 fpsOverlayActive = prefs[Keys.FPS_OVERLAY_ACTIVE] ?: false,
                 favoriteCommands = prefs[Keys.FAVORITE_COMMANDS] ?: emptySet(),
@@ -114,7 +127,12 @@ class PreferencesRepository(private val context: Context) {
 
     suspend fun updateRefreshRate(rate: Int) = set(Keys.REFRESH_RATE, rate)
     suspend fun updateDpi(dpi: Int) = set(Keys.DISPLAY_DPI, dpi)
-    suspend fun updateAnimationScale(scale: Float) = set(Keys.ANIMATION_SCALE, scale)
+    suspend fun updateTransitionScale(scale: Float) = set(Keys.TRANSITION_SCALE, scale)
+    suspend fun updateAnimatorScale(scale: Float) = set(Keys.ANIMATOR_SCALE, scale)
+    suspend fun updateWindowScale(scale: Float) = set(Keys.WINDOW_SCALE, scale)
+    suspend fun updateDisableHwOverlays(v: Boolean) = set(Keys.DISABLE_HW_OVERLAYS, v)
+    suspend fun updatePerfGovernor(v: Boolean) = set(Keys.PERF_GOVERNOR, v)
+    suspend fun updateHighPriorityDex2oat(v: Boolean) = set(Keys.HIGH_PRIO_DEX2OAT, v)
     suspend fun updateVsync(v: Boolean) = set(Keys.VSYNC_DISABLED, v)
     suspend fun updateDirtyRegions(v: Boolean) = set(Keys.DIRTY_REGIONS, v)
     suspend fun updateShowDirty(v: Boolean) = set(Keys.SHOW_DIRTY_REGIONS, v)
@@ -127,7 +145,6 @@ class PreferencesRepository(private val context: Context) {
     suspend fun updateSilentLogging(v: Boolean) = set(Keys.SILENT_LOGGING, v)
     suspend fun updateRenderer(renderer: String) = set(Keys.GRAPHICS_RENDERER, renderer)
     suspend fun updateFpsOverlay(active: Boolean) = set(Keys.FPS_OVERLAY_ACTIVE, active)
-
     suspend fun updateFluidGraphics(v: Boolean) = set(Keys.FLUID_GRAPHICS, v)
     suspend fun updateSfHardwareAccel(v: Boolean) = set(Keys.SF_HARDWARE_ACCEL, v)
     suspend fun updateGpuPacing(v: Boolean) = set(Keys.GPU_PACING, v)

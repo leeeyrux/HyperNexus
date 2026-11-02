@@ -1,13 +1,10 @@
 package com.hypernexus.ui.screens
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,13 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hypernexus.R
-import com.hypernexus.data.HardwareMonitor
-import com.hypernexus.data.LiveHardwareMetrics
-import com.hypernexus.services.RedMagicOverlayService
+import com.hypernexus.data.*
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.DeviceSpecsCard
 import com.hypernexus.ui.components.GlassCard
-import com.hypernexus.ui.components.IOSSwitchTile
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -44,15 +38,18 @@ fun PanelScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
-    val uiState by viewModel.uiState.collectAsState()
     val hardwareMonitor = remember { HardwareMonitor(context) }
     val specs = remember { hardwareMonitor.getStaticSpecs() }
 
     var liveMetrics by remember { mutableStateOf<LiveHardwareMetrics?>(null) }
+    var batteryData by remember { mutableStateOf<BatteryTelemetry?>(null) }
+    var networkData by remember { mutableStateOf<NetworkTelemetry?>(null) }
 
     LaunchedEffect(Unit) {
         while (true) {
             liveMetrics = hardwareMonitor.getLiveMetrics()
+            batteryData = hardwareMonitor.getBatteryTelemetry()
+            networkData = hardwareMonitor.getNetworkTelemetry()
             delay(1500)
         }
     }
@@ -64,7 +61,7 @@ fun PanelScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ENCABEZADO CON LOGO OFICIAL INLINE
+        // 1. HEADER CON LOGO OFICIAL
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -82,132 +79,116 @@ fun PanelScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text(
-                            text = "HyperNexus",
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Core Engine v1.0",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF8E8E93)
-                        )
+                        Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("Hub de Telemetría Operativa", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                     }
                 }
             }
         }
 
-        item { DeviceSpecsCard(specs = specs) }
-
-        // TARJETA DE COMUNIDAD Y REDES SOCIALES
+        // 2. DISCRETE SOCIAL MEDIA BRANDING CARD
         item {
             GlassCard {
                 Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Share, null, tint = Color(0xFF007AFF), modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("Comunidad Oficial & Soporte", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Sigue al desarrollador para módulos exclusivos, soporte de scripts y nuevas optimizaciones de bajo nivel.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF8E8E93)
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-
+                    Text("Canales Oficiales del Desarrollador", style = MaterialTheme.typography.labelMedium, color = Color(0xFF8E8E93))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Button(
-                            onClick = { uriHandler.openUri("https://www.tiktok.com/@leeeyrux?_r=1&_t=ZS-9B4eTu4uldd") },
-                            modifier = Modifier.weight(1f).height(44.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1C1C1E))
-                        ) {
-                            Text("TikTok", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        SocialBadge(label = "Instagram", handle = "@leeeyru.btw", color = Color(0xFFE1306C)) {
+                            uriHandler.openUri("https://www.instagram.com/leeeyru.btw?xtok=dG9ib3Fpb21lcHZl")
                         }
-
-                        Button(
-                            onClick = { uriHandler.openUri("https://youtube.com/@leeeyrux?si=opFIeoEvtiCChxFI") },
-                            modifier = Modifier.weight(1f).height(44.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF003C).copy(alpha = 0.2f))
-                        ) {
-                            Text("YouTube", color = Color(0xFFFF003C), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        SocialBadge(label = "TikTok", handle = "@leeeyrux", color = Color.White) {
+                            uriHandler.openUri("https://tiktok.com")
                         }
-
-                        Button(
-                            onClick = { uriHandler.openUri("https://t.me/Leeeyrux_Nexus") },
-                            modifier = Modifier.weight(1f).height(44.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF).copy(alpha = 0.2f))
-                        ) {
-                            Text("Telegram", color = Color(0xFF007AFF), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        SocialBadge(label = "YouTube", handle = "@Leeeyrux", color = Color(0xFFFF003C)) {
+                            uriHandler.openUri("https://youtube.com")
+                        }
+                        SocialBadge(label = "Telegram", handle = "@Leeeyrux_Nexus", color = Color(0xFF007AFF)) {
+                            uriHandler.openUri("https://t.me")
                         }
                     }
                 }
             }
         }
 
+        // 3. SPECS GENERALES
+        item { DeviceSpecsCard(specs = specs) }
+
+        // 4. TELEMETRÍA DE RED EN VIVO
         item {
             GlassCard {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Speed, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
+                        Icon(Icons.Default.Wifi, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text("Forzar Tasa de Refresco", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                        Text("Telemetría de Conectividad en Vivo", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    val rates = listOf(0 to "Auto", 60 to "60Hz", 90 to "90Hz", 120 to "120Hz", 144 to "144Hz")
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        rates.forEach { (rate, label) ->
-                            Button(
-                                onClick = {
-                                    viewModel.setRefreshRate(context, rate)
-                                    Toast.makeText(context, "Frecuencia: $label", Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = Modifier.weight(1f).height(38.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(0.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (uiState.refreshRate == rate) Color(0xFF007AFF) else Color(0xFF2C2C2E)
-                                )
-                            ) {
-                                Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text("Latencia Ping", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
+                            val pingVal = networkData?.pingMs ?: -1
+                            Text(
+                                text = if (pingVal > 0) "$pingVal ms" else "-- ms",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = if (pingVal in 1..70) Color(0xFF30D158) else Color(0xFFFF9500),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Column {
+                            Text("Potencia de Señal", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
+                            Text(networkData?.signalStrengthDbm ?: "- dBm", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Column {
+                            Text("Tipo de Enlace", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
+                            Text(networkData?.connectionType ?: "Verificando...", style = MaterialTheme.typography.titleMedium, color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
         }
 
+        // 5. TELEMETRÍA DE BATERÍA MASIVA
         item {
-            IOSSwitchTile(
-                title = "Contador Red Magic Multi-Info",
-                subtitle = "Toca el HUD para alternar: [Individual FPS] ⮂ [Hora | FPS | Ping | Temp | Batería]",
-                checked = uiState.fpsOverlayActive,
-                onCheckedChange = { enabled ->
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
-                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
-                        context.startActivity(intent)
-                    } else {
-                        viewModel.setFpsOverlay(enabled)
-                        val intent = Intent(context, RedMagicOverlayService::class.java)
-                        if (enabled) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent)
-                            else context.startService(intent)
-                        } else {
-                            context.stopService(intent)
-                        }
+            GlassCard {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.BatteryChargingFull, null, tint = Color(0xFF30D158), modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Telemetría Energética de Batería", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    batteryData?.let { b ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            TelemetryField(label = "Nivel / Estado", value = "${b.levelPercent}% | ${b.status}")
+                            TelemetryField(label = "Salud de Celdas", value = b.health)
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            TelemetryField(label = "Tensión Exacta", value = "${b.voltageMv} mV")
+                            TelemetryField(label = "Amperaje Instantáneo", value = "${b.currentAmperageMa} mA")
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            TelemetryField(label = "Tecnología Química", value = b.technology)
+                            TelemetryField(label = "Capacidad Máx.", value = "4,500 - 5,000 mAh")
+                        }
+                    } ?: Text("Cargando sensores de energía...", color = Color(0xFF8E8E93), fontSize = 12.sp)
                 }
-            )
+            }
         }
 
+        // 6. MEMORIA RAM & FRECUENCIAS CPU
         item {
             GlassCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -265,23 +246,9 @@ fun PanelScreen(
             }
         }
 
+        // 7. FILA DE ACCIONES RÁPIDAS (EXCLUSIVAMENTE 3)
         item {
-            GlassCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Thermostat, null, tint = Color(0xFFFF9500), modifier = Modifier.size(32.dp))
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text("Temperatura del Sistema", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        val t = liveMetrics?.thermalTemp ?: 0f
-                        Text(if (t > 0) "${"%.1f".format(t)}°C" else "--°C", style = MaterialTheme.typography.headlineMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = {
                         scope.launch {
@@ -290,33 +257,67 @@ fun PanelScreen(
                             Toast.makeText(context, "RAM Liberada", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))
                 ) {
-                    Icon(Icons.Default.CleaningServices, null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Limpiar RAM")
+                    Text("Limpiar RAM", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Button(
                     onClick = {
                         scope.launch {
                             viewModel.privilegedActions.enableGamingMode()
-                            Toast.makeText(context, "Modo Gaming Inyectado", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Gaming Boost Inyectado", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9500))
                 ) {
-                    Icon(Icons.Default.Bolt, null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Gaming Boost")
+                    Text("Gaming Boost", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Button(
+                    onClick = {
+                        viewModel.optimizePing { msg ->
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF30D158))
+                ) {
+                    Text("Optimizar Ping", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
         item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+}
+
+@Composable
+private fun SocialBadge(label: String, handle: String, color: Color, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF2C2C2E))
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("●", color = color, fontSize = 10.sp)
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("$label: ", color = Color(0xFF8E8E93), fontSize = 11.sp)
+        Text(handle, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun TelemetryField(label: String, value: String) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.SemiBold)
     }
 }
