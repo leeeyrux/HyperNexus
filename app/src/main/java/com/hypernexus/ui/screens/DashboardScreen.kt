@@ -1,5 +1,6 @@
 package com.hypernexus.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,6 +28,7 @@ fun DashboardScreen(
     privilegedActions: PrivilegedActions,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var ramInfo by remember { mutableStateOf<PrivilegedActions.RamInfo?>(null) }
     var cpuCores by remember { mutableStateOf<List<PrivilegedActions.CpuCoreInfo>>(emptyList()) }
@@ -57,6 +60,21 @@ fun DashboardScreen(
                     scope.launch {
                         privilegedActions.enableHighPerformance()
                         privilegedActions.enableDex2OatSpeed()
+                        Toast.makeText(context, "Sistema Optimizado", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onCleanRamClick = {
+                    scope.launch {
+                        privilegedActions.killBackgroundApps()
+                        privilegedActions.clearSmartCache()
+                        Toast.makeText(context, "RAM y Caché Liberados", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onGameModeClick = {
+                    scope.launch {
+                        privilegedActions.enableGamingMode()
+                        privilegedActions.toggleCpuBoost(true)
+                        Toast.makeText(context, "¡Modo Gaming Activado!", Toast.LENGTH_SHORT).show()
                     }
                 }
             )
@@ -150,7 +168,7 @@ fun RamCard(ramInfo: PrivilegedActions.RamInfo?) {
                     )
                 } else {
                     Text(
-                        text = "Cargando...",
+                        text = "Cargando métricas...",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF8E8E93)
                     )
@@ -159,6 +177,7 @@ fun RamCard(ramInfo: PrivilegedActions.RamInfo?) {
         }
     }
 }
+
 @Composable
 fun CpuCard(cpuCores: List<PrivilegedActions.CpuCoreInfo>) {
     GlassCard {
@@ -173,12 +192,12 @@ fun CpuCard(cpuCores: List<PrivilegedActions.CpuCoreInfo>) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
-                        text = "Procesador",
+                        text = "Frecuencias del Procesador",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White
                     )
                     Text(
-                        text = "${cpuCores.size} núcleos activos",
+                        text = "${cpuCores.size} núcleos en tiempo real",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF8E8E93)
                     )
@@ -218,7 +237,7 @@ fun CpuCoreItem(
     ) {
         Column {
             Text(
-                text = "Núcleo ${core.coreId}",
+                text = "Core #${core.coreId}",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFF8E8E93)
             )
@@ -229,7 +248,7 @@ fun CpuCoreItem(
                 fontWeight = FontWeight.SemiBold
             )
             if (core.maxMhz > 0) {
-                val usage = (core.currentMhz.toFloat() / core.maxMhz * 100).toInt()
+                val usage = (core.currentMhz.toFloat() / core.maxMhz * 100).toInt().coerceIn(0, 100)
                 Text(
                     text = "$usage% uso",
                     style = MaterialTheme.typography.labelSmall,
@@ -257,7 +276,7 @@ fun TemperatureCard(temperature: Float) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Temperatura",
+                    text = "Temperatura Térmica",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White
                 )
@@ -272,24 +291,17 @@ fun TemperatureCard(temperature: Float) {
                     },
                     fontWeight = FontWeight.Bold
                 )
-                if (temperature > 0) {
-                    Text(
-                        text = when {
-                            temperature > 45 -> "⚠️ Temperatura alta, desactiva tweaks"
-                            temperature > 38 -> "Temperatura moderada"
-                            else -> "Temperatura óptima"
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF8E8E93)
-                    )
-                }
             }
         }
     }
 }
 
 @Composable
-fun QuickActionsCard(onOptimizeClick: () -> Unit) {
+fun QuickActionsCard(
+    onOptimizeClick: () -> Unit,
+    onCleanRamClick: () -> Unit,
+    onGameModeClick: () -> Unit
+) {
     GlassCard {
         Column {
             Text(
@@ -313,14 +325,14 @@ fun QuickActionsCard(onOptimizeClick: () -> Unit) {
                     icon = Icons.Default.CleaningServices,
                     label = "Limpiar\nRAM",
                     color = Color(0xFF007AFF),
-                    onClick = { /* TODO */ },
+                    onClick = onCleanRamClick,
                     modifier = Modifier.weight(1f)
                 )
                 QuickActionButton(
                     icon = Icons.Default.Gamepad,
                     label = "Modo\nGaming",
                     color = Color(0xFFFF9500),
-                    onClick = { /* TODO */ },
+                    onClick = onGameModeClick,
                     modifier = Modifier.weight(1f)
                 )
             }

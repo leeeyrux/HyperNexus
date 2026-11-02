@@ -1,6 +1,6 @@
 package com.hypernexus.ui.screens
-import kotlinx.coroutines.launch
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,17 +12,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hypernexus.PrivilegedActions
 import com.hypernexus.ui.components.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun PerformanceScreen(
     privilegedActions: PrivilegedActions,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     
     var dex2oatEnabled by remember { mutableStateOf(false) }
@@ -49,7 +52,7 @@ fun PerformanceScreen(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Optimiza la velocidad de tu dispositivo",
+                text = "Optimiza la velocidad y los tiempos de respuesta del sistema",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF8E8E93)
             )
@@ -57,8 +60,8 @@ fun PerformanceScreen(
         
         item {
             IOSSwitchTile(
-                title = "Compilación Instantánea",
-                subtitle = "Reorganiza el código interno de tus apps para que arranquen más rápido",
+                title = "Compilación AOT Instantánea",
+                subtitle = "Reorganiza el código de las aplicaciones para acelerar arranques",
                 checked = dex2oatEnabled,
                 onCheckedChange = { enabled ->
                     dex2oatEnabled = enabled
@@ -67,15 +70,14 @@ fun PerformanceScreen(
                         if (enabled) privilegedActions.enableDex2OatSpeed()
                         isApplying = false
                     }
-                },
-                warningText = if (highPerformanceEnabled) "Puede tardar unos minutos la primera vez" else null
+                }
             )
         }
         
         item {
             IOSSwitchTile(
                 title = "Modo Alto Rendimiento",
-                subtitle = "Usa toda la RAM disponible sin restricciones para evitar cierres",
+                subtitle = "Elimina los límites de consumo de memoria RAM en segundo plano",
                 checked = highPerformanceEnabled,
                 onCheckedChange = { enabled ->
                     highPerformanceEnabled = enabled
@@ -90,8 +92,8 @@ fun PerformanceScreen(
         
         item {
             IOSSwitchTile(
-                title = "Respuesta Rápida",
-                subtitle = "Mejora la velocidad con la que la pantalla detecta tus dedos al jugar",
+                title = "Respuesta Táctil Ultra Rápida",
+                subtitle = "Reduce el tiempo de muestreo táctil a 0.02ms para juegos",
                 checked = fastTouchEnabled,
                 onCheckedChange = { enabled ->
                     fastTouchEnabled = enabled
@@ -100,15 +102,14 @@ fun PerformanceScreen(
                         if (enabled) privilegedActions.enableFastTouch()
                         isApplying = false
                     }
-                },
-                warningText = "Puede aumentar ligeramente el consumo de batería"
+                }
             )
         }
         
         item {
             IOSSwitchTile(
-                title = "Modo Silencioso",
-                subtitle = "Silencia registros internos para reducir trabajo del procesador",
+                title = "Modo Silencioso de Registros",
+                subtitle = "Desactiva los logs del sistema para liberar ciclos de reloj del CPU",
                 checked = loggingDisabled,
                 onCheckedChange = { enabled ->
                     loggingDisabled = enabled
@@ -120,14 +121,18 @@ fun PerformanceScreen(
                 }
             )
         }
+        
         item {
             IOSSliderTile(
                 title = "Densidad de Pantalla (DPI)",
-                subtitle = "Ajusta el tamaño de elementos en pantalla",
+                subtitle = "Ajusta la escala de la interfaz al instante",
                 value = dpiValue,
-                onValueChange = { dpiValue = it },
-                valueRange = 300f..480f,
-                steps = 5,
+                onValueChange = { 
+                    dpiValue = it
+                    scope.launch { privilegedActions.changeDisplayDensity(it.toInt()) }
+                },
+                valueRange = 320f..540f,
+                steps = 10,
                 formatValue = { "${it.toInt()} DPI" }
             )
         }
@@ -135,10 +140,13 @@ fun PerformanceScreen(
         item {
             IOSSliderTile(
                 title = "Velocidad de Animaciones",
-                subtitle = "Reduce el tiempo de las animaciones para que las apps se abran al instante",
+                subtitle = "Multiplicador de ventanas y transiciones del sistema",
                 value = animationScale,
-                onValueChange = { animationScale = it },
-                valueRange = 0.5f..2f,
+                onValueChange = { 
+                    animationScale = it
+                    scope.launch { privilegedActions.setAnimationScales(it) }
+                },
+                valueRange = 0.0f..1.5f,
                 steps = 5,
                 formatValue = { "${it}x" }
             )
@@ -153,11 +161,14 @@ fun PerformanceScreen(
                         privilegedActions.enableHighPerformance()
                         privilegedActions.enableFastTouch()
                         privilegedActions.disableLogging()
+                        privilegedActions.setAnimationScales(0.25f)
+                        animationScale = 0.25f
                         isApplying = false
                         dex2oatEnabled = true
                         highPerformanceEnabled = true
                         fastTouchEnabled = true
                         loggingDisabled = true
+                        Toast.makeText(context, "Perfil Máximo Rendimiento Aplicado", Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier
@@ -176,51 +187,18 @@ fun PerformanceScreen(
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Aplicando...")
+                    Text("Inyectando comandos...")
                 } else {
                     Icon(Icons.Default.Bolt, null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        "Activar Modo Máximo Rendimiento",
+                        "Activar Todo el Perfil de Rendimiento",
                         fontWeight = FontWeight.SemiBold
                     )
                 }
             }
         }
         
-        item {
-            GlassCard {
-                Row {
-                    Icon(
-                        Icons.Default.Info,
-                        contentDescription = null,
-                        tint = Color(0xFF007AFF),
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "¿Qué hace cada ajuste?",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "• Compilación Instantánea: Optimiza el código de las apps\n" +
-                                   "• Alto Rendimiento: Libera RAM y acelera el sistema\n" +
-                                   "• Respuesta Rápida: Mejora la sensibilidad táctil\n" +
-                                   "• Modo Silencioso: Reduce carga del procesador",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF8E8E93),
-                            lineHeight = 20.sp
-                        )
-                    }
-                }
-            }
-        }
-        
-        item {
-            Spacer(modifier = Modifier.height(80.dp))
-        }
+        item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 }

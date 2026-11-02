@@ -1,5 +1,6 @@
 package com.hypernexus
 
+import android.os.Build
 import android.util.Log
 import androidx.annotation.Keep
 import kotlinx.coroutines.Dispatchers
@@ -11,18 +12,64 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
         private const val TAG = "PrivilegedActions"
     }
     
-    // ==========================================
-    // SECCIÓN 1: RENDIMIENTO (PERFORMANCE)
-    // ==========================================
+    @Keep
+    data class DeviceHardwareInfo(
+        val model: String,
+        val manufacturer: String,
+        val soc: String,
+        val androidVersion: String,
+        val uptime: String
+    )
+
+    suspend fun getDeviceHardwareInfo(): DeviceHardwareInfo = withContext(Dispatchers.IO) {
+        val rawUptime = readCpuFile("/proc/uptime")?.split(" ")?.get(0)?.toDoubleOrNull() ?: 0.0
+        val days = (rawUptime / 86400).toInt()
+        val hours = ((rawUptime % 86400) / 3600).toInt()
+        val minutes = (((rawUptime % 86400) % 3600) / 60).toInt()
+        
+        DeviceHardwareInfo(
+            model = Build.MODEL,
+            manufacturer = Build.MANUFACTURER.uppercase(),
+            soc = Build.HARDWARE,
+            androidVersion = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
+            uptime = "${days}d ${hours}h ${minutes}m"
+        )
+    }
     
+    suspend fun changeDisplayDensity(dpi: Int): Result<Unit> = withContext(Dispatchers.IO) {
+        val cmd = if (dpi == 0) "wm density reset" else "wm density $dpi"
+        executeScriptWithValidation(listOf(cmd), "Change Density to $dpi")
+    }
+
+    suspend fun forceRefreshRate(rate: Int): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = if (rate == 0) {
+            listOf(
+                "settings delete system peak_refresh_rate",
+                "settings delete system min_refresh_rate",
+                "settings delete system user_refresh_rate"
+            )
+        } else {
+            listOf(
+                "settings put system peak_refresh_rate $rate.0",
+                "settings put system min_refresh_rate $rate.0",
+                "settings put system user_refresh_rate $rate"
+            )
+        }
+        executeScriptWithValidation(commands, "Force Refresh Rate: $rate Hz")
+    }
+
+    suspend fun setAnimationScales(scale: Float): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = listOf(
+            "settings put global window_animation_scale $scale",
+            "settings put global transition_animation_scale $scale",
+            "settings put global animator_duration_scale $scale"
+        )
+        executeScriptWithValidation(commands, "Animation Scale: $scale")
+    }
+
     suspend fun enableDex2OatSpeed(): Result<Unit> = withContext(Dispatchers.IO) {
         val commands = listOf(
             "settings put global pm.dexopt.bg-dexopt speed-profile",
-            "settings put global pm.dexopt.boot speed-profile",
-            "settings put global pm.dexopt.first-boot speed-profile",
-            "setprop persist.sys.compile.system_apks speed",
-            "setprop persist.sys.compile.system_folders speed",
-            "setprop persist.sys.compile.system_files speed",
             "cmd package compile -m speed-profile -a"
         )
         executeScriptWithValidation(commands, "Dex2Oat Speed")
@@ -30,28 +77,30 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
     
     suspend fun enableHighPerformance(): Result<Unit> = withContext(Dispatchers.IO) {
         val commands = listOf(
-            "setprop ro.config.low_ram false",
             "setprop persist.sys.performance_enabled 3",
-            "setprop persist.sys.performance_folders 100",
-            "setprop persist.sys.optimizer_files 100",
-            "setprop persist.sys.performance_limiter off",
-            "settings put global window_animation_scale 0.5",
-            "settings put global transition_animation_scale 0.5",
-            "settings put global animator_duration_scale 0.5"
+            "settings put global window_animation_scale 0.5"
         )
         executeScriptWithValidation(commands, "High Performance")
     }
     
+    suspend fun enableGamingMode(): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = listOf(
+            "setprop persist.sys.performance_enabled 3",
+            "setprop debug.sf.disable_hw_overlays 1",
+            "setprop persist.sys.Touchscreen.tap_response_time 0.01",
+            "setprop persist.sys.enable.fast_rendering 1",
+            "cmd power set-mode 0",
+            "settings put global window_animation_scale 0.25",
+            "settings put global transition_animation_scale 0.25",
+            "settings put global animator_duration_scale 0.25"
+        )
+        executeScriptWithValidation(commands, "Gaming Mode Extreme")
+    }
+    
     suspend fun enableFastTouch(): Result<Unit> = withContext(Dispatchers.IO) {
         val commands = listOf(
-            "setprop persist.sys.Mouse_Sensitivity 5.50",
-            "setprop persist.sys.MouseSpeed 1",
-            "setprop persist.sys.touchswipedeadzone 5",
-            "setprop persist.sys.Touchscreen.swipe_sensitivity 1.0",
-            "setprop persist.sys.Touchscreen.gesture_recognition true",
             "setprop persist.sys.Touchscreen.tap_response_time 0.02",
-            "setprop persist.sys.enable.fast_rendering 1",
-            "setprop persist.sys.smooth.ui 60"
+            "setprop persist.sys.enable.fast_rendering 1"
         )
         executeScriptWithValidation(commands, "Fast Touch")
     }
@@ -59,26 +108,51 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
     suspend fun disableLogging(): Result<Unit> = withContext(Dispatchers.IO) {
         val commands = listOf(
             "setprop persist.sys.log.tag.event OFF",
-            "setprop persist.sys.system.logs.enabled false",
-            "setprop persist.sys.enable_logs false",
-            "setprop persist.sys.log_size 0kb",
-            "setprop persist.sys.system.logcat.live disabled"
+            "setprop persist.sys.enable_logs false"
         )
         executeScriptWithValidation(commands, "Disable Logging")
     }
-    
-    // ==========================================
-    // SECCIÓN 2: GRÁFICOS (GRAPHICS)
-    // ==========================================
-    
+
+    suspend fun toggleCpuBoost(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val gov = if (enable) "performance" else "schedutil"
+        val cpuCount = Runtime.getRuntime().availableProcessors()
+        val commands = mutableListOf<String>()
+        for (i in 0 until cpuCount) {
+            commands.add("echo $gov > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor")
+        }
+        executeScriptWithValidation(commands, "CPU Boost: $enable")
+    }
+
+    suspend fun configureGpuRenderer(type: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = when (type.lowercase()) {
+            "vulkan" -> listOf("setprop debug.hwui.renderer vulkan")
+            "opengl" -> listOf("setprop debug.hwui.renderer opengl")
+            else -> listOf("setprop debug.hwui.renderer skiagl")
+        }
+        executeScriptWithValidation(commands, "GPU Renderer: $type")
+    }
+
+    suspend fun toggleHardwareAcceleration(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = listOf(
+            "setprop persist.sys.composition.type gpu",
+            "setprop debug.sf.disable_hw_overlays ${if (enable) "1" else "0"}"
+        )
+        executeScriptWithValidation(commands, "HW Acceleration: $enable")
+    }
+
+    suspend fun forceGpuRendering(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val value = if (enable) "1" else "0"
+        val commands = listOf(
+            "setprop debug.egl.hw $value",
+            "setprop debug.sf.hw $value"
+        )
+        executeScriptWithValidation(commands, "Force GPU Rendering: $enable")
+    }
+
     suspend fun disableVsync(): Result<Unit> = withContext(Dispatchers.IO) {
         val commands = listOf(
             "setprop debug.hwui.disable_vsync true",
-            "setprop persist.sys.stable.fps.enable true",
-            "setprop persist.sys.dont.lower.fps true",
-            "setprop persist.sys.stabilizer.fps true",
-            "setprop persist.sys.ro.vendor.smart_dfps disable",
-            "setprop persist.sys.ro.vendor.dfps disable"
+            "setprop persist.sys.stable.fps.enable true"
         )
         executeScriptWithValidation(commands, "Disable VSYNC")
     }
@@ -86,60 +160,37 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
     suspend fun disableDirtyRegions(): Result<Unit> = withContext(Dispatchers.IO) {
         val commands = listOf(
             "setprop debug.hwui.render_dirty_regions false",
-            "setprop debug.hwui.show_dirty_regions false",
-            "setprop debug.hwui.show_layers_updates false",
-            "setprop debug.hwui.show_overdraw false"
+            "setprop debug.hwui.show_dirty_regions false"
         )
         executeScriptWithValidation(commands, "Disable Dirty Regions")
     }
-    
+
     suspend fun showDirtyRegions(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
         val value = if (enable) "true" else "false"
         val commands = listOf(
-            "setprop debug.hwui.show_dirty_regions $value",
-            "setprop debug.hwui.show_layers_updates $value"
+            "setprop debug.hwui.show_dirty_regions $value"
         )
         executeScriptWithValidation(commands, "Show Dirty Regions: $enable")
     }
-
+    
     suspend fun configureAntialiasing(enabled: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
-        val commands = if (enabled) {
-            listOf(
-                "setprop debug.egl.force_msaa 4",
-                "setprop debug.hwui.disable_scissor_opt false"
-            )
-        } else {
-            listOf(
-                "setprop debug.egl.force_msaa 0",
-                "setprop debug.egl.force_fxaa false",
-                "setprop debug.egl.force_taa false",
-                "setprop debug.egl.force_ssaa false",
-                "setprop debug.egl.force_smaa false",
-                "setprop debug.egl.force_mlaa false",
-                "setprop debug.egl.force_txaa false",
-                "setprop debug.egl.force_csaa false"
-            )
-        }
+        val commands = if (enabled) listOf("setprop debug.egl.force_msaa 4") else listOf("setprop debug.egl.force_msaa 0")
         executeScriptWithValidation(commands, "Antialiasing: $enabled")
     }
     
     suspend fun optimizeHwuiCache(): Result<Unit> = withContext(Dispatchers.IO) {
-        val commands = listOf(
-            "setprop debug.hwui.texture_cache_size 24",
-            "setprop debug.hwui.layer_cache_size 8",
-            "setprop debug.hwui.path_cache_size 1",
-            "setprop debug.hwui.text_large_cache_width 512",
-            "setprop debug.hwui.text_large_cache_height 256",
-            "setprop debug.hwui.text_small_cache_width 256",
-            "setprop debug.hwui.text_small_cache_height 128",
-            "setprop debug.hwui.use_gpu_pixel_buffers true"
-        )
+        val commands = listOf("setprop debug.hwui.texture_cache_size 24", "setprop debug.hwui.layer_cache_size 8")
         executeScriptWithValidation(commands, "HWUI Cache Optimization")
     }
     
-    // ==========================================
-    // SECCIÓN 3: TELEMETRÍA Y MONITOREO
-    // ==========================================
+    suspend fun clearSmartCache(): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = listOf("pm trim-caches 4096G", "fstrim -v /data")
+        executeScriptWithValidation(commands, "Smart Cache Cleaner")
+    }
+
+    suspend fun killBackgroundApps(): Result<Unit> = withContext(Dispatchers.IO) {
+        executeScriptWithValidation(listOf("cmd activity kill-all", "am kill-all"), "Smart App Killer")
+    }
     
     suspend fun getRamUsage(): RamInfo = withContext(Dispatchers.IO) {
         val info = readCpuFile("/proc/meminfo") ?: ""
@@ -147,7 +198,7 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
         val available = extractValue(info, "MemAvailable") ?: 0L
         val used = total - available
         val percentage = if (total > 0L) (used * 100L / total) else 0L
-        RamInfo(totalKb = total, usedKb = used, availableKb = available, usagePercent = percentage.toInt())
+        RamInfo(total, used, available, percentage.toInt())
     }
     
     suspend fun getCpuFrequencies(): List<CpuCoreInfo> = withContext(Dispatchers.IO) {
@@ -156,22 +207,13 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
         for (i in 0 until cpuCount) {
             val maxFreq = readCpuFile("/sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_max_freq")
             val currentFreq = readCpuFile("/sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq")
-            cores.add(CpuCoreInfo(
-                coreId = i,
-                currentMhz = (currentFreq?.trim()?.toIntOrNull() ?: 0) / 1000,
-                maxMhz = (maxFreq?.trim()?.toIntOrNull() ?: 0) / 1000
-            ))
+            cores.add(CpuCoreInfo(i, (currentFreq?.trim()?.toIntOrNull() ?: 0) / 1000, (maxFreq?.trim()?.toIntOrNull() ?: 0) / 1000))
         }
         cores
     }
     
     suspend fun getTemperature(): Float = withContext(Dispatchers.IO) {
-        val thermalZones = listOf(
-            "/sys/class/thermal/thermal_zone0/temp",
-            "/sys/class/thermal/thermal_zone1/temp",
-            "/sys/class/thermal/thermal_zone2/temp",
-            "/sys/class/power_supply/battery/temp"
-        )
+        val thermalZones = listOf("/sys/class/thermal/thermal_zone0/temp", "/sys/class/power_supply/battery/temp")
         var maxTemp = 0f
         for (zone in thermalZones) {
             val tempRaw = readCpuFile(zone)?.trim()?.toFloatOrNull()
@@ -180,18 +222,10 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
         if (maxTemp > 1000f) maxTemp / 1000f else maxTemp
     }
     
-    // ==========================================
-    // SECCIÓN 4: AUXILIARES
-    // ==========================================
-    
     private suspend fun executeScriptWithValidation(commands: List<String>, scriptName: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             Log.i(TAG, "Lanzando lote de comandos: $scriptName")
-            val results = bridge.executeScript(commands)
-            val failed = results.filter { it.first != 0 }
-            if (failed.isNotEmpty()) {
-                Log.w(TAG, "El script $scriptName tiene ${failed.size} comandos no soportados.")
-            }
+            bridge.executeScript(commands)
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Fallo en: $scriptName", e)
@@ -207,16 +241,9 @@ class PrivilegedActions(private val bridge: ShizukuBridge) {
     private fun readCpuFile(path: String): String? {
         return try {
             val result = bridge.executeShellCommand("cat $path")
-            // Cambiado para admitir respuestas exitosas del shell nativo heredado
             if (result.first == 0 || result.second.isNotEmpty()) result.second.trim() else null
-        } catch (e: Exception) {
-            null
-        }
+        } catch (e: Exception) { null }
     }
-    
-    // ==========================================
-    // SECCIÓN 5: MODELOS BLINDADOS (@KEEP)
-    // ==========================================
     
     @Keep
     data class RamInfo(val totalKb: Long, val usedKb: Long, val availableKb: Long, val usagePercent: Int)

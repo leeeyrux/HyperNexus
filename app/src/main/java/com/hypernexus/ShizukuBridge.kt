@@ -95,8 +95,8 @@ class ShizukuBridge(private val context: Context) {
         }
         
         return try {
-            // Se ejecuta de forma nativa e ilimitada el comando shell mediante Runtime heredando privilegios del Binder
-            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
+            // Ejecución remota nativa con privilegios ADB/System vía Shizuku
+            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
             
             val outputReader = BufferedReader(InputStreamReader(process.inputStream))
             val errorReader = BufferedReader(InputStreamReader(process.errorStream))
@@ -111,7 +111,7 @@ class ShizukuBridge(private val context: Context) {
             
             exitCode to (output + error).trim()
         } catch (e: Exception) {
-            Log.e(TAG, "Fallo critico al ejecutar el comando: $command", e)
+            Log.e(TAG, "Fallo critico al ejecutar el comando con Shizuku: $command", e)
             -1 to "Error de ejecucion: ${e.message}"
         }
     }
