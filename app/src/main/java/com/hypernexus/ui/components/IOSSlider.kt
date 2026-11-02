@@ -21,11 +21,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
-/**
- * COMPONENTE: SLIDER ESTILO iOS PREMIUM
- * Deslizador táctil de baja latencia con burbuja flotante predictiva.
- * Diseñado específicamente para el ajuste de buffers gráficos y frecuencias de CPU.
- */
 @Composable
 fun IOSSlider(
     value: Float,
@@ -35,11 +30,10 @@ fun IOSSlider(
     enabled: Boolean = true,
     steps: Int = 0,
     showBubble: Boolean = true,
+    onValueChangeFinished: (() -> Unit)? = null,
     formatValue: (Float) -> String = { it.roundToInt().toString() }
 ) {
-    var sliderSize by remember { mutableStateOf(IntSize.Zero) }
     var isDragging by remember { mutableStateOf(false) }
-    
     val density = LocalDensity.current
     val trackHeight = 6.dp
     val thumbSize = 28.dp
@@ -48,15 +42,12 @@ fun IOSSlider(
             (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
     
     BoxWithConstraints(
-        modifier = modifier
-            .height(40.dp)
-            .onSizeChanged { sliderSize = it }
+        modifier = modifier.height(40.dp)
     ) {
         val widthInPx = constraints.maxWidth.toFloat()
         val thumbTravelDistance = widthInPx - with(density) { thumbSize.toPx() }
         val thumbX = thumbTravelDistance * fraction
         
-        // Track Inactivo (Fondo Gris Industrial)
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -66,7 +57,6 @@ fun IOSSlider(
                 .background(Color(0xFF3A3A3C))
         )
         
-        // Track Activo (Progreso Azul iOS / Opaco Inactivo)
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -76,7 +66,6 @@ fun IOSSlider(
                 .background(if (enabled) Color(0xFF007AFF) else Color(0xFF007AFF).copy(alpha = 0.4f))
         )
         
-        // Thumb (Botón Deslizador Blanco Puro)
         Box(
             modifier = Modifier
                 .offset(x = with(density) { thumbX.toDp() })
@@ -88,29 +77,33 @@ fun IOSSlider(
                     if (enabled) {
                         detectDragGestures(
                             onDragStart = { isDragging = true },
-                            onDragEnd = { isDragging = false },
-                            onDragCancel = { isDragging = false },
+                            onDragEnd = { 
+                                isDragging = false 
+                                onValueChangeFinished?.invoke()
+                            },
+                            onDragCancel = { 
+                                isDragging = false 
+                                onValueChangeFinished?.invoke()
+                            },
                             onDrag = { change, _ ->
                                 change.consume()
                                 val newX = change.position.x.coerceIn(0f, thumbTravelDistance)
                                 val newFraction = newX / thumbTravelDistance
-                                val newValue = valueRange.start + 
-                                    (valueRange.endInclusive - valueRange.start) * newFraction
+                                val rawValue = valueRange.start + (valueRange.endInclusive - valueRange.start) * newFraction
                                 
-                                val steppedValue = if (steps > 0) {
+                                val finalValue = if (steps > 0) {
                                     val stepSize = (valueRange.endInclusive - valueRange.start) / (steps + 1)
-                                    (valueRange.start + (newValue / stepSize).roundToInt() * stepSize)
+                                    (valueRange.start + (rawValue / stepSize).roundToInt() * stepSize)
                                         .coerceIn(valueRange.start, valueRange.endInclusive)
-                                } else newValue
+                                } else rawValue
                                 
-                                onValueChange(steppedValue)
+                                onValueChange(finalValue)
                             }
                         )
                     }
                 }
         )
         
-        // Burbuja Flotante Dinámica (Estilo Control de Brillo)
         if (showBubble && isDragging) {
             Box(
                 modifier = Modifier
@@ -118,7 +111,7 @@ fun IOSSlider(
                         x = with(density) { (thumbX + thumbSize.toPx() / 2).toDp() } - 30.dp,
                         y = (-50).dp
                     )
-                    .size(width = 60.dp, height = 40.dp)
+                    .size(width = 70.dp, height = 40.dp)
                     .shadow(8.dp, RoundedCornerShape(12.dp))
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xE61C1C1E))
@@ -135,10 +128,6 @@ fun IOSSlider(
     }
 }
 
-/**
- * COMPONENTE: CONTENEDOR INTEGRADO (SLIDER TILE)
- * Encapsula la tarjeta GlassCard junto con etiquetas de título, subtítulo e indicador.
- */
 @Composable
 fun IOSSliderTile(
     title: String,
@@ -149,6 +138,7 @@ fun IOSSliderTile(
     subtitle: String? = null,
     enabled: Boolean = true,
     steps: Int = 0,
+    onValueChangeFinished: (() -> Unit)? = null,
     formatValue: (Float) -> String = { it.roundToInt().toString() }
 ) {
     GlassCard(modifier = modifier) {
@@ -189,6 +179,7 @@ fun IOSSliderTile(
                 valueRange = valueRange,
                 enabled = enabled,
                 steps = steps,
+                onValueChangeFinished = onValueChangeFinished,
                 formatValue = formatValue
             )
         }

@@ -99,15 +99,14 @@ class FpsOverlayService : Service(), Choreographer.FrameCallback {
             y = 150
         }
 
-        // Píldora Cyberpunk / RedMagic
         overlayView = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(32, 16, 32, 16)
             
             val shape = GradientDrawable().apply {
-                setColor(Color.parseColor("#E60F0F12")) // Negro humo traslúcido
+                setColor(Color.parseColor("#E60F0F12"))
                 cornerRadius = 48f
-                setStroke(3, Color.parseColor("#FF003C")) // Borde Rojo Neón RedMagic
+                setStroke(3, Color.parseColor("#FF003C"))
             }
             background = shape
         }
@@ -121,7 +120,7 @@ class FpsOverlayService : Service(), Choreographer.FrameCallback {
 
         fpsTextView = TextView(this).apply {
             text = "-- FPS"
-            setTextColor(Color.parseColor("#00FF66")) // Verde cibernético
+            setTextColor(Color.parseColor("#00FF66"))
             textSize = 14f
             typeface = android.graphics.Typeface.MONOSPACE
         }
@@ -129,7 +128,6 @@ class FpsOverlayService : Service(), Choreographer.FrameCallback {
         overlayView?.addView(badge)
         overlayView?.addView(fpsTextView)
 
-        // Arrastrar la píldora por toda la pantalla con suavidad
         overlayView?.setOnTouchListener(object : View.OnTouchListener {
             private var initialX = 0
             private var initialY = 0
@@ -168,11 +166,10 @@ class FpsOverlayService : Service(), Choreographer.FrameCallback {
     override fun doFrame(frameTimeNanos: Long) {
         frameCount++
         val elapsed = frameTimeNanos - lastTime
-        if (elapsed >= 500_000_000L) { // Actualiza cada 500ms
+        if (elapsed >= 500_000_000L) {
             val fps = ((frameCount * 1_000_000_000.0) / elapsed).toInt()
             fpsTextView?.text = "$fps FPS"
             
-            // Si baja de 45 fps se pone amarillo/naranja, si sube va en verde puro
             if (fps < 45) {
                 fpsTextView?.setTextColor(Color.parseColor("#FF9500"))
             } else {

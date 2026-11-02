@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -62,18 +63,13 @@ fun GraphicsScreen(
             )
         }
         
-        // SELECTOR DE FRECUENCIA HASTA 144HZ
         item {
             GlassCard {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Speed, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Forzar Tasa de Refresco",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White
-                        )
+                        Text("Forzar Tasa de Refresco", style = MaterialTheme.typography.titleMedium, color = Color.White)
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     
@@ -86,7 +82,10 @@ fun GraphicsScreen(
                             Button(
                                 onClick = {
                                     selectedHz = rate
-                                    scope.launch { privilegedActions.forceRefreshRate(rate) }
+                                    scope.launch { 
+                                        privilegedActions.forceRefreshRate(rate)
+                                        Toast.makeText(context, "Frecuencia: $label", Toast.LENGTH_SHORT).show()
+                                    }
                                 },
                                 modifier = Modifier.weight(1f).height(40.dp),
                                 shape = RoundedCornerShape(10.dp),
@@ -103,7 +102,6 @@ fun GraphicsScreen(
             }
         }
         
-        // CONTADOR REDMAGIC
         item {
             IOSSwitchTile(
                 title = "Contador de FPS RedMagic",
@@ -111,20 +109,14 @@ fun GraphicsScreen(
                 checked = fpsOverlayActive,
                 onCheckedChange = { enabled ->
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:${context.packageName}")
-                        )
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
                         context.startActivity(intent)
                     } else {
                         fpsOverlayActive = enabled
                         val intent = Intent(context, FpsOverlayService::class.java)
                         if (enabled) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                context.startForegroundService(intent)
-                            } else {
-                                context.startService(intent)
-                            }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent)
+                            else context.startService(intent)
                         } else {
                             context.stopService(intent)
                         }
@@ -141,15 +133,14 @@ fun GraphicsScreen(
                 onCheckedChange = { enabled ->
                     vsyncDisabled = enabled
                     scope.launch { if (enabled) privilegedActions.disableVsync() }
-                },
-                warningText = "Aumenta la fluidez y respuesta táctil en partidas intensas"
+                }
             )
         }
         
         item {
             IOSSwitchTile(
                 title = "Forzar Renderizado GPU",
-                subtitle = "Obliga al procesador gráfico a manejar las capas 2D del sistema",
+                subtitle = "Obliga al chip gráfico a procesar capas 2D del sistema",
                 checked = gpuRenderingForced,
                 onCheckedChange = { enabled ->
                     gpuRenderingForced = enabled
