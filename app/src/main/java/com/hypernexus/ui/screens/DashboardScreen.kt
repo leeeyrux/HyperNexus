@@ -5,7 +5,9 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,11 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hypernexus.R
 import com.hypernexus.data.HardwareMonitor
 import com.hypernexus.data.LiveHardwareMetrics
 import com.hypernexus.services.RedMagicOverlayService
@@ -59,21 +62,36 @@ fun DashboardScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // ENCABEZADO CON BRANDING OFICIAL
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Panel de Rendimiento", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
-                }
-                Box(
-                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("HN", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher),
+                        contentDescription = "HyperNexus Logo",
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "HyperNexus",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Panel de Rendimiento",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF8E8E93)
+                        )
+                    }
                 }
             }
         }
@@ -116,7 +134,7 @@ fun DashboardScreen(
         item {
             IOSSwitchTile(
                 title = "Contador Red Magic Multi-Info",
-                subtitle = "Toca el overlay para expandir: [Hora | FPS | Red | Batería | Temp]",
+                subtitle = "Toca el HUD para alternar: [Individual FPS] ⮂ [Hora | FPS | Ping | Temp | Batería]",
                 checked = uiState.fpsOverlayActive,
                 onCheckedChange = { enabled ->
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
