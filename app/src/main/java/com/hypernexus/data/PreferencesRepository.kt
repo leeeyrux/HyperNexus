@@ -1,0 +1,95 @@
+package com.hypernexus.data
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import java.io.IOException
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "hypernexus_settings")
+
+data class NexusSettings(
+    val refreshRate: Int = 0,
+    val vsyncDisabled: Boolean = false,
+    val dirtyRegionsDisabled: Boolean = false,
+    val showDirtyRegions: Boolean = false,
+    val forceGpuRendering: Boolean = false,
+    val msaa4x: Boolean = false,
+    val hwuiCacheOptimized: Boolean = false,
+    val dex2oatEnabled: Boolean = false,
+    val highPerformance: Boolean = false,
+    val fastTouch: Boolean = false,
+    val silentLogging: Boolean = false,
+    val displayDpi: Int = 400,
+    val animationScale: Float = 1.0f,
+    val graphicsRenderer: String = "skiagl",
+    val fpsOverlayActive: Boolean = false
+)
+
+class PreferencesRepository(private val context: Context) {
+
+    private object Keys {
+        val REFRESH_RATE = intPreferencesKey("refresh_rate")
+        val VSYNC_DISABLED = booleanPreferencesKey("vsync_disabled")
+        val DIRTY_REGIONS = booleanPreferencesKey("dirty_regions")
+        val SHOW_DIRTY_REGIONS = booleanPreferencesKey("show_dirty_regions")
+        val FORCE_GPU = booleanPreferencesKey("force_gpu")
+        val MSAA_4X = booleanPreferencesKey("msaa_4x")
+        val HWUI_CACHE = booleanPreferencesKey("hwui_cache")
+        val DEX2OAT = booleanPreferencesKey("dex2oat")
+        val HIGH_PERFORMANCE = booleanPreferencesKey("high_performance")
+        val FAST_TOUCH = booleanPreferencesKey("fast_touch")
+        val SILENT_LOGGING = booleanPreferencesKey("silent_logging")
+        val DISPLAY_DPI = intPreferencesKey("display_dpi")
+        val ANIMATION_SCALE = floatPreferencesKey("animation_scale")
+        val GRAPHICS_RENDERER = stringPreferencesKey("graphics_renderer")
+        val FPS_OVERLAY_ACTIVE = booleanPreferencesKey("fps_overlay_active")
+    }
+
+    val settingsFlow: Flow<NexusSettings> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { prefs ->
+            NexusSettings(
+                refreshRate = prefs[Keys.REFRESH_RATE] ?: 0,
+                vsyncDisabled = prefs[Keys.VSYNC_DISABLED] ?: false,
+                dirtyRegionsDisabled = prefs[Keys.DIRTY_REGIONS] ?: false,
+                showDirtyRegions = prefs[Keys.SHOW_DIRTY_REGIONS] ?: false,
+                forceGpuRendering = prefs[Keys.FORCE_GPU] ?: false,
+                msaa4x = prefs[Keys.MSAA_4X] ?: false,
+                hwuiCacheOptimized = prefs[Keys.HWUI_CACHE] ?: false,
+                dex2oatEnabled = prefs[Keys.DEX2OAT] ?: false,
+                highPerformance = prefs[Keys.HIGH_PERFORMANCE] ?: false,
+                fastTouch = prefs[Keys.FAST_TOUCH] ?: false,
+                silentLogging = prefs[Keys.SILENT_LOGGING] ?: false,
+                displayDpi = prefs[Keys.DISPLAY_DPI] ?: 400,
+                animationScale = prefs[Keys.ANIMATION_SCALE] ?: 1.0f,
+                graphicsRenderer = prefs[Keys.GRAPHICS_RENDERER] ?: "skiagl",
+                fpsOverlayActive = prefs[Keys.FPS_OVERLAY_ACTIVE] ?: false
+            )
+        }
+
+    private suspend fun <T> set(key: Preferences.Key<T>, value: T) {
+        context.dataStore.edit { it[key] = value }
+    }
+
+    suspend fun updateRefreshRate(rate: Int) = set(Keys.REFRESH_RATE, rate)
+    suspend fun updateDpi(dpi: Int) = set(Keys.DISPLAY_DPI, dpi)
+    suspend fun updateAnimationScale(scale: Float) = set(Keys.ANIMATION_SCALE, scale)
+    suspend fun updateVsync(v: Boolean) = set(Keys.VSYNC_DISABLED, v)
+    suspend fun updateDirtyRegions(v: Boolean) = set(Keys.DIRTY_REGIONS, v)
+    suspend fun updateShowDirty(v: Boolean) = set(Keys.SHOW_DIRTY_REGIONS, v)
+    suspend fun updateForceGpu(v: Boolean) = set(Keys.FORCE_GPU, v)
+    suspend fun updateMsaa4x(v: Boolean) = set(Keys.MSAA_4X, v)
+    suspend fun updateHwuiCache(v: Boolean) = set(Keys.HWUI_CACHE, v)
+    suspend fun updateDex2oat(v: Boolean) = set(Keys.DEX2OAT, v)
+    suspend fun updateHighPerformance(v: Boolean) = set(Keys.HIGH_PERFORMANCE, v)
+    suspend fun updateFastTouch(v: Boolean) = set(Keys.FAST_TOUCH, v)
+    suspend fun updateSilentLogging(v: Boolean) = set(Keys.SILENT_LOGGING, v)
+    suspend fun updateRenderer(renderer: String) = set(Keys.GRAPHICS_RENDERER, renderer)
+    suspend fun updateFpsOverlay(active: Boolean) = set(Keys.FPS_OVERLAY_ACTIVE, active)
+}

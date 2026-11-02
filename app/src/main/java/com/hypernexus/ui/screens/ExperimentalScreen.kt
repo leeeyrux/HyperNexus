@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,31 +20,35 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.hypernexus.PrivilegedActions
+import com.hypernexus.domain.AppFilterManager
+import com.hypernexus.domain.GameTargetApp
+import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.GlassCard
 import kotlinx.coroutines.launch
 
 @Composable
 fun ExperimentalScreen(
-    privilegedActions: PrivilegedActions,
+    viewModel: HyperNexusViewModel,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
-    var appList by remember { mutableStateOf<List<PrivilegedActions.InstalledApp>>(emptyList()) }
-    var selectedApp by remember { mutableStateOf<PrivilegedActions.InstalledApp?>(null) }
+    val appFilterManager = remember { AppFilterManager(context) }
+
+    var appList by remember { mutableStateOf<List<GameTargetApp>>(emptyList()) }
+    var selectedApp by remember { mutableStateOf<GameTargetApp?>(null) }
     var isCompiling by remember { mutableStateOf(false) }
     var gameFps by remember { mutableStateOf(120) }
     var downscale80 by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        appList = privilegedActions.getInstalledApps(context)
+        appList = appFilterManager.getInstalledUserApplications()
         if (appList.isNotEmpty() && selectedApp == null) {
             selectedApp = appList.firstOrNull { it.isGame } ?: appList.first()
         }
     }
-    
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -52,29 +58,17 @@ fun ExperimentalScreen(
     ) {
         item {
             Column {
-                Text(
-                    text = "Game Tuner & DEX2OAT",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = Color(0xFFFF9500),
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Motor de optimización por aplicación estilo Magic Tuner",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF8E8E93)
-                )
+                Text("Game Tuner & DEX2OAT", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
+                Text("Motor de optimización por aplicación estilo Magic Tuner", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
             }
         }
 
-        // SELECTOR DE APP / JUEGO
         item {
             GlassCard {
                 Column {
-                    Text("Selecciona una App o Juego", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    Text("Selecciona una App o Juego (${appList.size} detectadas)", style = MaterialTheme.typography.titleMedium, color = Color.White)
                     Spacer(modifier = Modifier.height(8.dp))
-                    
-                    var expanded by remember { mutableStateOf(false) }
-                    
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -89,7 +83,7 @@ fun ExperimentalScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = selectedApp?.appName ?: "Cargando apps...",
+                                text = selectedApp?.let { "${if (it.isGame) "🎮 " else "📱 "}${it.appName}" } ?: "Cargando apps...",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = Color.White,
                                 fontWeight = FontWeight.SemiBold
@@ -97,14 +91,10 @@ fun ExperimentalScreen(
                             Icon(Icons.Default.ArrowDropDown, null, tint = Color.White)
                         }
                     }
-                    
+
                     if (expanded && appList.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 220.dp)
-                        ) {
+                        Column(modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp)) {
                             appList.forEach { app ->
                                 Row(
                                     modifier = Modifier
@@ -121,7 +111,7 @@ fun ExperimentalScreen(
                                     Text(
                                         text = "${if (app.isGame) "🎮 " else "📱 "}${app.appName}",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = if (selectedApp == app) Color(0xFF007AFF) else Color.White
+                                        color = if (app.isGame) Color(0xFF30D158) else Color.White
                                     )
                                 }
                             }
@@ -131,7 +121,6 @@ fun ExperimentalScreen(
             }
         }
 
-        // ACCIÓN 1: COMPILADOR DEX2OAT EXCLUSIVO
         item {
             GlassCard {
                 Column {
@@ -142,20 +131,20 @@ fun ExperimentalScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Convierte el código de la app seleccionada a código binario nativo AOT. Abre más rápido y reduce tirones en partidas.",
+                        text = "Convierte el código a binario nativo AOT para evitar tirones y recortar tiempos de carga.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF8E8E93)
                     )
                     Spacer(modifier = Modifier.height(14.dp))
-                    
+
                     Button(
                         onClick = {
                             selectedApp?.let { app ->
                                 scope.launch {
                                     isCompiling = true
-                                    privilegedActions.compileAppSpeed(app.packageName)
+                                    viewModel.privilegedActions.compileAppSpeed(app.packageName)
                                     isCompiling = false
-                                    Toast.makeText(context, "DEX2OAT completado para ${app.appName}", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "DEX2OAT finalizado: ${app.appName}", Toast.LENGTH_LONG).show()
                                 }
                             }
                         },
@@ -176,7 +165,6 @@ fun ExperimentalScreen(
             }
         }
 
-        // ACCIÓN 2: GAME MANAGER API TUNER
         item {
             GlassCard {
                 Column {
@@ -186,14 +174,10 @@ fun ExperimentalScreen(
                         Text("Game Manager API Tuner", style = MaterialTheme.typography.titleMedium, color = Color.White)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Aplica modos de rendimiento por hardware a nivel de sistema para el paquete seleccionado.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF8E8E93)
-                    )
+                    Text("Ajusta políticas por hardware en el paquete seleccionado.", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                     Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Text("Tasa de FPS en este Juego:", style = MaterialTheme.typography.labelMedium, color = Color.White)
+
+                    Text("FPS Destino en Juego:", style = MaterialTheme.typography.labelMedium, color = Color.White)
                     Spacer(modifier = Modifier.height(6.dp))
                     val fpsOptions = listOf(60, 90, 120, 144)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -210,15 +194,15 @@ fun ExperimentalScreen(
                             }
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Button(
                         onClick = {
                             selectedApp?.let { app ->
                                 scope.launch {
                                     val downscale = if (downscale80) 0.8f else 1.0f
-                                    privilegedActions.applyGameMode(app.packageName, gameFps, downscale)
+                                    viewModel.privilegedActions.applyGameMode(app.packageName, gameFps, downscale)
                                     Toast.makeText(context, "Game API inyectado a ${app.appName}", Toast.LENGTH_SHORT).show()
                                 }
                             }
@@ -233,7 +217,7 @@ fun ExperimentalScreen(
                 }
             }
         }
-        
+
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 }
