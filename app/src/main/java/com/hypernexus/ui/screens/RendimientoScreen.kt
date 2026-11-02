@@ -2,7 +2,7 @@ package com.hypernexus.ui.screens
 
 import android.content.res.Resources
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -38,20 +38,19 @@ fun RendimientoScreen(
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
 
-    // 1. Sliders con estado local desacoplado (Fluidez total, persistencia al soltar)
+    // Sliders con estado local desacoplado (Fluidez total, persistencia al soltar)
     val safeDpi = uiState.displayDpi.toFloat().coerceIn(320f, 500f)
     var localDpi by remember(uiState.displayDpi) { mutableStateOf(safeDpi) }
 
     val safeAnim = uiState.animationScale.coerceIn(0f, 2.0f)
     var localAnim by remember(uiState.animationScale) { mutableStateOf(safeAnim) }
 
-    // 2. Escalador de Resolución
+    // Escalador de Resolución
     val displayMetrics = Resources.getSystem().displayMetrics
     val nativeWidth = displayMetrics.widthPixels.coerceAtLeast(720)
     val nativeHeight = displayMetrics.heightPixels.coerceAtLeast(1280)
     val aspectRatio = nativeHeight.toFloat() / nativeWidth.toFloat()
 
-    // Presets calculados según el aspect ratio nativo del teléfono
     val resolutions = remember(nativeWidth, nativeHeight) {
         listOf(
             "Nativa (${nativeWidth}x${nativeHeight})" to (nativeWidth to nativeHeight),
@@ -77,7 +76,7 @@ fun RendimientoScreen(
             Text("Ajustes protegidos contra bloqueos de pantalla", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
         }
 
-        // SLIDER DPI: Rango 320..500 con pasos de 15 (steps = 11)
+        // SLIDER DPI: Rango 320..500 con pasos de 15
         item {
             IOSSliderTile(
                 title = "Densidad de Pantalla (DPI Seguro)",
@@ -98,7 +97,7 @@ fun RendimientoScreen(
             )
         }
 
-        // SLIDER ANIMACIONES: 0x, 0.5x, 1x, 1.5x, 2x (steps = 3)
+        // SLIDER ANIMACIONES: 0x, 0.5x, 1x, 1.5x, 2x
         item {
             IOSSliderTile(
                 title = "Escala de Animaciones",
@@ -264,13 +263,13 @@ fun RendimientoScreen(
                     Text("Sí, asumo el riesgo", fontWeight = FontWeight.Bold)
                 }
             },
-            cancelButton = {
+            dismissButton = {
                 OutlinedButton(
                     onClick = {
                         showAntiCuriosoDialog = false
                         selectedResolutionTarget = null
                     },
-                    border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Color.White.copy(alpha = 0.3f)))
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f))
                 ) {
                     Text("Mejor no (Salvar mi teléfono)", color = Color.White)
                 }
