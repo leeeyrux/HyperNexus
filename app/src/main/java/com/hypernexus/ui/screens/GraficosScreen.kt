@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hypernexus.services.RedMagicOverlayService
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.GlassCard
