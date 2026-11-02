@@ -45,11 +45,14 @@ fun PanelScreen(
     var batteryData by remember { mutableStateOf<BatteryTelemetry?>(null) }
     var networkData by remember { mutableStateOf<NetworkTelemetry?>(null) }
 
+    // Bucle seguro: si cualquier sensor falla, no tumba la aplicación
     LaunchedEffect(Unit) {
         while (true) {
-            liveMetrics = hardwareMonitor.getLiveMetrics()
-            batteryData = hardwareMonitor.getBatteryTelemetry()
-            networkData = hardwareMonitor.getNetworkTelemetry()
+            try {
+                liveMetrics = hardwareMonitor.getLiveMetrics()
+                batteryData = hardwareMonitor.getBatteryTelemetry()
+                networkData = hardwareMonitor.getNetworkTelemetry()
+            } catch (_: Throwable) {}
             delay(1500)
         }
     }
@@ -61,7 +64,7 @@ fun PanelScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. HEADER CON LOGO OFICIAL
+        // 1. HEADER CON LOGO OFICIAL INMUNE A NOT_FOUND_EXCEPTION
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -69,14 +72,29 @@ fun PanelScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_launcher),
-                        contentDescription = "HyperNexus Logo",
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-                    )
+                    val logoPainter = runCatching { painterResource(id = R.mipmap.ic_launcher) }
+                        .getOrElse { runCatching { painterResource(id = R.drawable.ic_launcher) }.getOrNull() }
+
+                    if (logoPainter != null) {
+                        Image(
+                            painter = logoPainter,
+                            contentDescription = "HyperNexus Logo",
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF007AFF)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("HN", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        }
+                    }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
@@ -246,7 +264,7 @@ fun PanelScreen(
             }
         }
 
-        // 7. FILA DE ACCIONES RÁPIDAS (EXCLUSIVAMENTE 3)
+        // 7. FILA DE ACCIONES RÁPIDAS
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(

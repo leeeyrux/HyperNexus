@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hypernexus.data.PreferencesRepository
@@ -111,11 +110,14 @@ fun HyperNexusApp(
                 contentColor = Color(0xFF007AFF),
                 edgePadding = 12.dp,
                 indicator = { tabPositions ->
-                    TabRowDefaults.Indicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = Color(0xFF007AFF),
-                        height = 3.dp
-                    )
+                    // Validación matemática estricta: nunca indexar si está midiendo o vacía
+                    if (tabPositions.isNotEmpty() && selectedTab in tabPositions.indices) {
+                        TabRowDefaults.Indicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = Color(0xFF007AFF),
+                            height = 3.dp
+                        )
+                    }
                 },
                 divider = {}
             ) {

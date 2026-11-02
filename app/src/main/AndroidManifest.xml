@@ -2,9 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- PERMISOS DE LA APLICACION -->
+    <!-- PERMISOS DE RED Y TELEMETRÍA -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    
+    <!-- PERMISOS DE OVERLAY Y SERVICIOS -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -46,7 +50,18 @@
 
         </activity>
 
-        <!-- SERVICIOS HYPERNEXUS -->
+        <!-- HYPERNEXUS GAMING VPN SERVICE -->
+        <service
+            android:name=".services.HyperNexusVpnService"
+            android:enabled="true"
+            android:exported="false"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+
+        <!-- SERVICIOS HUD & HERZIOS -->
         <service
             android:name=".services.RedMagicOverlayService"
             android:enabled="true"

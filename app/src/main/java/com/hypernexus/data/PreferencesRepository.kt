@@ -42,7 +42,10 @@ data class NexusSettings(
     val boosterSkiaGl: Boolean = false,
     val boosterVulkan: Boolean = false,
     val activeModules: Set<String> = emptySet(),
-    val installedModulePaths: Set<String> = emptySet()
+    val installedModulePaths: Set<String> = emptySet(),
+    // GAMING VPN VALUES
+    val vpnActive: Boolean = false,
+    val vpnTargetPackage: String = ""
 )
 
 class PreferencesRepository(private val context: Context) {
@@ -79,6 +82,8 @@ class PreferencesRepository(private val context: Context) {
         val BOOSTER_VULKAN = booleanPreferencesKey("booster_vulkan")
         val ACTIVE_MODULES = stringSetPreferencesKey("active_modules")
         val INSTALLED_MODULES = stringSetPreferencesKey("installed_modules")
+        val VPN_ACTIVE = booleanPreferencesKey("vpn_active")
+        val VPN_TARGET_PACKAGE = stringPreferencesKey("vpn_target_package")
     }
 
     val settingsFlow: Flow<NexusSettings> = context.dataStore.data
@@ -117,7 +122,9 @@ class PreferencesRepository(private val context: Context) {
                 boosterSkiaGl = prefs[Keys.BOOSTER_SKIAGL] ?: false,
                 boosterVulkan = prefs[Keys.BOOSTER_VULKAN] ?: false,
                 activeModules = prefs[Keys.ACTIVE_MODULES] ?: emptySet(),
-                installedModulePaths = prefs[Keys.INSTALLED_MODULES] ?: emptySet()
+                installedModulePaths = prefs[Keys.INSTALLED_MODULES] ?: emptySet(),
+                vpnActive = prefs[Keys.VPN_ACTIVE] ?: false,
+                vpnTargetPackage = prefs[Keys.VPN_TARGET_PACKAGE] ?: ""
             )
         }
 
@@ -153,6 +160,13 @@ class PreferencesRepository(private val context: Context) {
     suspend fun updateTouchscreenOptimized(v: Boolean) = set(Keys.TOUCHSCREEN_OPT, v)
     suspend fun updateBoosterSkiaGl(v: Boolean) = set(Keys.BOOSTER_SKIAGL, v)
     suspend fun updateBoosterVulkan(v: Boolean) = set(Keys.BOOSTER_VULKAN, v)
+
+    suspend fun updateVpnState(active: Boolean, targetPackage: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.VPN_ACTIVE] = active
+            prefs[Keys.VPN_TARGET_PACKAGE] = targetPackage
+        }
+    }
 
     suspend fun toggleFavoriteCommand(cmd: String) {
         context.dataStore.edit { prefs ->

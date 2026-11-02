@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.hypernexus.PrivilegedActions
 import com.hypernexus.data.NexusSettings
 import com.hypernexus.data.PreferencesRepository
+import com.hypernexus.services.HyperNexusVpnService
 import com.hypernexus.services.RefreshRateKeeperService
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,6 +24,22 @@ class HyperNexusViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = NexusSettings()
         )
+
+    fun toggleVpnTunnel(context: Context, targetPackage: String, enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateVpnState(enable, targetPackage)
+            val intent = Intent(context, HyperNexusVpnService::class.java).apply {
+                action = if (enable) HyperNexusVpnService.ACTION_START else HyperNexusVpnService.ACTION_STOP
+                if (enable) putExtra(HyperNexusVpnService.EXTRA_TARGET_PACKAGE, targetPackage)
+            }
+            if (enable) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent)
+                else context.startService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
+    }
 
     fun setRefreshRate(context: Context, rate: Int) {
         viewModelScope.launch {
