@@ -14,7 +14,7 @@ android {
         minSdk = 26          // Compatible desde Android 8.0 (Oreo) en adelante
         targetSdk = 34       // Apuntando a Android 14 (Upside Down Cake)
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.5.0"
     }
 
     buildTypes {
