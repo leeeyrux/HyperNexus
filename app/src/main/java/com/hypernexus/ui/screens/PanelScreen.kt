@@ -65,7 +65,7 @@ fun PanelScreen(
             }
             context.startActivity(intent)
         } catch (_: Exception) {
-            Toast.makeText(context, "No se encontró navegador para abrir el enlace", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No se encontró navegador", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -76,6 +76,7 @@ fun PanelScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 1. ENCABEZADO CON LOGO OFICIAL
         item(key = "panel_header", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "panel_header") {
                 Row(
@@ -110,13 +111,14 @@ fun PanelScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Hub de Telemetría v1.4.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                            Text("Hub de Telemetría v1.5.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                         }
                     }
                 }
             }
         }
 
+        // 2. CANALES OFICIALES DE SOPORTE
         item(key = "panel_social", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "panel_social") {
                 GlassCard {
@@ -151,12 +153,14 @@ fun PanelScreen(
             }
         }
 
+        // 3. SPECS GENERALES
         item(key = "panel_specs", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "panel_specs") {
                 DeviceSpecsCard(specs = specs)
             }
         }
 
+        // 4. TELEMETRÍA DE RED EN VIVO
         item(key = "panel_network", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "panel_network") {
                 GlassCard {
@@ -193,6 +197,7 @@ fun PanelScreen(
             }
         }
 
+        // 5. TELEMETRÍA DE BATERÍA
         item(key = "panel_battery", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 4, itemKey = "panel_battery") {
                 GlassCard {
@@ -214,12 +219,18 @@ fun PanelScreen(
                                 TelemetryField(label = "Tensión Exacta", value = "${b.voltageMv} mV")
                                 TelemetryField(label = "Amperaje Instantáneo", value = "${b.currentAmperageMa} mA")
                             }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                TelemetryField(label = "Tecnología Química", value = b.technology)
+                                TelemetryField(label = "Capacidad Máx.", value = "4,500 - 5,000 mAh")
+                            }
                         } ?: Text("Cargando sensores de energía...", color = Color(0xFF8E8E93), fontSize = 12.sp)
                     }
                 }
             }
         }
 
+        // 6. MEMORIA RAM
         item(key = "panel_ram", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 5, itemKey = "panel_ram") {
                 GlassCard {
@@ -247,8 +258,76 @@ fun PanelScreen(
             }
         }
 
+        // 7. TARJETA FIJA DE LOS 8 NÚCLEOS DEL CPU (CORE #0 A CORE #7)
+        item(key = "panel_cpu", contentType = "premium_card_node") {
+            CyberGlowEntranceWrapper(index = 6, itemKey = "panel_cpu") {
+                GlassCard {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Speed, null, tint = Color(0xFF30D158), modifier = Modifier.size(28.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                val count = liveMetrics?.cores?.size?.takeIf { it > 0 } ?: 8
+                                Text(
+                                    text = "Frecuencias del CPU - $count núcleos activos",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Lectura en tiempo real por clúster (0-7)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF8E8E93)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        val cores = liveMetrics?.cores.takeIf { !it.isNullOrEmpty() }
+                            ?: (0..7).map { CoreFrequency(it, 0, 0) }
+
+                        cores.chunked(2).forEach { rowCores ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                rowCores.forEach { core ->
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(Color(0xFF2C2C2E))
+                                            .padding(10.dp)
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = "Core #${core.coreIndex}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color(0xFF8E8E93)
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            val mhzText = if (core.currentMhz > 0) "${core.currentMhz} MHz" else "En espera"
+                                            Text(
+                                                text = mhzText,
+                                                style = MaterialTheme.typography.titleSmall,
+                                                color = if (core.currentMhz > 0) Color.White else Color(0xFF636366),
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                                if (rowCores.size == 1) Spacer(modifier = Modifier.weight(1f))
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        // 8. ACCIONES RÁPIDAS
         item(key = "panel_actions", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 6, itemKey = "panel_actions") {
+            CyberGlowEntranceWrapper(index = 7, itemKey = "panel_actions") {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = {
@@ -295,7 +374,7 @@ fun PanelScreen(
             }
         }
 
-        item { Spacer(modifier = Modifier.height(80.dp)) }
+        item { Spacer(modifier = Modifier.height(100.dp)) }
     }
 }
 
