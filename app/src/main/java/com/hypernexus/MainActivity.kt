@@ -13,25 +13,18 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.hypernexus.data.PreferencesRepository
 import com.hypernexus.services.HyperNexusVpnService
 import com.hypernexus.ui.HyperNexusViewModel
+import com.hypernexus.ui.components.MainNavigationCapsule
 import com.hypernexus.ui.screens.*
 import com.hypernexus.ui.theme.HyperNexusTheme
-
-data class NavItem(val title: String, val icon: ImageVector)
 
 class MainActivity : ComponentActivity() {
 
@@ -41,7 +34,6 @@ class MainActivity : ComponentActivity() {
 
     private var pendingVpnTargetPackage: String? = null
 
-    // Contrato oficial para interceptar la autorización del sistema VpnService sin caídas
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -56,7 +48,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Fijación a 60Hz para evitar vibraciones en recomposiciones
+        // Lock de dibujado a 60Hz para eliminar micro-stutter
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 val params = window.attributes
@@ -143,18 +135,6 @@ fun HyperNexusApp(
     val isConnected by shizukuBridge.isConnected.collectAsState()
     val hasPermission by shizukuBridge.hasPermission.collectAsState()
 
-    val navTabs = remember {
-        listOf(
-            NavItem("Panel", Icons.Default.Dashboard),
-            NavItem("Rendimiento", Icons.Default.Speed),
-            NavItem("Gráficos", Icons.Default.VideogameAsset),
-            NavItem("Seguridad", Icons.Default.Shield),
-            NavItem("Módulos", Icons.Default.Extension),
-            NavItem("Terminal", Icons.Default.Terminal),
-            NavItem("Experimental", Icons.Default.Science)
-        )
-    }
-
     Scaffold(
         containerColor = Color.Black,
         topBar = {
@@ -171,79 +151,54 @@ fun HyperNexusApp(
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Black)
             )
-        },
-        bottomBar = {
-            ScrollableTabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = Color(0xFF141416),
-                contentColor = Color(0xFF007AFF),
-                edgePadding = 12.dp,
-                indicator = { tabPositions ->
-                    if (tabPositions.isNotEmpty() && selectedTab in tabPositions.indices) {
-                        TabRowDefaults.Indicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = Color(0xFF007AFF),
-                            height = 3.dp
-                        )
-                    }
-                },
-                divider = {}
-            ) {
-                navTabs.forEachIndexed { index, tab ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = {
-                            Text(
-                                text = tab.title,
-                                fontSize = 11.sp,
-                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.title,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        },
-                        selectedContentColor = Color(0xFF007AFF),
-                        unselectedContentColor = Color(0xFF8E8E93)
-                    )
-                }
-            }
         }
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(top = padding.calculateTopPadding())
                 .background(Color.Black)
         ) {
-            when (selectedTab) {
-                0 -> PanelScreen(viewModel = viewModel)
-                1 -> RendimientoScreen(viewModel = viewModel)
-                2 -> GraficosScreen(viewModel = viewModel)
-                3 -> SeguridadScreen(
-                    viewModel = viewModel,
-                    onRequestVpnStart = onRequestVpnStart,
-                    onRequestVpnStop = onRequestVpnStop
-                )
-                4 -> ModulosScreen(viewModel = viewModel)
-                5 -> TerminalScreen(viewModel = viewModel)
-                6 -> ExperimentalScreen(viewModel = viewModel)
+            // CONTENIDO PRINCIPAL: Fluye por detrás de la cápsula sin recortar bordes
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (selectedTab) {
+                    0 -> PanelScreen(viewModel = viewModel)
+                    1 -> RendimientoScreen(viewModel = viewModel)
+                    2 -> GraficosScreen(viewModel = viewModel)
+                    3 -> SeguridadScreen(
+                        viewModel = viewModel,
+                        onRequestVpnStart = onRequestVpnStart,
+                        onRequestVpnStop = onRequestVpnStop
+                    )
+                    4 -> ModulosScreen(viewModel = viewModel)
+                    5 -> TerminalScreen(viewModel = viewModel)
+                    6 -> ExperimentalScreen(viewModel = viewModel)
+                }
             }
 
+            // FINAL BOSS: CÁPSULA FLOTANTE LIQUID GLASS HOVER
+            MainNavigationCapsule(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 20.dp, bottom = 16.dp)
+            )
+
+            // Banner de autorización Shizuku
             if (!hasPermission) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(bottom = 90.dp)
+                        .fillMaxWidth(0.92f),
                     shape = RoundedCornerShape(16.dp),
                     color = Color(0xFF1C1C1E)
                 ) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Permiso Shizuku Requerido", style = MaterialTheme.typography.titleMedium, color = Color.White)
                             Text("Indispensable para aplicar optimizaciones", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
