@@ -7,7 +7,6 @@ import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hypernexus.data.HardwareMonitor
@@ -61,14 +62,16 @@ fun SeguridadScreen(
     var cleaningSpeedMbSec by remember { mutableStateOf(0) }
     var cleanedSuccess by remember { mutableStateOf(false) }
 
-    var installedGames by remember { mutableStateOf<List<GameTargetApp>>(emptyList()) }
+    var rawGames by remember { mutableStateOf<List<GameTargetApp>>(emptyList()) }
+    val memoizedGames by remember { derivedStateOf { rawGames } }
+
     var selectedTargetGame by remember { mutableStateOf<GameTargetApp?>(null) }
     var showGamePickerModal by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         storageData = hardwareMonitor.getStorageTelemetry()
         val allApps = appFilterManager.getInstalledUserApplications()
-        installedGames = allApps
+        rawGames = allApps
         if (allApps.isNotEmpty() && selectedTargetGame == null) {
             val savedPkg = uiState.vpnTargetPackage
             selectedTargetGame = allApps.firstOrNull { it.packageName == savedPkg }
@@ -228,10 +231,17 @@ fun SeguridadScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (selectedTargetGame?.icon != null) {
-                                    Image(
-                                        bitmap = selectedTargetGame!!.icon!!,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(30.dp).clip(CircleShape)
+                                    val bmp = selectedTargetGame!!.icon!!
+                                    Spacer(
+                                        modifier = Modifier
+                                            .size(30.dp)
+                                            .clip(CircleShape)
+                                            .drawWithCache {
+                                                val dst = IntSize(size.width.toInt(), size.height.toInt())
+                                                onDrawBehind {
+                                                    drawImage(image = bmp, dstSize = dst)
+                                                }
+                                            }
                                     )
                                 } else {
                                     Icon(Icons.Default.SportsEsports, null, tint = Color.White, modifier = Modifier.size(20.dp))
@@ -396,7 +406,7 @@ fun SeguridadScreen(
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 
-    // MODAL CON KEY ESTABLE PARA CERO-LAG AL SCROLLEAR
+    // MODAL DE JUEGOS CON KEYS ESTABLES, CONTENT TYPE Y DIBUJADO ACELERADO
     if (showGamePickerModal) {
         AlertDialog(
             onDismissRequest = { showGamePickerModal = false },
@@ -405,7 +415,7 @@ fun SeguridadScreen(
             modifier = Modifier.border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
             title = {
                 Text(
-                    text = "Seleccionar Juego (${installedGames.size} encontrados)",
+                    text = "Seleccionar Juego (${memoizedGames.size} encontrados)",
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
@@ -416,8 +426,9 @@ fun SeguridadScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(
-                        items = installedGames,
-                        key = { it.packageName }
+                        items = memoizedGames,
+                        key = { it.packageName },
+                        contentType = { "app_row_card" }
                     ) { game ->
                         Row(
                             modifier = Modifier
@@ -432,10 +443,17 @@ fun SeguridadScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (game.icon != null) {
-                                Image(
-                                    bitmap = game.icon,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp).clip(CircleShape)
+                                val bmp = game.icon
+                                Spacer(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .drawWithCache {
+                                            val dst = IntSize(size.width.toInt(), size.height.toInt())
+                                            onDrawBehind {
+                                                drawImage(image = bmp, dstSize = dst)
+                                            }
+                                        }
                                 )
                             } else {
                                 Icon(Icons.Default.SportsEsports, null, tint = Color.White, modifier = Modifier.size(22.dp))

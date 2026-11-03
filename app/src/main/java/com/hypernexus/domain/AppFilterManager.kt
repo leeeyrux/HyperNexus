@@ -25,10 +25,15 @@ class AppFilterManager(
     private val context: Context,
     private val shizukuBridge: ShizukuBridge? = null
 ) {
-    // Palabras clave estrictas de títulos y publishers gaming reconocidos
-    private val strictGameKeywords = listOf(
-        "freefire", "max", "dts", "cod", "pubg", "supercell", 
-        "activision", "garena", "tencent", "epicgames"
+    // Palabras clave de publishers y franquicias gaming
+    private val gameKeywords = listOf(
+        "freefire", "max", "dts", "roblox", "cod", "pubg", 
+        "supercell", "ea", "mojang", "activision", "garena", "tencent"
+    )
+
+    // BARRERA DE EXCLUSIÓN ESTRICTA: Expulsadas de Tier 1 de forma forzosa
+    private val strictExclusionKeywords = listOf(
+        "gob.bancodelbienestar", "bienestar", "banco", "chamba", "empleo", "security"
     )
 
     suspend fun getInstalledUserApplications(): List<GameTargetApp> = withContext(Dispatchers.IO) {
@@ -46,27 +51,33 @@ class AppFilterManager(
             emptyList()
         }
 
-        val listAGames = mutableListOf<GameTargetApp>()
-        val listBOtherApps = mutableListOf<GameTargetApp>()
+        val tier1Games = mutableListOf<GameTargetApp>()
+        val tier2Utilities = mutableListOf<GameTargetApp>()
 
         for (pkg in packages) {
             val pkgName = pkg.packageName
             val appInfo = pkg.applicationInfo ?: continue
 
-            // Excluir la app propia y la API de Shizuku
+            // Excluir la app propia y Shizuku
             if (pkgName == ownPackage || pkgName == "moe.shizuku.privileged.api") continue
 
             val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
             val isUpdatedSystem = (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
 
-            // Filtrar servicios internos que no sean de usuario ni actualizados
+            // Filtrar servicios base del sistema no actualizados
             if (isSystem && !isUpdatedSystem) continue
 
             val pkgLower = pkgName.lowercase()
             val appLabel = try { pm.getApplicationLabel(appInfo).toString() } catch (_: Exception) { pkgName }
+            val appLabelLower = appLabel.lowercase()
 
-            // Validación rigurosa de categoría juego
-            val isGameCategory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // 1. Barrera de exclusión estricta
+            val isForceExcluded = strictExclusionKeywords.any { exc ->
+                pkgLower.contains(exc) || appLabelLower.contains(exc)
+            }
+
+            // 2. Detección por metadatos nativos
+            val isGameMetadata = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 appInfo.category == ApplicationInfo.CATEGORY_GAME ||
                         (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
             } else {
@@ -74,8 +85,12 @@ class AppFilterManager(
                 (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
             }
 
-            val matchesKeyword = strictGameKeywords.any { kw -> pkgLower.contains(kw) }
-            val isVerifiedGame = isGameCategory || matchesKeyword
+            // 3. Detección por coincidencia de strings
+            val matchesGameKeyword = gameKeywords.any { kw ->
+                pkgLower.contains(kw) || appLabelLower.contains(kw)
+            }
+
+            val isTier1 = !isForceExcluded && (isGameMetadata || matchesGameKeyword)
 
             val iconDrawable = try { pm.getApplicationIcon(appInfo) } catch (_: Exception) { null }
             val imageBitmap = drawableToImageBitmap(iconDrawable)
@@ -83,23 +98,23 @@ class AppFilterManager(
             val appItem = GameTargetApp(
                 packageName = pkgName,
                 appName = appLabel,
-                isGame = isVerifiedGame,
+                isGame = isTier1,
                 icon = imageBitmap
             )
 
-            if (isVerifiedGame) {
-                listAGames.add(appItem)
+            if (isTier1) {
+                tier1Games.add(appItem)
             } else {
-                listBOtherApps.add(appItem)
+                tier2Utilities.add(appItem)
             }
         }
 
-        // Ordenamiento alfabético individual
-        listAGames.sortBy { it.appName.lowercase() }
-        listBOtherApps.sortBy { it.appName.lowercase() }
+        // Ordenamiento alfabético independiente
+        tier1Games.sortBy { it.appName.lowercase() }
+        tier2Utilities.sortBy { it.appName.lowercase() }
 
-        // Fusión: Lista A (Juegos) al tope absoluto, Lista B (Resto de apps) abajo
-        listAGames + listBOtherApps
+        // Fusión: Tier 1 (Juegos) arriba, Tier 2 (Utilidades) debajo
+        tier1Games + tier2Utilities
     }
 
     private fun drawableToImageBitmap(drawable: Drawable?): ImageBitmap? {
