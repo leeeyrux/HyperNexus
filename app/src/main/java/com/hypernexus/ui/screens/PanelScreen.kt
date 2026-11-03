@@ -27,9 +27,9 @@ import androidx.compose.ui.unit.sp
 import com.hypernexus.R
 import com.hypernexus.data.*
 import com.hypernexus.ui.HyperNexusViewModel
+import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.DeviceSpecsCard
 import com.hypernexus.ui.components.GlassCard
-import com.hypernexus.ui.components.StaggeredEntranceCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -77,7 +77,7 @@ fun PanelScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item(key = "panel_header", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 0) {
+            CyberGlowEntranceWrapper(index = 0, itemKey = "panel_header") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -110,7 +110,7 @@ fun PanelScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Hub de Telemetría v1.3.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                            Text("Hub de Telemetría v1.4.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                         }
                     }
                 }
@@ -118,7 +118,7 @@ fun PanelScreen(
         }
 
         item(key = "panel_social", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 1) {
+            CyberGlowEntranceWrapper(index = 1, itemKey = "panel_social") {
                 GlassCard {
                     Column {
                         Text("Canales Oficiales y Soporte", style = MaterialTheme.typography.labelMedium, color = Color(0xFF8E8E93))
@@ -152,13 +152,13 @@ fun PanelScreen(
         }
 
         item(key = "panel_specs", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 2) {
+            CyberGlowEntranceWrapper(index = 2, itemKey = "panel_specs") {
                 DeviceSpecsCard(specs = specs)
             }
         }
 
         item(key = "panel_network", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 3) {
+            CyberGlowEntranceWrapper(index = 3, itemKey = "panel_network") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -194,7 +194,7 @@ fun PanelScreen(
         }
 
         item(key = "panel_battery", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 4) {
+            CyberGlowEntranceWrapper(index = 4, itemKey = "panel_battery") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -221,7 +221,7 @@ fun PanelScreen(
         }
 
         item(key = "panel_ram", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 5) {
+            CyberGlowEntranceWrapper(index = 5, itemKey = "panel_ram") {
                 GlassCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Memory, null, tint = Color(0xFF007AFF), modifier = Modifier.size(32.dp))
@@ -248,7 +248,7 @@ fun PanelScreen(
         }
 
         item(key = "panel_actions", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 6) {
+            CyberGlowEntranceWrapper(index = 6, itemKey = "panel_actions") {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = {

@@ -39,9 +39,9 @@ import com.hypernexus.domain.AppFilterManager
 import com.hypernexus.domain.GameTargetApp
 import com.hypernexus.services.HyperNexusVpnService
 import com.hypernexus.ui.HyperNexusViewModel
+import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitch
-import com.hypernexus.ui.components.StaggeredEntranceCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -116,7 +116,7 @@ fun SeguridadScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item(key = "seg_header", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 0) {
+            CyberGlowEntranceWrapper(index = 0, itemKey = "seg_header") {
                 Column {
                     Text("Seguridad & Red Gamer", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
                     Text("Split Tunneling por socket con optimización de MTU y DNS", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
@@ -125,7 +125,7 @@ fun SeguridadScreen(
         }
 
         item(key = "seg_vpn_card", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 1) {
+            CyberGlowEntranceWrapper(index = 1, itemKey = "seg_vpn_card") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -190,7 +190,7 @@ fun SeguridadScreen(
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(Color(0xFF00E676).copy(alpha = 0.12f))
                                     .padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -279,7 +279,7 @@ fun SeguridadScreen(
         }
 
         item(key = "seg_protection_circle", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 2) {
+            CyberGlowEntranceWrapper(index = 2, itemKey = "seg_protection_circle") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -325,7 +325,7 @@ fun SeguridadScreen(
         }
 
         item(key = "seg_cleaner", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 3) {
+            CyberGlowEntranceWrapper(index = 3, itemKey = "seg_cleaner") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -390,7 +390,7 @@ fun SeguridadScreen(
         }
 
         item(key = "seg_audit_list", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 4) {
+            CyberGlowEntranceWrapper(index = 4, itemKey = "seg_audit_list") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {

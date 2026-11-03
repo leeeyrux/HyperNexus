@@ -26,9 +26,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hypernexus.ui.HyperNexusViewModel
+import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitchTile
-import com.hypernexus.ui.components.StaggeredEntranceCard
 import kotlinx.coroutines.launch
 
 @Composable
@@ -64,7 +64,7 @@ fun RendimientoScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item(key = "rend_header", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 0) {
+            CyberGlowEntranceWrapper(index = 0, itemKey = "rend_header") {
                 Column {
                     Text("Rendimiento", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
                     Text("Ajustes por pasos seguros sin deslizamiento errático", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
@@ -73,7 +73,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_hz", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 1) {
+            CyberGlowEntranceWrapper(index = 1, itemKey = "rend_hz") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -108,7 +108,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_dpi", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 2) {
+            CyberGlowEntranceWrapper(index = 2, itemKey = "rend_dpi") {
                 GlassCard {
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -144,7 +144,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_transition", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 3) {
+            CyberGlowEntranceWrapper(index = 3, itemKey = "rend_transition") {
                 StepOptionCard(
                     title = "Escala de Transición",
                     selectedValue = uiState.transitionScale,
@@ -158,7 +158,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_animator", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 4) {
+            CyberGlowEntranceWrapper(index = 4, itemKey = "rend_animator") {
                 StepOptionCard(
                     title = "Escala de Animación / Duración",
                     selectedValue = uiState.animatorScale,
@@ -172,7 +172,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_window", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 5) {
+            CyberGlowEntranceWrapper(index = 5, itemKey = "rend_window") {
                 StepOptionCard(
                     title = "Escala de Ventana",
                     selectedValue = uiState.windowScale,
@@ -186,7 +186,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_resolution", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 6) {
+            CyberGlowEntranceWrapper(index = 6, itemKey = "rend_resolution") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -223,7 +223,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_hw_overlays", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 7) {
+            CyberGlowEntranceWrapper(index = 7, itemKey = "rend_hw_overlays") {
                 IOSSwitchTile(
                     title = "Disable HW Overlays",
                     subtitle = "Fuerza composición directa por GPU en SurfaceFlinger",
@@ -234,7 +234,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_msaa", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 8) {
+            CyberGlowEntranceWrapper(index = 8, itemKey = "rend_msaa") {
                 IOSSwitchTile(
                     title = "Enable Forced 4x MSAA",
                     subtitle = "Inyección global de anti-aliasing OpenGL ES 2.0+",
@@ -245,7 +245,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_governor", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 9) {
+            CyberGlowEntranceWrapper(index = 9, itemKey = "rend_governor") {
                 IOSSwitchTile(
                     title = "Performance Governor Scheduler",
                     subtitle = "Fuerza frecuencia máxima en todos los clústeres del CPU",
@@ -256,7 +256,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_dex2oat", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 10) {
+            CyberGlowEntranceWrapper(index = 10, itemKey = "rend_dex2oat") {
                 IOSSwitchTile(
                     title = "Force High-Priority Dex2oat",
                     subtitle = "Asigna 8 hilos dedicados para compilación de paquetes AOT",
@@ -267,7 +267,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_quick_profile", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 11) {
+            CyberGlowEntranceWrapper(index = 11, itemKey = "rend_quick_profile") {
                 Button(
                     onClick = {
                         scope.launch {

@@ -22,9 +22,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hypernexus.ui.HyperNexusViewModel
+import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitch
-import com.hypernexus.ui.components.StaggeredEntranceCard
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -123,7 +123,7 @@ fun ModulosScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item(key = "mod_header", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 0) {
+            CyberGlowEntranceWrapper(index = 0, itemKey = "mod_header") {
                 Column {
                     Text("Módulos Universales", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
                     Text("Inyector de scripts, optimizaciones y mods de rendimiento", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
@@ -132,7 +132,7 @@ fun ModulosScreen(
         }
 
         item(key = "mod_install_btn", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 1) {
+            CyberGlowEntranceWrapper(index = 1, itemKey = "mod_install_btn") {
                 Button(
                     onClick = { filePickerLauncher.launch("*/*") },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -161,7 +161,7 @@ fun ModulosScreen(
                 val script = parts.getOrNull(1) ?: ""
                 val isActive = uiState.activeModules.contains(name)
 
-                StaggeredEntranceCard(index = 2) {
+                CyberGlowEntranceWrapper(index = 2, itemKey = rawModule) {
                     GlassCard {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -200,7 +200,7 @@ fun ModulosScreen(
             contentType = { "premium_card_node" }
         ) { mod ->
             val isActive = uiState.activeModules.contains(mod.id)
-            StaggeredEntranceCard(index = 3) {
+            CyberGlowEntranceWrapper(index = 3, itemKey = mod.id) {
                 GlassCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

@@ -22,9 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hypernexus.services.RedMagicOverlayService
 import com.hypernexus.ui.HyperNexusViewModel
+import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitchTile
-import com.hypernexus.ui.components.StaggeredEntranceCard
 
 @Composable
 fun GraficosScreen(
@@ -52,7 +52,7 @@ fun GraficosScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item(key = "graf_header", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 0) {
+            CyberGlowEntranceWrapper(index = 0, itemKey = "graf_header") {
                 Column {
                     Text("Gráficos & Renderizado", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
                     Text("Controladores de bajo nivel Magic Tuner & Vexiro Engine", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
@@ -61,7 +61,7 @@ fun GraficosScreen(
         }
 
         item(key = "graf_hud_switch", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 1) {
+            CyberGlowEntranceWrapper(index = 1, itemKey = "graf_hud_switch") {
                 IOSSwitchTile(
                     title = "Contador Red Magic Multi-Info",
                     subtitle = "HUD flotante: Toca para alternar [FPS] o [Hora | FPS | Ping | Temp | Batería]",
@@ -86,7 +86,7 @@ fun GraficosScreen(
         }
 
         item(key = "graf_renderer_card", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 2) {
+            CyberGlowEntranceWrapper(index = 2, itemKey = "graf_renderer_card") {
                 GlassCard {
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -108,7 +108,7 @@ fun GraficosScreen(
                                         Toast.makeText(context, "Pipeline: $key", Toast.LENGTH_SHORT).show()
                                     }
                                     .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
                                     selected = isSelected,
@@ -130,7 +130,7 @@ fun GraficosScreen(
         }
 
         item(key = "graf_composition_card", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 3) {
+            CyberGlowEntranceWrapper(index = 3, itemKey = "graf_composition_card") {
                 GlassCard {
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -162,7 +162,7 @@ fun GraficosScreen(
         }
 
         item(key = "graf_fluid_graphics", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 4) {
+            CyberGlowEntranceWrapper(index = 4, itemKey = "graf_fluid_graphics") {
                 IOSSwitchTile(
                     title = "Modo de Gráficos Fluidos",
                     subtitle = "Optimización profunda de sincronización y buffer SurfaceFlinger",
@@ -173,7 +173,7 @@ fun GraficosScreen(
         }
 
         item(key = "graf_sf_accel", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 5) {
+            CyberGlowEntranceWrapper(index = 5, itemKey = "graf_sf_accel") {
                 IOSSwitchTile(
                     title = "Aceleración por Hardware de SF",
                     subtitle = "Prioridad absoluta de hardware para la composición de pantalla",
@@ -184,7 +184,7 @@ fun GraficosScreen(
         }
 
         item(key = "graf_pacing", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 6) {
+            CyberGlowEntranceWrapper(index = 6, itemKey = "graf_pacing") {
                 IOSSwitchTile(
                     title = "Control de Intervalo de GPU",
                     subtitle = "Alineación de cadencia de frames en microsegundos",
@@ -195,7 +195,7 @@ fun GraficosScreen(
         }
 
         item(key = "graf_thermal", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 7) {
+            CyberGlowEntranceWrapper(index = 7, itemKey = "graf_thermal") {
                 IOSSwitchTile(
                     title = "Thermal Controller (Vexiro Engine)",
                     subtitle = "Suprime el límite térmico que reduce el rendimiento en juegos",
@@ -206,7 +206,7 @@ fun GraficosScreen(
         }
 
         item(key = "graf_touch", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 8) {
+            CyberGlowEntranceWrapper(index = 8, itemKey = "graf_touch") {
                 IOSSwitchTile(
                     title = "Touchscreen Optimized",
                     subtitle = "Perfil de baja latencia táctil para máxima sensibilidad al deslizar",
@@ -217,7 +217,7 @@ fun GraficosScreen(
         }
 
         item(key = "graf_booster_skia", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 9) {
+            CyberGlowEntranceWrapper(index = 9, itemKey = "graf_booster_skia") {
                 IOSSwitchTile(
                     title = "Booster Render (SkiaGL)",
                     subtitle = "Refuerzo dedicado para el pipeline OpenGL 2D/3D del sistema",
@@ -228,7 +228,7 @@ fun GraficosScreen(
         }
 
         item(key = "graf_booster_vk", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 10) {
+            CyberGlowEntranceWrapper(index = 10, itemKey = "graf_booster_vk") {
                 IOSSwitchTile(
                     title = "Booster Render (Vulkan)",
                     subtitle = "Refuerzo para Vulkan con asignación de caché ampliada",

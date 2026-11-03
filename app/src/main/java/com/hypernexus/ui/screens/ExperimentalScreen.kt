@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.hypernexus.domain.AppFilterManager
 import com.hypernexus.domain.GameTargetApp
 import com.hypernexus.ui.HyperNexusViewModel
+import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
 import kotlinx.coroutines.launch
 
@@ -64,87 +65,41 @@ fun ExperimentalScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
-            Column {
-                Text("Game Tuner & DEX2OAT", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
-                Text("Motor de optimización por aplicación con priorización gaming", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+        item(key = "exp_header", contentType = "premium_card_node") {
+            CyberGlowEntranceWrapper(index = 0, itemKey = "exp_header") {
+                Column {
+                    Text("Game Tuner & DEX2OAT", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
+                    Text("Motor de optimización por aplicación con priorización gaming", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                }
             }
         }
 
-        item {
-            GlassCard {
-                Column {
-                    Text("Selecciona una App o Juego (${memoizedAppList.size} detectados)", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF2C2C2E))
-                            .clickable { expanded = !expanded }
-                            .padding(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                selectedApp?.icon?.let { bmp ->
-                                    Spacer(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .drawWithCache {
-                                                val dst = IntSize(size.width.toInt(), size.height.toInt())
-                                                onDrawBehind {
-                                                    drawImage(image = bmp, dstSize = dst)
-                                                }
-                                            }
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                }
-                                Text(
-                                    text = selectedApp?.appName ?: "Cargando aplicaciones...",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            Icon(Icons.Default.ArrowDropDown, null, tint = Color.White)
-                        }
-                    }
-
-                    if (expanded && memoizedAppList.isNotEmpty()) {
+        item(key = "exp_app_picker", contentType = "premium_card_node") {
+            CyberGlowEntranceWrapper(index = 1, itemKey = "exp_app_picker") {
+                GlassCard {
+                    Column {
+                        Text("Selecciona una App o Juego (${memoizedAppList.size} detectados)", style = MaterialTheme.typography.titleMedium, color = Color.White)
                         Spacer(modifier = Modifier.height(8.dp))
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF2C2C2E))
+                                .clickable { expanded = !expanded }
+                                .padding(12.dp)
                         ) {
-                            items(
-                                items = memoizedAppList,
-                                key = { it.packageName },
-                                contentType = { "app_row_card" }
-                            ) { app ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (selectedApp?.packageName == app.packageName) Color(0xFF007AFF).copy(alpha = 0.2f) else Color.Transparent)
-                                        .clickable {
-                                            selectedApp = app
-                                            expanded = false
-                                        }
-                                        .padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    if (app.icon != null) {
-                                        val bmp = app.icon
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    selectedApp?.icon?.let { bmp ->
                                         Spacer(
                                             modifier = Modifier
-                                                .size(28.dp)
-                                                .clip(RoundedCornerShape(6.dp))
+                                                .size(34.dp)
+                                                .clip(RoundedCornerShape(8.dp))
                                                 .drawWithCache {
                                                     val dst = IntSize(size.width.toInt(), size.height.toInt())
                                                     onDrawBehind {
@@ -152,115 +107,169 @@ fun ExperimentalScreen(
                                                     }
                                                 }
                                         )
-                                    } else {
-                                        Text(if (app.isGame) "🎮" else "📱", fontSize = 18.sp)
+                                        Spacer(modifier = Modifier.width(10.dp))
                                     }
-                                    Spacer(modifier = Modifier.width(10.dp))
                                     Text(
-                                        text = app.appName,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = if (app.isGame) Color(0xFF30D158) else Color.White
+                                        text = selectedApp?.appName ?: "Cargando aplicaciones...",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 }
+                                Icon(Icons.Default.ArrowDropDown, null, tint = Color.White)
                             }
                         }
-                    }
-                }
-            }
-        }
 
-        item {
-            GlassCard {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Bolt, null, tint = Color(0xFF30D158), modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("Compilación DEX2OAT Speed", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Convierte el código a binario nativo AOT para evitar tirones y recortar tiempos de carga.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF8E8E93)
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Button(
-                        onClick = {
-                            selectedApp?.let { app ->
-                                scope.launch {
-                                    isCompiling = true
-                                    viewModel.privilegedActions.compileAppSpeed(app.packageName)
-                                    isCompiling = false
-                                    Toast.makeText(context, "DEX2OAT finalizado: ${app.appName}", Toast.LENGTH_LONG).show()
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF30D158)),
-                        enabled = !isCompiling && selectedApp != null
-                    ) {
-                        if (isCompiling) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text("Compilando código AOT...")
-                        } else {
-                            Text("Compilar ${selectedApp?.appName ?: "App"}", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-
-        item {
-            GlassCard {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Gamepad, null, tint = Color(0xFFFF9500), modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("Game Manager API Tuner", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Ajusta políticas por hardware en el paquete seleccionado.", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text("FPS Destino en Juego:", style = MaterialTheme.typography.labelMedium, color = Color.White)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    val fpsOptions = listOf(60, 90, 120, 144)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        fpsOptions.forEach { fps ->
-                            Button(
-                                onClick = { gameFps = fps },
-                                modifier = Modifier.weight(1f).height(38.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (gameFps == fps) Color(0xFFFF9500) else Color(0xFF2C2C2E)
-                                )
+                        if (expanded && memoizedAppList.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Text("$fps", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                items(
+                                    items = memoizedAppList,
+                                    key = { it.packageName },
+                                    contentType = { "app_row_card" }
+                                ) { app ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (selectedApp?.packageName == app.packageName) Color(0xFF007AFF).copy(alpha = 0.2f) else Color.Transparent)
+                                            .clickable {
+                                                selectedApp = app
+                                                expanded = false
+                                            }
+                                            .padding(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (app.icon != null) {
+                                            val bmp = app.icon
+                                            Spacer(
+                                                modifier = Modifier
+                                                    .size(28.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .drawWithCache {
+                                                        val dst = IntSize(size.width.toInt(), size.height.toInt())
+                                                        onDrawBehind {
+                                                            drawImage(image = bmp, dstSize = dst)
+                                                        }
+                                                    }
+                                            )
+                                        } else {
+                                            Text(if (app.isGame) "🎮" else "📱", fontSize = 18.sp)
+                                        }
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            text = app.appName,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (app.isGame) Color(0xFF30D158) else Color.White
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
+                }
+            }
+        }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+        item(key = "exp_dex2oat_card", contentType = "premium_card_node") {
+            CyberGlowEntranceWrapper(index = 2, itemKey = "exp_dex2oat_card") {
+                GlassCard {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Bolt, null, tint = Color(0xFF30D158), modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Compilación DEX2OAT Speed", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Convierte el código a binario nativo AOT para evitar tirones y recortar tiempos de carga.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF8E8E93)
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                    Button(
-                        onClick = {
-                            selectedApp?.let { app ->
-                                scope.launch {
-                                    val downscale = if (downscale80) 0.8f else 1.0f
-                                    viewModel.privilegedActions.applyGameMode(app.packageName, gameFps, downscale)
-                                    Toast.makeText(context, "Game API inyectado a ${app.appName}", Toast.LENGTH_SHORT).show()
+                        Button(
+                            onClick = {
+                                selectedApp?.let { app ->
+                                    scope.launch {
+                                        isCompiling = true
+                                        viewModel.privilegedActions.compileAppSpeed(app.packageName)
+                                        isCompiling = false
+                                        Toast.makeText(context, "DEX2OAT finalizado: ${app.appName}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF30D158)),
+                            enabled = !isCompiling && selectedApp != null
+                        ) {
+                            if (isCompiling) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text("Compilando código AOT...")
+                            } else {
+                                Text("Compilar ${selectedApp?.appName ?: "App"}", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item(key = "exp_game_api_card", contentType = "premium_card_node") {
+            CyberGlowEntranceWrapper(index = 3, itemKey = "exp_game_api_card") {
+                GlassCard {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Gamepad, null, tint = Color(0xFFFF9500), modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Game Manager API Tuner", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Ajusta políticas por hardware en el paquete seleccionado.", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text("FPS Destino en Juego:", style = MaterialTheme.typography.labelMedium, color = Color.White)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        val fpsOptions = listOf(60, 90, 120, 144)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            fpsOptions.forEach { fps ->
+                                Button(
+                                    onClick = { gameFps = fps },
+                                    modifier = Modifier.weight(1f).height(38.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (gameFps == fps) Color(0xFFFF9500) else Color(0xFF2C2C2E)
+                                    )
+                                ) {
+                                    Text("$fps", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9500)),
-                        enabled = selectedApp != null
-                    ) {
-                        Text("Inyectar Game API a ${selectedApp?.appName ?: "App"}", fontWeight = FontWeight.Bold)
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = {
+                                selectedApp?.let { app ->
+                                    scope.launch {
+                                        val downscale = if (downscale80) 0.8f else 1.0f
+                                        viewModel.privilegedActions.applyGameMode(app.packageName, gameFps, downscale)
+                                        Toast.makeText(context, "Game API inyectado a ${app.appName}", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9500)),
+                            enabled = selectedApp != null
+                        ) {
+                            Text("Inyectar Game API a ${selectedApp?.appName ?: "App"}", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }

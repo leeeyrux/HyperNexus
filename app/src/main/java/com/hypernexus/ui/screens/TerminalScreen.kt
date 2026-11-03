@@ -22,8 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hypernexus.ui.HyperNexusViewModel
+import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
-import com.hypernexus.ui.components.StaggeredEntranceCard
 import kotlinx.coroutines.launch
 
 @Composable
@@ -36,7 +36,7 @@ fun TerminalScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     var inputCommand by remember { mutableStateOf("") }
-    var consoleLogs by remember { mutableStateOf("HyperNexus ADB Shell v1.3.5 [Shizuku Protocol]\nEscriba un comando o seleccione uno predefinido.\n") }
+    var consoleLogs by remember { mutableStateOf("HyperNexus ADB Shell v1.4.0 [Shizuku Protocol]\nEscriba un comando o seleccione uno predefinido.\n") }
     var isExecuting by remember { mutableStateOf(false) }
 
     val presetCommands = remember {
@@ -79,7 +79,7 @@ fun TerminalScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item(key = "term_banner", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 0) {
+            CyberGlowEntranceWrapper(index = 0, itemKey = "term_banner") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -112,7 +112,7 @@ fun TerminalScreen(
         }
 
         item(key = "term_console", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 1) {
+            CyberGlowEntranceWrapper(index = 1, itemKey = "term_console") {
                 GlassCard {
                     Column {
                         Row(
@@ -149,7 +149,7 @@ fun TerminalScreen(
         }
 
         item(key = "term_input_field", contentType = "premium_card_node") {
-            StaggeredEntranceCard(index = 2) {
+            CyberGlowEntranceWrapper(index = 2, itemKey = "term_input_field") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -223,7 +223,7 @@ fun TerminalScreen(
                 key = { it },
                 contentType = { "premium_card_node" }
             ) { favCmd ->
-                StaggeredEntranceCard(index = 3) {
+                CyberGlowEntranceWrapper(index = 3, itemKey = favCmd) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -256,7 +256,7 @@ fun TerminalScreen(
             key = { it.second },
             contentType = { "premium_card_node" }
         ) { (title, cmd) ->
-            StaggeredEntranceCard(index = 4) {
+            CyberGlowEntranceWrapper(index = 4, itemKey = cmd) {
                 GlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
