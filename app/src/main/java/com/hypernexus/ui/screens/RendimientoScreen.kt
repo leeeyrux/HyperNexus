@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitchTile
+import com.hypernexus.ui.components.StaggeredEntranceCard
 import kotlinx.coroutines.launch
 
 @Composable
@@ -39,18 +40,10 @@ fun RendimientoScreen(
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
 
-    // INICIALIZACIÓN NULL-STATE: Ningún chip seleccionado en la carga inicial
-    var activeDpiChoice by remember { mutableStateOf<Int?>(null) }
-    var activeTransitionScale by remember { mutableStateOf<Float?>(null) }
-    var activeAnimatorScale by remember { mutableStateOf<Float?>(null) }
-    var activeWindowScale by remember { mutableStateOf<Float?>(null) }
-
     val dpiOptions = remember { listOf(320, 340, 360, 380, 400, 420, 440, 460, 480, 500) }
     val scaleOptions = remember { listOf(0.0f, 0.5f, 1.0f, 1.5f, 2.0f) }
     val refreshRates = remember { listOf(0 to "Auto", 60 to "60Hz", 90 to "90Hz", 120 to "120Hz", 144 to "144Hz") }
 
-    // MATRIZ DE ESCALADO BASADA EN RATIO 720x1600 (20:9 ESTÁNDAR)
-    // Previene rotura de la barra de estado y los gestos inferiores
     val safeAspectResolutions = remember {
         listOf(
             "Nativa (Restablecer)" to (0 to 0),
@@ -70,38 +63,158 @@ fun RendimientoScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
-            Text("Rendimiento", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-            Text("Ajustes por pasos seguros sin deslizamiento errático", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+        item(key = "rend_header", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 0) {
+                Column {
+                    Text("Rendimiento", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Ajustes por pasos seguros sin deslizamiento errático", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                }
+            }
         }
 
-        // CONTROL DE HERZIOS
-        item {
-            GlassCard {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Speed, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("Forzar Tasa de Refresco Global", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
+        item(key = "rend_hz", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 1) {
+                GlassCard {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Speed, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Forzar Tasa de Refresco Global", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        refreshRates.forEach { (rate, label) ->
-                            val isSelected = uiState.refreshRate == rate && uiState.refreshRate != 0
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            refreshRates.forEach { (rate, label) ->
+                                val isSelected = uiState.refreshRate == rate && uiState.refreshRate != 0
+                                Button(
+                                    onClick = {
+                                        viewModel.setRefreshRate(context, rate)
+                                        Toast.makeText(context, "Frecuencia: $label", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.weight(1f).height(38.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(0.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSelected) Color(0xFF007AFF) else Color(0xFF2C2C2E)
+                                    )
+                                ) {
+                                    Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item(key = "rend_dpi", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 2) {
+                GlassCard {
+                    Column {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Densidad de Pantalla (DPI)", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text(uiState.displayDpi?.let { "$it DPI" } ?: "-- DPI", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+                        }
+                        Text("Selecciona un valor predeterminado seguro", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            dpiOptions.forEach { dpi ->
+                                val isSelected = uiState.displayDpi == dpi
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (isSelected) Color(0xFF007AFF) else Color(0xFF2C2C2E))
+                                        .clickable {
+                                            viewModel.setDisplayDpi(dpi)
+                                            Toast.makeText(context, "DPI: $dpi", Toast.LENGTH_SHORT).show()
+                                        }
+                                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                                ) {
+                                    Text("$dpi", color = Color.White, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item(key = "rend_transition", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 3) {
+                StepOptionCard(
+                    title = "Escala de Transición",
+                    selectedValue = uiState.transitionScale,
+                    options = scaleOptions,
+                    onSelected = {
+                        viewModel.setTransitionScale(it)
+                        Toast.makeText(context, "Transición: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        }
+
+        item(key = "rend_animator", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 4) {
+                StepOptionCard(
+                    title = "Escala de Animación / Duración",
+                    selectedValue = uiState.animatorScale,
+                    options = scaleOptions,
+                    onSelected = {
+                        viewModel.setAnimatorScale(it)
+                        Toast.makeText(context, "Duración: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        }
+
+        item(key = "rend_window", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 5) {
+                StepOptionCard(
+                    title = "Escala de Ventana",
+                    selectedValue = uiState.windowScale,
+                    options = scaleOptions,
+                    onSelected = {
+                        viewModel.setWindowScale(it)
+                        Toast.makeText(context, "Ventana: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        }
+
+        item(key = "rend_resolution", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 6) {
+                GlassCard {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.AspectRatio, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Escalador de Resolución (Ratio Fijo 20:9)", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Calibrado al estándar 720x1600 para preservar gestos táctiles y barra superior.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF8E8E93)
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        safeAspectResolutions.forEach { (label, target) ->
                             Button(
                                 onClick = {
-                                    viewModel.setRefreshRate(context, rate)
-                                    Toast.makeText(context, "Frecuencia: $label", Toast.LENGTH_SHORT).show()
+                                    selectedResolutionTarget = target
+                                    showAntiCuriosoDialog = true
                                 },
-                                modifier = Modifier.weight(1f).height(38.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                                 shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(0.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isSelected) Color(0xFF007AFF) else Color(0xFF2C2C2E)
+                                    containerColor = if (target.first == 0) Color(0xFF2C2C2E) else Color(0xFF007AFF).copy(alpha = 0.15f)
                                 )
                             ) {
-                                Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(label, color = if (target.first == 0) Color(0xFFFF9500) else Color.White, fontSize = 13.sp)
                             }
                         }
                     }
@@ -109,214 +222,78 @@ fun RendimientoScreen(
             }
         }
 
-        // 1. DENSIDAD DE PANTALLA (DPI EN PASOS DE 20, NULL-STATE INICIAL)
-        item {
-            GlassCard {
-                Column {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Densidad de Pantalla (DPI)", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                        Text(activeDpiChoice?.let { "$it DPI" } ?: "-- DPI", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
-                    }
-                    Text("Selecciona un valor predeterminado seguro", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        dpiOptions.forEach { dpi ->
-                            val isSelected = activeDpiChoice == dpi
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(if (isSelected) Color(0xFF007AFF) else Color(0xFF2C2C2E))
-                                    .clickable {
-                                        activeDpiChoice = dpi
-                                        viewModel.setDisplayDpi(dpi)
-                                        Toast.makeText(context, "DPI: $dpi", Toast.LENGTH_SHORT).show()
-                                    }
-                                    .padding(horizontal = 14.dp, vertical = 8.dp)
-                            ) {
-                                Text("$dpi", color = Color.White, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp)
-                            }
-                        }
-                    }
-                }
+        item(key = "rend_hw_overlays", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 7) {
+                IOSSwitchTile(
+                    title = "Disable HW Overlays",
+                    subtitle = "Fuerza composición directa por GPU en SurfaceFlinger",
+                    checked = uiState.disableHwOverlays,
+                    onCheckedChange = { viewModel.toggleDisableHwOverlays(it) }
+                )
             }
         }
 
-        // 2. ESCALA DE TRANSICIÓN (NULL-STATE)
-        item {
-            StepOptionCard(
-                title = "Escala de Transición",
-                selectedValue = activeTransitionScale,
-                options = scaleOptions,
-                onSelected = {
-                    activeTransitionScale = it
-                    viewModel.setTransitionScale(it)
-                    Toast.makeText(context, "Transición: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
-                }
-            )
-        }
-
-        // 3. ESCALA DE ANIMACIÓN / DURACIÓN (NULL-STATE)
-        item {
-            StepOptionCard(
-                title = "Escala de Animación / Duración",
-                selectedValue = activeAnimatorScale,
-                options = scaleOptions,
-                onSelected = {
-                    activeAnimatorScale = it
-                    viewModel.setAnimatorScale(it)
-                    Toast.makeText(context, "Duración: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
-                }
-            )
-        }
-
-        // 4. ESCALA DE VENTANA (NULL-STATE)
-        item {
-            StepOptionCard(
-                title = "Escala de Ventana",
-                selectedValue = activeWindowScale,
-                options = scaleOptions,
-                onSelected = {
-                    activeWindowScale = it
-                    viewModel.setWindowScale(it)
-                    Toast.makeText(context, "Ventana: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
-                }
-            )
-        }
-
-        // ESCALADOR DE RESOLUCIÓN RECALIBRADO (720x1600 BASE)
-        item {
-            GlassCard {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.AspectRatio, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("Escalador de Resolución (Ratio Fijo 20:9)", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Calibrado al estándar 720x1600 para preservar gestos táctiles y barra superior.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF8E8E93)
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    safeAspectResolutions.forEach { (label, target) ->
-                        Button(
-                            onClick = {
-                                selectedResolutionTarget = target
-                                showAntiCuriosoDialog = true
-                            },
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (target.first == 0) Color(0xFF2C2C2E) else Color(0xFF007AFF).copy(alpha = 0.15f)
-                            )
-                        ) {
-                            Text(label, color = if (target.first == 0) Color(0xFFFF9500) else Color.White, fontSize = 13.sp)
-                        }
-                    }
-                }
+        item(key = "rend_msaa", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 8) {
+                IOSSwitchTile(
+                    title = "Enable Forced 4x MSAA",
+                    subtitle = "Inyección global de anti-aliasing OpenGL ES 2.0+",
+                    checked = uiState.msaa4x,
+                    onCheckedChange = { viewModel.toggleForced4xMsaa(it) }
+                )
             }
         }
 
-        // PERFILES DE BAJO NIVEL
-        item {
-            IOSSwitchTile(
-                title = "Disable HW Overlays",
-                subtitle = "Fuerza composición directa por GPU en SurfaceFlinger",
-                checked = uiState.disableHwOverlays,
-                onCheckedChange = { viewModel.toggleDisableHwOverlays(it) }
-            )
+        item(key = "rend_governor", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 9) {
+                IOSSwitchTile(
+                    title = "Performance Governor Scheduler",
+                    subtitle = "Fuerza frecuencia máxima en todos los clústeres del CPU",
+                    checked = uiState.perfGovernor,
+                    onCheckedChange = { viewModel.togglePerfGovernor(it) }
+                )
+            }
         }
 
-        item {
-            IOSSwitchTile(
-                title = "Enable Forced 4x MSAA",
-                subtitle = "Inyección global de anti-aliasing OpenGL ES 2.0+",
-                checked = uiState.msaa4x,
-                onCheckedChange = { viewModel.toggleForced4xMsaa(it) }
-            )
+        item(key = "rend_dex2oat", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 10) {
+                IOSSwitchTile(
+                    title = "Force High-Priority Dex2oat",
+                    subtitle = "Asigna 8 hilos dedicados para compilación de paquetes AOT",
+                    checked = uiState.highPriorityDex2oat,
+                    onCheckedChange = { viewModel.toggleHighPriorityDex2oat(it) }
+                )
+            }
         }
 
-        item {
-            IOSSwitchTile(
-                title = "Performance Governor Scheduler",
-                subtitle = "Fuerza frecuencia máxima en todos los clústeres del CPU",
-                checked = uiState.perfGovernor,
-                onCheckedChange = { viewModel.togglePerfGovernor(it) }
-            )
-        }
-
-        item {
-            IOSSwitchTile(
-                title = "Force High-Priority Dex2oat",
-                subtitle = "Asigna 8 hilos dedicados para compilación de paquetes AOT",
-                checked = uiState.highPriorityDex2oat,
-                onCheckedChange = { viewModel.toggleHighPriorityDex2oat(it) }
-            )
-        }
-
-        item {
-            IOSSwitchTile(
-                title = "Modo Alto Rendimiento",
-                subtitle = "Elimina los límites de consumo de memoria RAM",
-                checked = uiState.highPerformance,
-                onCheckedChange = { viewModel.toggleHighPerformance(it) }
-            )
-        }
-
-        item {
-            IOSSwitchTile(
-                title = "Respuesta Táctil Ultra Rápida",
-                subtitle = "Reduce el tiempo de muestreo táctil a 0.02ms",
-                checked = uiState.fastTouch,
-                onCheckedChange = { viewModel.toggleFastTouch(it) }
-            )
-        }
-
-        item {
-            IOSSwitchTile(
-                title = "Modo Silencioso de Registros",
-                subtitle = "Desactiva logs del sistema para liberar ciclos de CPU",
-                checked = uiState.silentLogging,
-                onCheckedChange = { viewModel.toggleSilentLogging(it) }
-            )
-        }
-
-        item {
-            Button(
-                onClick = {
-                    scope.launch {
-                        activeTransitionScale = 0f
-                        activeAnimatorScale = 0f
-                        activeWindowScale = 0f
-                        viewModel.setTransitionScale(0f)
-                        viewModel.setAnimatorScale(0f)
-                        viewModel.setWindowScale(0f)
-                        viewModel.toggleHighPerformance(true)
-                        viewModel.toggleFastTouch(true)
-                        viewModel.toggleDisableHwOverlays(true)
-                        Toast.makeText(context, "Perfil de Máxima Velocidad Aplicado", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF30D158))
-            ) {
-                Icon(Icons.Default.Bolt, null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Activar Perfil Extremo (0x Todo)", fontWeight = FontWeight.Bold)
+        item(key = "rend_quick_profile", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 11) {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            viewModel.setTransitionScale(0f)
+                            viewModel.setAnimatorScale(0f)
+                            viewModel.setWindowScale(0f)
+                            viewModel.toggleHighPerformance(true)
+                            viewModel.toggleFastTouch(true)
+                            viewModel.toggleDisableHwOverlays(true)
+                            Toast.makeText(context, "Perfil de Máxima Velocidad Aplicado", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF30D158))
+                ) {
+                    Icon(Icons.Default.Bolt, null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Activar Perfil Extremo (0x Todo)", fontWeight = FontWeight.Bold)
+                }
             }
         }
 
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 
-    // DIÁLOGO ANTI-CURIOSO
     if (showAntiCuriosoDialog && selectedResolutionTarget != null) {
         AlertDialog(
             onDismissRequest = {

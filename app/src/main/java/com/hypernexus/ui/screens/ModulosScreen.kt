@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitch
+import com.hypernexus.ui.components.StaggeredEntranceCard
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -42,7 +43,6 @@ fun ModulosScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
-    // 8 PRESETS TOTALES (4 ORIGINALES + 4 NUEVOS AVANZADOS)
     val presetModules = remember {
         listOf(
             PresetModule(
@@ -122,57 +122,67 @@ fun ModulosScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
-            Text("Módulos Universales", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-            Text("Inyector de scripts, optimizaciones y mods de rendimiento", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
-        }
-
-        // ACCIÓN: INSTALAR DESDE ALMACENAMIENTO
-        item {
-            Button(
-                onClick = { filePickerLauncher.launch("*/*") },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))
-            ) {
-                Icon(Icons.Default.FileOpen, null)
-                Spacer(modifier = Modifier.width(10.dp))
-                Text("Instalar Módulo desde Almacenamiento (.sh / .txt)", fontWeight = FontWeight.Bold)
+        item(key = "mod_header", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 0) {
+                Column {
+                    Text("Módulos Universales", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Inyector de scripts, optimizaciones y mods de rendimiento", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                }
             }
         }
 
-        // MÓDULOS DE USUARIO CARGADOS
+        item(key = "mod_install_btn", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 1) {
+                Button(
+                    onClick = { filePickerLauncher.launch("*/*") },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))
+                ) {
+                    Icon(Icons.Default.FileOpen, null)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text("Instalar Módulo desde Almacenamiento (.sh / .txt)", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
         if (uiState.installedModulePaths.isNotEmpty()) {
-            item {
+            item(key = "mod_custom_title", contentType = "premium_card_node") {
                 Text("Módulos Personalizados (${uiState.installedModulePaths.size})", style = MaterialTheme.typography.titleMedium, color = Color.White)
             }
 
-            items(uiState.installedModulePaths.toList()) { rawModule ->
+            items(
+                items = uiState.installedModulePaths.toList(),
+                key = { it },
+                contentType = { "premium_card_node" }
+            ) { rawModule ->
                 val parts = rawModule.split(":::")
                 val name = parts.getOrNull(0) ?: "Custom Script"
                 val script = parts.getOrNull(1) ?: ""
                 val isActive = uiState.activeModules.contains(name)
 
-                GlassCard {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(name, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(script.take(80) + if (script.length > 80) "..." else "", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93), fontFamily = FontFamily.Monospace)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IOSSwitch(
-                                checked = isActive,
-                                onCheckedChange = { viewModel.toggleModule(name, script) }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            IconButton(onClick = { viewModel.removeCustomModule(rawModule) }) {
-                                Icon(Icons.Default.Delete, "Eliminar", tint = Color(0xFFFF003C))
+                StaggeredEntranceCard(index = 2) {
+                    GlassCard {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(name, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(script.take(80) + if (script.length > 80) "..." else "", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93), fontFamily = FontFamily.Monospace)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IOSSwitch(
+                                    checked = isActive,
+                                    onCheckedChange = { viewModel.toggleModule(name, script) }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                IconButton(onClick = { viewModel.removeCustomModule(rawModule) }) {
+                                    Icon(Icons.Default.Delete, "Eliminar", tint = Color(0xFFFF003C))
+                                }
                             }
                         }
                     }
@@ -180,29 +190,34 @@ fun ModulosScreen(
             }
         }
 
-        // 8 PRESETS RECOMENDADOS
-        item {
+        item(key = "mod_presets_title", contentType = "premium_card_node") {
             Text("Sugerencias de Inyección Rápida", style = MaterialTheme.typography.titleMedium, color = Color.White)
         }
 
-        items(presetModules) { mod ->
+        items(
+            items = presetModules,
+            key = { it.id },
+            contentType = { "premium_card_node" }
+        ) { mod ->
             val isActive = uiState.activeModules.contains(mod.id)
-            GlassCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(mod.title, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(mod.description, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
+            StaggeredEntranceCard(index = 3) {
+                GlassCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(mod.title, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(mod.description, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        IOSSwitch(
+                            checked = isActive,
+                            onCheckedChange = { viewModel.toggleModule(mod.id, mod.script) }
+                        )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    IOSSwitch(
-                        checked = isActive,
-                        onCheckedChange = { viewModel.toggleModule(mod.id, mod.script) }
-                    )
                 }
             }
         }

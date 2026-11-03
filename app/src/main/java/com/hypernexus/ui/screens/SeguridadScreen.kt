@@ -41,6 +41,7 @@ import com.hypernexus.services.HyperNexusVpnService
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitch
+import com.hypernexus.ui.components.StaggeredEntranceCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -114,288 +115,302 @@ fun SeguridadScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
-            Text("Seguridad & Red Gamer", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-            Text("Split Tunneling por socket con optimización de MTU y DNS", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+        item(key = "seg_header", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 0) {
+                Column {
+                    Text("Seguridad & Red Gamer", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Split Tunneling por socket con optimización de MTU y DNS", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                }
+            }
         }
 
-        // MASTER WIDGET: SCI-FI GAMING VPN TUNNEL
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF16161A))
-                    .border(
-                        width = if (isTunnelRunning) 2.dp else 1.dp,
-                        color = if (isTunnelRunning) activeBorderColor.copy(alpha = pulseGlowAlpha) else activeBorderColor,
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .padding(18.dp)
-            ) {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.VpnKey,
-                                contentDescription = null,
-                                tint = if (isTunnelRunning) Color(0xFF00E676) else Color(0xFF00E5FF),
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "GAMING VPN TUNNEL",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 1.sp
-                                )
-                                Text(
-                                    text = "MTU 1400 | DNS 1.1.1.1 Zero-Drop",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF8E8E93)
-                                )
-                            }
-                        }
-
-                        IOSSwitch(
-                            checked = isTunnelRunning,
-                            onCheckedChange = { enable ->
-                                if (enable) {
-                                    val targetPkg = selectedTargetGame?.packageName ?: ""
-                                    onRequestVpnStart(targetPkg)
-                                } else {
-                                    onRequestVpnStop()
-                                }
-                            }
+        item(key = "seg_vpn_card", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 1) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFF16161A))
+                        .border(
+                            width = if (isTunnelRunning) 2.dp else 1.dp,
+                            color = if (isTunnelRunning) activeBorderColor.copy(alpha = pulseGlowAlpha) else activeBorderColor,
+                            shape = RoundedCornerShape(16.dp)
                         )
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    if (isTunnelRunning) {
+                        .padding(18.dp)
+                ) {
+                    Column {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF00E676).copy(alpha = 0.12f))
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF00E676).copy(alpha = pulseGlowAlpha))
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "[ PROTEGIDO - ENRUTANDO JUEGO SELECCIONADO ]",
-                                color = Color(0xFF00E676),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF222226))
-                            .clickable { showGamePickerModal = true }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF16161A))
-                                    .border(
-                                        width = 1.5.dp,
-                                        brush = Brush.sweepGradient(
-                                            listOf(Color(0xFF00E5FF), Color(0xFF00E676), Color(0xFF00E5FF))
-                                        ),
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (selectedTargetGame?.icon != null) {
-                                    val bmp = selectedTargetGame!!.icon!!
-                                    Spacer(
-                                        modifier = Modifier
-                                            .size(30.dp)
-                                            .clip(CircleShape)
-                                            .drawWithCache {
-                                                val dst = IntSize(size.width.toInt(), size.height.toInt())
-                                                onDrawBehind {
-                                                    drawImage(image = bmp, dstSize = dst)
-                                                }
-                                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.VpnKey,
+                                    contentDescription = null,
+                                    tint = if (isTunnelRunning) Color(0xFF00E676) else Color(0xFF00E5FF),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "GAMING VPN TUNNEL",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp
                                     )
-                                } else {
-                                    Icon(Icons.Default.SportsEsports, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                    Text(
+                                        text = "MTU 1400 | DNS 1.1.1.1 Zero-Drop",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF8E8E93)
+                                    )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.width(12.dp))
+                            IOSSwitch(
+                                checked = isTunnelRunning,
+                                onCheckedChange = { enable ->
+                                    if (enable) {
+                                        val targetPkg = selectedTargetGame?.packageName ?: ""
+                                        onRequestVpnStart(targetPkg)
+                                    } else {
+                                        onRequestVpnStop()
+                                    }
+                                }
+                            )
+                        }
 
-                            Column {
-                                Text(
-                                    text = selectedTargetGame?.appName ?: "Seleccionar Juego...",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        if (isTunnelRunning) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF00E676).copy(alpha = 0.12f))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF00E676).copy(alpha = pulseGlowAlpha))
                                 )
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = selectedTargetGame?.packageName ?: "Toca para abrir lista completa",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF8E8E93),
+                                    text = "[ PROTEGIDO - ENRUTANDO JUEGO SELECCIONADO ]",
+                                    color = Color(0xFF00E676),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Monospace
                                 )
                             }
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
 
-                        Icon(Icons.Default.ArrowDropDown, null, tint = Color(0xFF00E5FF))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF222226))
+                                .clickable { showGamePickerModal = true }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF16161A))
+                                        .border(
+                                            width = 1.5.dp,
+                                            brush = Brush.sweepGradient(
+                                                listOf(Color(0xFF00E5FF), Color(0xFF00E676), Color(0xFF00E5FF))
+                                            ),
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (selectedTargetGame?.icon != null) {
+                                        val bmp = selectedTargetGame!!.icon!!
+                                        Spacer(
+                                            modifier = Modifier
+                                                .size(30.dp)
+                                                .clip(CircleShape)
+                                                .drawWithCache {
+                                                    val dst = IntSize(size.width.toInt(), size.height.toInt())
+                                                    onDrawBehind {
+                                                        drawImage(image = bmp, dstSize = dst)
+                                                    }
+                                                }
+                                        )
+                                    } else {
+                                        Icon(Icons.Default.SportsEsports, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Column {
+                                    Text(
+                                        text = selectedTargetGame?.appName ?: "Seleccionar Juego...",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = selectedTargetGame?.packageName ?: "Toca para abrir lista completa",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF8E8E93),
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                            }
+
+                            Icon(Icons.Default.ArrowDropDown, null, tint = Color(0xFF00E5FF))
+                        }
                     }
                 }
             }
         }
 
-        // ANILLO DE PROTECCIÓN
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFF0F1E17), Color(0xFF141416))
+        item(key = "seg_protection_circle", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 2) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFF0F1E17), Color(0xFF141416))
+                            )
                         )
-                    )
-                    .border(1.dp, Color(0xFF30D158).copy(alpha = 0.3f), RoundedCornerShape(20.dp))
-                    .padding(20.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(120.dp)) {
-                        Canvas(modifier = Modifier.size(110.dp)) {
-                            drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 10f))
-                            drawArc(
-                                brush = Brush.sweepGradient(listOf(Color(0xFF30D158), Color(0xFF00FF66), Color(0xFF30D158))),
-                                startAngle = -90f,
-                                sweepAngle = 360f,
-                                useCenter = false,
-                                style = Stroke(width = 10f, cap = StrokeCap.Round)
+                        .border(1.dp, Color(0xFF30D158).copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+                        .padding(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(120.dp)) {
+                            Canvas(
+                                modifier = Modifier
+                                    .size(110.dp)
+                                    .drawWithCache {
+                                        onDrawBehind {
+                                            drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 10f))
+                                            drawArc(
+                                                brush = Brush.sweepGradient(listOf(Color(0xFF30D158), Color(0xFF00FF66), Color(0xFF30D158))),
+                                                startAngle = -90f,
+                                                sweepAngle = 360f,
+                                                useCenter = false,
+                                                style = Stroke(width = 10f, cap = StrokeCap.Round)
+                                            )
+                                        }
+                                    }
+                            ) {}
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("100%", style = MaterialTheme.typography.headlineMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text("SEGURO", style = MaterialTheme.typography.labelSmall, color = Color(0xFF30D158), fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text("Protección de Entorno Activa", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("Superficie de ejecución libre de brechas críticas", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
+                    }
+                }
+            }
+        }
+
+        item(key = "seg_cleaner", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 3) {
+                GlassCard {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CleaningServices, null, tint = Color(0xFF30D158), modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Hyper Cleaner Engine", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        storageData?.let { st ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("${st.usedPercentage}% usado", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text("${"%.2f".format(st.usedGb)} GB / ${"%.0f".format(st.totalGb)} GB", color = Color(0xFF8E8E93), fontSize = 13.sp)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = st.usedPercentage / 100f,
+                                modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
+                                color = if (st.usedPercentage > 88) Color(0xFFFF9500) else Color(0xFF30D158),
+                                trackColor = Color(0xFF2C2C2E)
                             )
                         }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("100%", style = MaterialTheme.typography.headlineMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("SEGURO", style = MaterialTheme.typography.labelSmall, color = Color(0xFF30D158), fontWeight = FontWeight.Bold)
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        if (isCleaning) {
+                            Text(
+                                text = "⚡ $cleaningSpeedMbSec MB/sec Limpieza en Progreso...",
+                                color = Color(0xFF00FF66),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text("Protección de Entorno Activa", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Superficie de ejecución libre de brechas críticas", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
-                }
-            }
-        }
 
-        // HYPER CLEANER ENGINE
-        item {
-            GlassCard {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CleaningServices, null, tint = Color(0xFF30D158), modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("Hyper Cleaner Engine", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    storageData?.let { st ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("${st.usedPercentage}% usado", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("${"%.2f".format(st.usedGb)} GB / ${"%.0f".format(st.totalGb)} GB", color = Color(0xFF8E8E93), fontSize = 13.sp)
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LinearProgressIndicator(
-                            progress = st.usedPercentage / 100f,
-                            modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
-                            color = if (st.usedPercentage > 88) Color(0xFFFF9500) else Color(0xFF30D158),
-                            trackColor = Color(0xFF2C2C2E)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    if (isCleaning) {
-                        Text(
-                            text = "⚡ $cleaningSpeedMbSec MB/sec Limpieza en Progreso...",
-                            color = Color(0xFF00FF66),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    Button(
-                        onClick = {
-                            isCleaning = true
-                            cleanedSuccess = false
-                            scope.launch {
-                                for (speed in listOf(85, 142, 198, 157, 110)) {
-                                    cleaningSpeedMbSec = speed
-                                    delay(250)
+                        Button(
+                            onClick = {
+                                isCleaning = true
+                                cleanedSuccess = false
+                                scope.launch {
+                                    for (speed in listOf(85, 142, 198, 157, 110)) {
+                                        cleaningSpeedMbSec = speed
+                                        delay(250)
+                                    }
+                                    viewModel.privilegedActions.cleanHyperEngine()
+                                    storageData = hardwareMonitor.getStorageTelemetry()
+                                    isCleaning = false
+                                    cleanedSuccess = true
+                                    Toast.makeText(context, "Caché purgado", Toast.LENGTH_SHORT).show()
                                 }
-                                viewModel.privilegedActions.cleanHyperEngine()
-                                storageData = hardwareMonitor.getStorageTelemetry()
-                                isCleaning = false
-                                cleanedSuccess = true
-                                Toast.makeText(context, "Caché purgado", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF30D158)),
-                        enabled = !isCleaning
-                    ) {
-                        Text(if (cleanedSuccess) "Almacenamiento Limpio" else "Purgar Caché y Basura Residual", fontWeight = FontWeight.Bold)
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF30D158)),
+                            enabled = !isCleaning
+                        ) {
+                            Text(if (cleanedSuccess) "Almacenamiento Limpio" else "Purgar Caché y Basura Residual", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
         }
 
-        // SETTINGS CHECKER AUDIT LIST
-        item {
-            GlassCard {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Security, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("Auditoría de Entorno y Ajustes", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
+        item(key = "seg_audit_list", contentType = "premium_card_node") {
+            StaggeredEntranceCard(index = 4) {
+                GlassCard {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Security, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Auditoría de Entorno y Ajustes", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    auditChecks.forEach { (title, subtitle) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF30D158), modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(title, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.SemiBold)
-                                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
+                        auditChecks.forEach { (title, subtitle) ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF30D158), modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(title, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.SemiBold)
+                                    Text(subtitle, style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
+                                }
                             }
                         }
                     }
@@ -406,7 +421,6 @@ fun SeguridadScreen(
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 
-    // MODAL DE JUEGOS CON KEYS ESTABLES, CONTENT TYPE Y DIBUJADO ACELERADO
     if (showGamePickerModal) {
         AlertDialog(
             onDismissRequest = { showGamePickerModal = false },
