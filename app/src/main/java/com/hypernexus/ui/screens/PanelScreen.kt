@@ -118,7 +118,7 @@ fun PanelScreen(
             }
         }
 
-        // 2. CANALES OFICIALES DE SOPORTE
+        // 2. REDES SOCIALES
         item(key = "panel_social", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "panel_social") {
                 GlassCard {

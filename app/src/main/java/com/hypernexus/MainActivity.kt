@@ -11,8 +11,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Lock de dibujado a 60Hz para eliminar micro-stutter
+        // Lock a 60Hz para asegurar fluidez sin tirones
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 val params = window.attributes
@@ -140,10 +140,15 @@ fun HyperNexusApp(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable {
+                            if (!hasPermission) shizukuBridge.requestPermission()
+                        }
+                    ) {
                         Text("HyperNexus", style = MaterialTheme.typography.titleLarge, color = Color.White)
                         Text(
-                            text = if (isConnected) "● Shizuku Conectado" else "○ Shizuku Desconectado",
+                            text = if (isConnected) "● Shizuku Conectado" else "○ Shizuku Desconectado (Toca para conceder)",
                             style = MaterialTheme.typography.labelSmall,
                             color = if (isConnected) Color(0xFF30D158) else Color(0xFFFF9500)
                         )
@@ -152,14 +157,14 @@ fun HyperNexusApp(
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Black)
             )
         }
-    ) { padding ->
+    ) { scaffoldPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = padding.calculateTopPadding())
+                .padding(top = scaffoldPadding.calculateTopPadding())
                 .background(Color.Black)
         ) {
-            // CONTENIDO PRINCIPAL: Fluye por detrás de la cápsula sin recortar bordes
+            // Contenido completo pasando libremente detrás de la cápsula flotante
             Box(modifier = Modifier.fillMaxSize()) {
                 when (selectedTab) {
                     0 -> PanelScreen(viewModel = viewModel)
@@ -176,39 +181,14 @@ fun HyperNexusApp(
                 }
             }
 
-            // FINAL BOSS: CÁPSULA FLOTANTE LIQUID GLASS HOVER
+            // Cápsula Liquid Glass Flotante (Desacoplada 20dp lateral y 16dp inferior)
             MainNavigationCapsule(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(horizontal = 20.dp, bottom = 16.dp)
+                    .padding(start = 20.dp, end = 20.dp, bottom = 16.dp)
             )
-
-            // Banner de autorización Shizuku
-            if (!hasPermission) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 90.dp)
-                        .fillMaxWidth(0.92f),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFF1C1C1E)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Permiso Shizuku Requerido", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                            Text("Indispensable para aplicar optimizaciones", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
-                        }
-                        Button(onClick = { shizukuBridge.requestPermission() }) {
-                            Text("Conceder")
-                        }
-                    }
-                }
-            }
         }
     }
 }

@@ -60,7 +60,7 @@ fun MainNavigationCapsule(
                 spotColor = Color.Black.copy(alpha = 0.8f)
             )
     ) {
-        // CAPA 1: BLUR TRANSLÚCIDO POR HARDWARE (LIQUID GLASS EFFECT)
+        // Capa 1: Efecto Liquid Glass Blur por Hardware
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             Box(
                 modifier = Modifier
@@ -78,7 +78,7 @@ fun MainNavigationCapsule(
             )
         }
 
-        // CAPA 2: BORDE ULTRAFINO NEÓN PLATEADO
+        // Capa 2: Borde ultrafino neón plateado
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -90,7 +90,7 @@ fun MainNavigationCapsule(
                 )
         )
 
-        // CAPA 3: TRACKER CONTINUO HORIZONTAL NO LINEAL 3D-CUBE
+        // Capa 3: Swipe horizontal no-lineal 3D-Cube (Monochrome Bold-White)
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,
@@ -105,7 +105,6 @@ fun MainNavigationCapsule(
             navNodes.forEachIndexed { index, node ->
                 val isSelected = selectedTab == index
 
-                // Interpolación no lineal 3D-Cube con curva Bézier a 350ms
                 val animScale by animateFloatAsState(
                     targetValue = if (isSelected) 1.0f else 0.92f,
                     animationSpec = tween(durationMillis = 350, easing = CubeSwipeEasing),
