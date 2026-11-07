@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.io.File
 
 class HyperNexusViewModel(
     val privilegedActions: PrivilegedActions,
@@ -62,13 +63,30 @@ class HyperNexusViewModel(
             while (isActive) {
                 delay(8000)
                 try {
-                    val memInfo = privilegedActions.getRamUsage()
-                    if (memInfo.usagePercent >= 85) {
+                    val usagePercent = readMemoryUsagePercent()
+                    if (usagePercent >= 85) {
                         privilegedActions.clearSmartCache()
-                        Log.i("HyperNexus", "Limpieza silenciosa por umbral de memoria ejecutada")
+                        Log.i("HyperNexus", "Limpieza silenciosa por umbral de memoria ejecutada ($usagePercent%)")
                     }
                 } catch (_: Exception) {}
             }
+        }
+    }
+
+    private fun readMemoryUsagePercent(): Int {
+        return try {
+            val file = File("/proc/meminfo")
+            if (file.exists()) {
+                val lines = file.readLines()
+                val totalKb = lines.firstOrNull { it.startsWith("MemTotal:") }
+                    ?.filter { it.isDigit() }?.toLongOrNull() ?: 1L
+                val availKb = lines.firstOrNull { it.startsWith("MemAvailable:") }
+                    ?.filter { it.isDigit() }?.toLongOrNull() ?: 0L
+                val used = (totalKb - availKb).coerceAtLeast(0)
+                ((used.toDouble() / totalKb.toDouble()) * 100).toInt()
+            } else 50
+        } catch (_: Exception) {
+            50
         }
     }
 
