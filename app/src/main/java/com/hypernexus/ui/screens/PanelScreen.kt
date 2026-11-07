@@ -3,12 +3,14 @@ package com.hypernexus.ui.screens
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -27,11 +30,19 @@ import androidx.compose.ui.unit.sp
 import com.hypernexus.R
 import com.hypernexus.data.*
 import com.hypernexus.ui.HyperNexusViewModel
-import com.hypernexus.ui.components.CyberGlowEntranceWrapper
-import com.hypernexus.ui.components.DeviceSpecsCard
-import com.hypernexus.ui.components.GlassCard
+import com.hypernexus.ui.components.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+
+data class ConflatedTelemetrySnapshot(
+    val liveMetrics: LiveHardwareMetrics,
+    val batteryData: BatteryTelemetry,
+    val networkData: NetworkTelemetry
+)
 
 @Composable
 fun PanelScreen(
@@ -42,21 +53,31 @@ fun PanelScreen(
     val scope = rememberCoroutineScope()
     val hardwareMonitor = remember { HardwareMonitor(context) }
     val specs = remember { hardwareMonitor.getStaticSpecs() }
+    val hazeState = rememberHazeState()
 
-    var liveMetrics by remember { mutableStateOf<LiveHardwareMetrics?>(null) }
-    var batteryData by remember { mutableStateOf<BatteryTelemetry?>(null) }
-    var networkData by remember { mutableStateOf<NetworkTelemetry?>(null) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            try {
-                liveMetrics = hardwareMonitor.getLiveMetrics()
-                batteryData = hardwareMonitor.getBatteryTelemetry()
-                networkData = hardwareMonitor.getNetworkTelemetry()
-            } catch (_: Throwable) {}
-            delay(1500)
-        }
+    // 1. MOTOR DE TELEMETRÍA ASÍNCRONO CONFLADO A 500MS
+    val telemetryFlow = remember {
+        flow {
+            while (true) {
+                try {
+                    val m = hardwareMonitor.getLiveMetrics()
+                    val b = hardwareMonitor.getBatteryTelemetry()
+                    val n = hardwareMonitor.getNetworkTelemetry()
+                    emit(ConflatedTelemetrySnapshot(m, b, n))
+                } catch (_: Throwable) {}
+                delay(500)
+            }
+        }.flowOn(Dispatchers.Default).conflate()
     }
+
+    val telemetrySnapshot by telemetryFlow.collectAsState(initial = null)
+
+    // CACHÉ DE FORMATEO CON derivedStateOf (Zero-Lag Recomposition)
+    val ramUsedMb by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.usedRamMb ?: 0L } }
+    val ramTotalMb by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.totalRamMb ?: 4096L } }
+    val ramPercent by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.ramUsagePercent ?: 0 } }
+    val ramUsageString by remember { derivedStateOf { "$ramUsedMb MB / $ramTotalMb MB" } }
+    val ramPercentString by remember { derivedStateOf { "$ramPercent% en uso" } }
 
     fun openBrowserUrl(url: String) {
         try {
@@ -72,12 +93,12 @@ fun PanelScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .haze(hazeState)
             .background(Color.Black)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. ENCABEZADO CON LOGO OFICIAL
-        item(key = "panel_header", contentType = "premium_card_node") {
+        item(key = "panel_header", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "panel_header") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -111,15 +132,14 @@ fun PanelScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Hub de Telemetría v1.5.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                            Text("Hub de Telemetría v1.5.1", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                         }
                     }
                 }
             }
         }
 
-        // 2. REDES SOCIALES
-        item(key = "panel_social", contentType = "premium_card_node") {
+        item(key = "panel_social", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "panel_social") {
                 GlassCard {
                     Column {
@@ -153,16 +173,105 @@ fun PanelScreen(
             }
         }
 
-        // 3. SPECS GENERALES
-        item(key = "panel_specs", contentType = "premium_card_node") {
+        item(key = "panel_specs", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "panel_specs") {
                 DeviceSpecsCard(specs = specs)
             }
         }
 
-        // 4. TELEMETRÍA DE RED EN VIVO
-        item(key = "panel_network", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 3, itemKey = "panel_network") {
+        // ====================================================================
+        // 2. THE PREMIUM OVAL LIQUID GLASS RAM CAPSULE (KIMI IA STYLE)
+        // ====================================================================
+        item(key = "panel_ram_capsule", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 3, itemKey = "panel_ram_capsule") {
+                val capsuleShape = RoundedCornerShape(26.dp)
+                val hazeStyle = HazeStyle(
+                    backgroundColor = Color(0x99121216),
+                    tint = Color.Black.copy(alpha = 0.35f),
+                    blurRadius = 45.dp
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
+                        .clip(capsuleShape)
+                        .hazeChild(hazeState, capsuleShape, hazeStyle)
+                        .background(hazeStyle.backgroundColor)
+                        .border(
+                            BorderStroke(
+                                1.dp,
+                                Brush.verticalGradient(
+                                    listOf(Color(0x40FFFFFF), Color(0x14FFFFFF))
+                                )
+                            ),
+                            capsuleShape
+                        )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF007AFF).copy(alpha = 0.18f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Memory,
+                                    contentDescription = "RAM",
+                                    tint = Color(0xFF007AFF),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Memoria RAM",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = ramUsageString,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF8E8E93)
+                                )
+                            }
+                        }
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = ramPercentString,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = if (ramPercent > 85) Color(0xFFFF3B30) else Color(0xFF30D158),
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            LinearProgressIndicator(
+                                progress = (ramPercent / 100f).coerceIn(0f, 1f),
+                                modifier = Modifier
+                                    .width(76.dp)
+                                    .height(5.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = if (ramPercent > 85) Color(0xFFFF3B30) else Color(0xFF30D158),
+                                trackColor = Color(0xFF2C2C2E)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // TELEMETRÍA DE RED EN VIVO
+        item(key = "panel_network", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 4, itemKey = "panel_network") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -172,10 +281,11 @@ fun PanelScreen(
                         }
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        val netData = telemetrySnapshot?.networkData
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column {
                                 Text("Latencia Ping", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
-                                val pingVal = networkData?.pingMs ?: -1
+                                val pingVal = netData?.pingMs ?: -1
                                 Text(
                                     text = if (pingVal > 0) "$pingVal ms" else "-- ms",
                                     style = MaterialTheme.typography.titleMedium,
@@ -185,11 +295,11 @@ fun PanelScreen(
                             }
                             Column {
                                 Text("Potencia de Señal", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
-                                Text(networkData?.signalStrengthDbm ?: "- dBm", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(netData?.signalStrengthDbm ?: "- dBm", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
                             }
                             Column {
                                 Text("Tipo de Enlace", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
-                                Text(networkData?.connectionType ?: "Verificando...", style = MaterialTheme.typography.titleMedium, color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+                                Text(netData?.connectionType ?: "Verificando...", style = MaterialTheme.typography.titleMedium, color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -197,9 +307,9 @@ fun PanelScreen(
             }
         }
 
-        // 5. TELEMETRÍA DE BATERÍA
-        item(key = "panel_battery", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 4, itemKey = "panel_battery") {
+        // TELEMETRÍA DE BATERÍA DETALLADA
+        item(key = "panel_battery", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 5, itemKey = "panel_battery") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -209,7 +319,7 @@ fun PanelScreen(
                         }
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        batteryData?.let { b ->
+                        telemetrySnapshot?.batteryData?.let { b ->
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 TelemetryField(label = "Nivel / Estado", value = "${b.levelPercent}% | ${b.status}")
                                 TelemetryField(label = "Salud de Celdas", value = b.health)
@@ -230,36 +340,8 @@ fun PanelScreen(
             }
         }
 
-        // 6. MEMORIA RAM
-        item(key = "panel_ram", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 5, itemKey = "panel_ram") {
-                GlassCard {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Memory, null, tint = Color(0xFF007AFF), modifier = Modifier.size(32.dp))
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Memoria RAM", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            liveMetrics?.let { m ->
-                                Text("${m.usedRamMb} MB / ${m.totalRamMb} MB", style = MaterialTheme.typography.bodyLarge, color = Color(0xFF8E8E93))
-                                Spacer(modifier = Modifier.height(8.dp))
-                                LinearProgressIndicator(
-                                    progress = m.ramUsagePercent / 100f,
-                                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
-                                    color = if (m.ramUsagePercent > 85) Color(0xFFFF3B30) else Color(0xFF30D158),
-                                    trackColor = Color(0xFF2C2C2E)
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("${m.ramUsagePercent}% en uso", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
-                            } ?: Text("Cargando memoria...", color = Color(0xFF8E8E93))
-                        }
-                    }
-                }
-            }
-        }
-
-        // 7. TARJETA FIJA DE LOS 8 NÚCLEOS DEL CPU (CORE #0 A CORE #7)
-        item(key = "panel_cpu", contentType = "premium_card_node") {
+        // 8 NÚCLEOS DE CPU
+        item(key = "panel_cpu", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 6, itemKey = "panel_cpu") {
                 GlassCard {
                     Column {
@@ -267,7 +349,7 @@ fun PanelScreen(
                             Icon(Icons.Default.Speed, null, tint = Color(0xFF30D158), modifier = Modifier.size(28.dp))
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
-                                val count = liveMetrics?.cores?.size?.takeIf { it > 0 } ?: 8
+                                val count = telemetrySnapshot?.liveMetrics?.cores?.size?.takeIf { it > 0 } ?: 8
                                 Text(
                                     text = "Frecuencias del CPU - $count núcleos activos",
                                     style = MaterialTheme.typography.titleMedium,
@@ -283,7 +365,7 @@ fun PanelScreen(
                         }
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        val cores = liveMetrics?.cores.takeIf { !it.isNullOrEmpty() }
+                        val cores = telemetrySnapshot?.liveMetrics?.cores.takeIf { !it.isNullOrEmpty() }
                             ?: (0..7).map { CoreFrequency(it, 0, 0) }
 
                         cores.chunked(2).forEach { rowCores ->
@@ -325,8 +407,8 @@ fun PanelScreen(
             }
         }
 
-        // 8. ACCIONES RÁPIDAS
-        item(key = "panel_actions", contentType = "premium_card_node") {
+        // ACCIONES RÁPIDAS
+        item(key = "panel_actions", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 7, itemKey = "panel_actions") {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(

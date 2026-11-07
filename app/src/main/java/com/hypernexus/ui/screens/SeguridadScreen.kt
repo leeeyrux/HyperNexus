@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -83,7 +84,18 @@ fun SeguridadScreen(
 
     val isTunnelRunning = uiState.vpnActive || HyperNexusVpnService.isRunning
 
+    // ANIMACIÓN DE ROTACIÓN DIRECTA EN RenderThread / GPU LAYER (ZERO RECOMPOSITION)
     val infiniteTransition = rememberInfiniteTransition(label = "cyberGlow")
+    val ringRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ringRotation"
+    )
+
     val pulseGlowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.35f,
         targetValue = 1.0f,
@@ -115,7 +127,7 @@ fun SeguridadScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item(key = "seg_header", contentType = "premium_card_node") {
+        item(key = "seg_header", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "seg_header") {
                 Column {
                     Text("Seguridad & Red Gamer", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
@@ -124,7 +136,7 @@ fun SeguridadScreen(
             }
         }
 
-        item(key = "seg_vpn_card", contentType = "premium_card_node") {
+        item(key = "seg_vpn_card", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "seg_vpn_card") {
                 Box(
                     modifier = Modifier
@@ -278,7 +290,8 @@ fun SeguridadScreen(
             }
         }
 
-        item(key = "seg_protection_circle", contentType = "premium_card_node") {
+        // ANILLO DE PROTECCIÓN CON ROTACIÓN DIRECTA POR GRAPHICSLAYER
+        item(key = "seg_protection_circle", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "seg_protection_circle") {
                 Box(
                     modifier = Modifier
@@ -298,13 +311,18 @@ fun SeguridadScreen(
                             Canvas(
                                 modifier = Modifier
                                     .size(110.dp)
+                                    .graphicsLayer {
+                                        rotationZ = ringRotation
+                                    }
                                     .drawWithCache {
                                         onDrawBehind {
                                             drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 10f))
                                             drawArc(
-                                                brush = Brush.sweepGradient(listOf(Color(0xFF30D158), Color(0xFF00FF66), Color(0xFF30D158))),
+                                                brush = Brush.sweepGradient(
+                                                    listOf(Color(0xFF30D158), Color(0xFF00FF66), Color(0xFF30D158))
+                                                ),
                                                 startAngle = -90f,
-                                                sweepAngle = 360f,
+                                                sweepAngle = 290f,
                                                 useCenter = false,
                                                 style = Stroke(width = 10f, cap = StrokeCap.Round)
                                             )
@@ -324,7 +342,8 @@ fun SeguridadScreen(
             }
         }
 
-        item(key = "seg_cleaner", contentType = "premium_card_node") {
+        // HYPER CLEANER ENGINE
+        item(key = "seg_cleaner", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "seg_cleaner") {
                 GlassCard {
                     Column {
@@ -342,7 +361,7 @@ fun SeguridadScreen(
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             LinearProgressIndicator(
-                                progress = st.usedPercentage / 100f,
+                                progress = (st.usedPercentage / 100f).coerceIn(0f, 1f),
                                 modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
                                 color = if (st.usedPercentage > 88) Color(0xFFFF9500) else Color(0xFF30D158),
                                 trackColor = Color(0xFF2C2C2E)
@@ -389,7 +408,8 @@ fun SeguridadScreen(
             }
         }
 
-        item(key = "seg_audit_list", contentType = "premium_card_node") {
+        // SETTINGS CHECKER AUDIT LIST
+        item(key = "seg_audit_list", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 4, itemKey = "seg_audit_list") {
                 GlassCard {
                     Column {
@@ -442,7 +462,7 @@ fun SeguridadScreen(
                     items(
                         items = memoizedGames,
                         key = { it.packageName },
-                        contentType = { "app_row_card" }
+                        contentType = { "premium_node" }
                     ) { game ->
                         Row(
                             modifier = Modifier

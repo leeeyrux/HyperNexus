@@ -65,7 +65,7 @@ fun ExperimentalScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item(key = "exp_header", contentType = "premium_card_node") {
+        item(key = "exp_header", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "exp_header") {
                 Column {
                     Text("Game Tuner & DEX2OAT", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
@@ -74,7 +74,7 @@ fun ExperimentalScreen(
             }
         }
 
-        item(key = "exp_app_picker", contentType = "premium_card_node") {
+        item(key = "exp_app_picker", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "exp_app_picker") {
                 GlassCard {
                     Column {
@@ -129,7 +129,7 @@ fun ExperimentalScreen(
                                 items(
                                     items = memoizedAppList,
                                     key = { it.packageName },
-                                    contentType = { "app_row_card" }
+                                    contentType = { "premium_node" }
                                 ) { app ->
                                     Row(
                                         modifier = Modifier
@@ -174,7 +174,7 @@ fun ExperimentalScreen(
             }
         }
 
-        item(key = "exp_dex2oat_card", contentType = "premium_card_node") {
+        item(key = "exp_dex2oat_card", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "exp_dex2oat_card") {
                 GlassCard {
                     Column {
@@ -220,7 +220,7 @@ fun ExperimentalScreen(
             }
         }
 
-        item(key = "exp_game_api_card", contentType = "premium_card_node") {
+        item(key = "exp_game_api_card", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "exp_game_api_card") {
                 GlassCard {
                     Column {
