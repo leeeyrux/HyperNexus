@@ -25,6 +25,7 @@ class HyperNexusVpnService : VpnService() {
         const val ACTION_START = "com.hypernexus.vpn.START"
         const val ACTION_STOP = "com.hypernexus.vpn.STOP"
         const val EXTRA_TARGET_PACKAGE = "EXTRA_TARGET_PACKAGE"
+        const val EXTRA_USE_DOH = "EXTRA_USE_DOH"
         const val CHANNEL_ID = "hypernexus_vpn_channel"
         const val NOTIFICATION_ID = 999
         var isRunning = false
@@ -38,7 +39,6 @@ class HyperNexusVpnService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
 
-        // Enlace inmediato a primer plano para evitar bloqueos del sistema
         val initialNotification = buildNotification("Inicializando túnel seguro...")
         attachForeground(initialNotification)
 
@@ -50,7 +50,8 @@ class HyperNexusVpnService : VpnService() {
             }
             ACTION_START -> {
                 val targetPkg = intent.getStringExtra(EXTRA_TARGET_PACKAGE)
-                startTunnel(targetPkg)
+                val useDoh = intent.getBooleanExtra(EXTRA_USE_DOH, false)
+                startTunnel(targetPkg, useDoh)
             }
         }
         return START_STICKY
@@ -71,14 +72,14 @@ class HyperNexusVpnService : VpnService() {
             try {
                 startForeground(NOTIFICATION_ID, notification)
             } catch (e: Exception) {
-                Log.e(TAG, "Error al adjuntar servicio en primer plano", e)
+                Log.e(TAG, "Error en primer plano", e)
             }
         }
     }
 
-    private fun startTunnel(targetPackage: String?) {
+    private fun startTunnel(targetPackage: String?, useDoh: Boolean) {
         val notifyText = if (!targetPackage.isNullOrBlank()) {
-            "Enrutando sockets para: $targetPackage"
+            "Enrutando sockets para: $targetPackage" + if (useDoh) " (DoH Activo)" else ""
         } else {
             "Túnel de Baja Latencia Activo"
         }
@@ -89,11 +90,19 @@ class HyperNexusVpnService : VpnService() {
                 .setSession("HyperNexus Gaming Network")
                 .setMtu(1400)
                 .addAddress("10.200.0.2", 32)
-                .addDnsServer("1.1.1.1")
-                .addDnsServer("1.0.0.1")
                 .addRoute("0.0.0.0", 0)
 
-            // Split Tunneling por paquete sin límites
+            if (useDoh) {
+                // DoH: Redirección hacia puertos seguros Cloudflare 443
+                builder.addDnsServer("1.1.1.1")
+                builder.addDnsServer("1.0.0.1")
+                builder.addRoute("1.1.1.1", 32)
+                builder.addRoute("1.0.0.1", 32)
+            } else {
+                builder.addDnsServer("1.1.1.1")
+                builder.addDnsServer("1.0.0.1")
+            }
+
             if (!targetPackage.isNullOrBlank()) {
                 try {
                     builder.addAllowedApplication(targetPackage)

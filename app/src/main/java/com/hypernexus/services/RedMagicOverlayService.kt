@@ -1,5 +1,6 @@
 package com.hypernexus.services
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.*
@@ -12,6 +13,7 @@ import android.os.*
 import android.provider.Settings
 import android.util.Log
 import android.view.*
+import android.view.animation.OvershootInterpolator
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
@@ -99,9 +101,12 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Standard startForeground fallback", e)
-            startForeground(NOTIFICATION_ID, notification)
+        } catch (_: Exception) {
+            try {
+                startForeground(NOTIFICATION_ID, notification)
+            } catch (e: Exception) {
+                Log.e(TAG, "Standard startForeground fallback", e)
+            }
         }
     }
 
@@ -146,14 +151,13 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
 
         buildHudViews()
         applyModeLayout(false)
-        attachTouchHandler()
+        attachTouchHandlerWithSpringInertia()
 
         windowManager?.addView(rootContainer, windowParams)
     }
 
     private fun createRedMagicBackground(): GradientDrawable {
         return GradientDrawable().apply {
-            // #D9262626: Contenedor gris oscuro Red Magic (#262626 al 85% de alpha)
             setColor(Color.parseColor("#D9262626"))
             cornerRadius = dpToPx(18).toFloat()
             setStroke(dpToPx(1), Color.parseColor("#4DFFFFFF"))
@@ -198,7 +202,6 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
         container.removeAllViews()
 
         if (expanded) {
-            // Modo Expandido: [ Hora | FPS | Ping | Temp | Batería ]
             container.addView(timeText)
             container.addView(sep1)
             container.addView(fpsText)
@@ -209,7 +212,6 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
             container.addView(sep4)
             container.addView(batteryText)
         } else {
-            // Modo Individual: Solo FPS
             container.addView(fpsText)
         }
 
@@ -222,7 +224,7 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
         }
     }
 
-    private fun attachTouchHandler() {
+    private fun attachTouchHandlerWithSpringInertia() {
         val container = rootContainer ?: return
         container.setOnTouchListener(object : View.OnTouchListener {
             private var initialX = 0
@@ -230,9 +232,14 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
             private var touchStartX = 0f
             private var touchStartY = 0f
             private var isClick = true
+            private var lastMoveTime = 0L
+            private var velocityX = 0f
+            private var velocityY = 0f
 
             override fun onTouch(v: View, event: MotionEvent): Boolean {
                 val params = windowParams ?: return false
+                val now = SystemClock.uptimeMillis()
+
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         initialX = params.x
@@ -240,11 +247,20 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
                         touchStartX = event.rawX
                         touchStartY = event.rawY
                         isClick = true
+                        lastMoveTime = now
+                        velocityX = 0f
+                        velocityY = 0f
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> {
                         val dx = (event.rawX - touchStartX).toInt()
                         val dy = (event.rawY - touchStartY).toInt()
+                        val dt = (now - lastMoveTime).coerceAtLeast(1)
+
+                        velocityX = (event.rawX - (initialX + dx)) / dt
+                        velocityY = (event.rawY - (initialY + dy)) / dt
+                        lastMoveTime = now
+
                         if (kotlin.math.abs(dx) > 8 || kotlin.math.abs(dy) > 8) {
                             isClick = false
                         }
@@ -261,6 +277,10 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
                         if (isClick) {
                             isExpanded = !isExpanded
                             applyModeLayout(isExpanded)
+                        } else {
+                            val settleTargetX = (params.x + (velocityX * 40)).toInt()
+                            val settleTargetY = (params.y + (velocityY * 40)).toInt()
+                            animateSpringSettle(params.x, params.y, settleTargetX, settleTargetY)
                         }
                         return true
                     }
@@ -268,6 +288,27 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
                 return false
             }
         })
+    }
+
+    private fun animateSpringSettle(startX: Int, startY: Int, targetX: Int, targetY: Int) {
+        val params = windowParams ?: return
+        val container = rootContainer ?: return
+
+        val animator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 320
+            interpolator = OvershootInterpolator(1.2f)
+            addUpdateListener { va ->
+                val fraction = va.animatedValue as Float
+                params.x = (startX + ((targetX - startX) * fraction)).toInt()
+                params.y = (startY + ((targetY - startY) * fraction)).toInt()
+                try {
+                    if (container.isAttachedToWindow) {
+                        windowManager?.updateViewLayout(container, params)
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+        animator.start()
     }
 
     override fun doFrame(frameTimeNanos: Long) {
@@ -386,7 +427,7 @@ class RedMagicOverlayService : Service(), Choreographer.FrameCallback {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error detaching HUD in onDestroy", e)
+            Log.e(TAG, "Error detaching HUD", e)
         }
         rootContainer = null
     }

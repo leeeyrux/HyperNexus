@@ -12,7 +12,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
-val CyberCubeEasing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1.0f)
+val CyberCubeEasing = CubicBezierEasing(0.2f, 0.8f, 0.15f, 1.0f)
 
 @Composable
 fun CyberGlowEntranceWrapper(
@@ -33,8 +33,8 @@ fun CyberGlowEntranceWrapper(
     }
 
     val density = LocalDensity.current
-    val startOffsetX = with(density) { (-45).dp.toPx() }
-    val startOffsetY = with(density) { 35.dp.toPx() }
+    val startOffsetX = with(density) { (-35).dp.toPx() }
+    val startOffsetY = with(density) { 45.dp.toPx() }
 
     val animProgress = remember { Animatable(0f) }
 
@@ -43,7 +43,7 @@ fun CyberGlowEntranceWrapper(
         delay(delayMs)
         animProgress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 375, easing = CyberCubeEasing)
+            animationSpec = tween(durationMillis = 520, easing = CyberCubeEasing)
         )
         hasAnimated = true
     }

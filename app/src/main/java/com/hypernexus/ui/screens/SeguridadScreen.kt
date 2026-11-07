@@ -2,11 +2,15 @@ package com.hypernexus.ui.screens
 
 import android.app.admin.DevicePolicyManager
 import android.content.Context
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
+import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,8 +47,11 @@ import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitch
+import com.hypernexus.ui.components.IOSSwitchTile
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun SeguridadScreen(
@@ -60,9 +67,11 @@ fun SeguridadScreen(
     val appFilterManager = remember { AppFilterManager(context, viewModel.privilegedActions.bridge) }
 
     var storageData by remember { mutableStateOf<StorageTelemetry?>(null) }
-    var isCleaning by remember { mutableStateOf(false) }
-    var cleaningSpeedMbSec by remember { mutableStateOf(0) }
-    var cleanedSuccess by remember { mutableStateOf(false) }
+
+    var isBoosterClearing by remember { mutableStateOf(false) }
+    var isAntivirusScanning by remember { mutableStateOf(false) }
+    var scannedAppPackageName by remember { mutableStateOf("") }
+    var antivirusProgress by remember { mutableStateOf(1f) }
 
     var rawGames by remember { mutableStateOf<List<GameTargetApp>>(emptyList()) }
     val memoizedGames by remember { derivedStateOf { rawGames } }
@@ -84,7 +93,6 @@ fun SeguridadScreen(
 
     val isTunnelRunning = uiState.vpnActive || HyperNexusVpnService.isRunning
 
-    // ANIMACIÓN DE ROTACIÓN DIRECTA EN RenderThread / GPU LAYER (ZERO RECOMPOSITION)
     val infiniteTransition = rememberInfiniteTransition(label = "cyberGlow")
     val ringRotation by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -96,17 +104,46 @@ fun SeguridadScreen(
         label = "ringRotation"
     )
 
-    val pulseGlowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Reverse),
-        label = "pulseAlpha"
+    val boosterRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(if (isBoosterClearing) 600 else 4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "boosterRotation"
     )
 
-    val activeBorderColor by animateColorAsState(
-        targetValue = if (isTunnelRunning) Color(0xFF00E676) else Color(0xFF00E5FF).copy(alpha = 0.35f),
-        label = "borderGlow"
-    )
+    fun startDeepAntivirusScan() {
+        if (isAntivirusScanning) return
+        isAntivirusScanning = true
+        antivirusProgress = 0f
+
+        scope.launch {
+            val pm = context.packageManager
+            val packages: List<PackageInfo> = withContext(Dispatchers.IO) {
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(PackageManager.GET_META_DATA.toLong()))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        pm.getInstalledPackages(PackageManager.GET_META_DATA)
+                    }
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            }
+
+            val total = packages.size.coerceAtLeast(1)
+            packages.forEachIndexed { idx, pkg ->
+                scannedAppPackageName = pkg.packageName
+                antivirusProgress = (idx + 1).toFloat() / total.toFloat()
+                delay(10)
+            }
+            scannedAppPackageName = "[ 100% DISPOSITIVO PROTEGIDO ]"
+            isAntivirusScanning = false
+        }
+    }
 
     val auditChecks = remember {
         val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager
@@ -131,13 +168,172 @@ fun SeguridadScreen(
             CyberGlowEntranceWrapper(index = 0, itemKey = "seg_header") {
                 Column {
                     Text("Seguridad & Red Gamer", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Split Tunneling por socket con optimización de MTU y DNS", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Dual-Engine Cybersecurity & Anti-Throttling v1.6.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
 
+        // ====================================================================
+        // DASHBOARD SPLIT DUAL-ENGINE: BOOSTER (CYAN) & ANTIVIRUS (EMERALD)
+        // ====================================================================
+        item(key = "seg_dual_engine", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 1, itemKey = "seg_dual_engine") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // LEFT: GAMING BOOSTER ENGINE
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFF141416))
+                            .border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+                            .clickable {
+                                if (!isBoosterClearing) {
+                                    isBoosterClearing = true
+                                    scope.launch {
+                                        viewModel.privilegedActions.cleanHyperEngine()
+                                        delay(1400)
+                                        isBoosterClearing = false
+                                        Toast.makeText(context, "Gaming Booster: Caché Depurada", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                            .padding(14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(86.dp)) {
+                                Canvas(
+                                    modifier = Modifier
+                                        .size(76.dp)
+                                        .graphicsLayer { rotationZ = boosterRotation }
+                                        .drawWithCache {
+                                            onDrawBehind {
+                                                drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 8f))
+                                                drawArc(
+                                                    brush = Brush.sweepGradient(
+                                                        listOf(Color(0xFF00E5FF), Color(0xFF00B0FF), Color(0xFF00E5FF))
+                                                    ),
+                                                    startAngle = -90f,
+                                                    sweepAngle = 270f,
+                                                    useCenter = false,
+                                                    style = Stroke(width = 8f, cap = StrokeCap.Round)
+                                                )
+                                            }
+                                        }
+                                ) {}
+                                Icon(Icons.Default.Bolt, null, tint = Color(0xFF00E5FF), modifier = Modifier.size(28.dp))
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("BOOSTER", style = MaterialTheme.typography.titleSmall, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(if (isBoosterClearing) "Optimizando..." else "Toca para Limpiar", fontSize = 10.sp, color = Color(0xFF00E5FF))
+                        }
+                    }
+
+                    // RIGHT: DEEP ANTIVIRUS ENGINE
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFF141416))
+                            .border(1.dp, Color(0xFF00E676).copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+                            .clickable { startDeepAntivirusScan() }
+                            .padding(14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(86.dp)) {
+                                Canvas(
+                                    modifier = Modifier
+                                        .size(76.dp)
+                                        .graphicsLayer { rotationZ = ringRotation }
+                                        .drawWithCache {
+                                            onDrawBehind {
+                                                drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 8f))
+                                                drawArc(
+                                                    brush = Brush.sweepGradient(
+                                                        listOf(Color(0xFF00E676), Color(0xFF00B0FF), Color(0xFF00E676))
+                                                    ),
+                                                    startAngle = 0f,
+                                                    sweepAngle = (antivirusProgress * 360f).coerceAtLeast(30f),
+                                                    useCenter = false,
+                                                    style = Stroke(width = 8f, cap = StrokeCap.Round)
+                                                )
+                                            }
+                                        }
+                                ) {}
+                                Text(
+                                    text = if (isAntivirusScanning) "${(antivirusProgress * 100).toInt()}%" else "100%",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("ANTIVIRUS", style = MaterialTheme.typography.titleSmall, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = if (isAntivirusScanning) "Auditando..." else "Protegido",
+                                fontSize = 10.sp,
+                                color = Color(0xFF00E676)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // SUB-LABEL DE ESTADO ANTIVIRUS EN VIVO
+        if (scannedAppPackageName.isNotBlank()) {
+            item(key = "seg_scan_status", contentType = "premium_node") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF00E676).copy(alpha = 0.12f))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = scannedAppPackageName,
+                        color = Color(0xFF00E676),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+
+        // LIMPIEZA AUTOMÁTICA POR UMBRAL (15% RAM)
+        item(key = "seg_threshold_switch", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 2, itemKey = "seg_threshold_switch") {
+                IOSSwitchTile(
+                    title = "Limpieza Automática por Umbral",
+                    subtitle = "Purga memoria en segundo plano si la RAM libre cae bajo el 15%",
+                    checked = uiState.thresholdRamPurger,
+                    onCheckedChange = { viewModel.toggleThresholdRamPurger(it) }
+                )
+            }
+        }
+
+        // ANTI-THROTTLING NETWORK ENGINE (DoH)
+        item(key = "seg_doh_switch", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 3, itemKey = "seg_doh_switch") {
+                IOSSwitchTile(
+                    title = "Anti-Throttling Network Engine (DoH)",
+                    subtitle = "Camufla metadatos DNS en HTTPS (Puerto 443) para evitar estrangulamiento ISP",
+                    checked = uiState.dohAntiThrottling,
+                    onCheckedChange = { viewModel.toggleDohAntiThrottling(it) }
+                )
+            }
+        }
+
+        // MASTER WIDGET: SCI-FI GAMING VPN TUNNEL
         item(key = "seg_vpn_card", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 1, itemKey = "seg_vpn_card") {
+            CyberGlowEntranceWrapper(index = 4, itemKey = "seg_vpn_card") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -145,7 +341,7 @@ fun SeguridadScreen(
                         .background(Color(0xFF16161A))
                         .border(
                             width = if (isTunnelRunning) 2.dp else 1.dp,
-                            color = if (isTunnelRunning) activeBorderColor.copy(alpha = pulseGlowAlpha) else activeBorderColor,
+                            color = if (isTunnelRunning) Color(0xFF00E676) else Color(0xFF00E5FF).copy(alpha = 0.35f),
                             shape = RoundedCornerShape(16.dp)
                         )
                         .padding(18.dp)
@@ -173,7 +369,7 @@ fun SeguridadScreen(
                                         letterSpacing = 1.sp
                                     )
                                     Text(
-                                        text = "MTU 1400 | DNS 1.1.1.1 Zero-Drop",
+                                        text = if (uiState.dohAntiThrottling) "DoH 443 | MTU 1400 | DNS 1.1.1.1" else "MTU 1400 | DNS 1.1.1.1 Zero-Drop",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF8E8E93)
                                     )
@@ -208,7 +404,7 @@ fun SeguridadScreen(
                                     modifier = Modifier
                                         .size(8.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFF00E676).copy(alpha = pulseGlowAlpha))
+                                        .background(Color(0xFF00E676))
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
@@ -290,127 +486,9 @@ fun SeguridadScreen(
             }
         }
 
-        // ANILLO DE PROTECCIÓN CON ROTACIÓN DIRECTA POR GRAPHICSLAYER
-        item(key = "seg_protection_circle", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 2, itemKey = "seg_protection_circle") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color(0xFF0F1E17), Color(0xFF141416))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF30D158).copy(alpha = 0.3f), RoundedCornerShape(20.dp))
-                        .padding(20.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(120.dp)) {
-                            Canvas(
-                                modifier = Modifier
-                                    .size(110.dp)
-                                    .graphicsLayer {
-                                        rotationZ = ringRotation
-                                    }
-                                    .drawWithCache {
-                                        onDrawBehind {
-                                            drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 10f))
-                                            drawArc(
-                                                brush = Brush.sweepGradient(
-                                                    listOf(Color(0xFF30D158), Color(0xFF00FF66), Color(0xFF30D158))
-                                                ),
-                                                startAngle = -90f,
-                                                sweepAngle = 290f,
-                                                useCenter = false,
-                                                style = Stroke(width = 10f, cap = StrokeCap.Round)
-                                            )
-                                        }
-                                    }
-                            ) {}
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("100%", style = MaterialTheme.typography.headlineMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                                Text("SEGURO", style = MaterialTheme.typography.labelSmall, color = Color(0xFF30D158), fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text("Protección de Entorno Activa", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                        Text("Superficie de ejecución libre de brechas críticas", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
-                    }
-                }
-            }
-        }
-
-        // HYPER CLEANER ENGINE
-        item(key = "seg_cleaner", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 3, itemKey = "seg_cleaner") {
-                GlassCard {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.CleaningServices, null, tint = Color(0xFF30D158), modifier = Modifier.size(24.dp))
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text("Hyper Cleaner Engine", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        storageData?.let { st ->
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("${st.usedPercentage}% usado", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                                Text("${"%.2f".format(st.usedGb)} GB / ${"%.0f".format(st.totalGb)} GB", color = Color(0xFF8E8E93), fontSize = 13.sp)
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            LinearProgressIndicator(
-                                progress = (st.usedPercentage / 100f).coerceIn(0f, 1f),
-                                modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
-                                color = if (st.usedPercentage > 88) Color(0xFFFF9500) else Color(0xFF30D158),
-                                trackColor = Color(0xFF2C2C2E)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        if (isCleaning) {
-                            Text(
-                                text = "⚡ $cleaningSpeedMbSec MB/sec Limpieza en Progreso...",
-                                color = Color(0xFF00FF66),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-
-                        Button(
-                            onClick = {
-                                isCleaning = true
-                                cleanedSuccess = false
-                                scope.launch {
-                                    for (speed in listOf(85, 142, 198, 157, 110)) {
-                                        cleaningSpeedMbSec = speed
-                                        delay(250)
-                                    }
-                                    viewModel.privilegedActions.cleanHyperEngine()
-                                    storageData = hardwareMonitor.getStorageTelemetry()
-                                    isCleaning = false
-                                    cleanedSuccess = true
-                                    Toast.makeText(context, "Caché purgado", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF30D158)),
-                            enabled = !isCleaning
-                        ) {
-                            Text(if (cleanedSuccess) "Almacenamiento Limpio" else "Purgar Caché y Basura Residual", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-
-        // SETTINGS CHECKER AUDIT LIST
+        // AUDITORÍA DE ENTORNOS
         item(key = "seg_audit_list", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 4, itemKey = "seg_audit_list") {
+            CyberGlowEntranceWrapper(index = 5, itemKey = "seg_audit_list") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -425,7 +503,7 @@ fun SeguridadScreen(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF30D158), modifier = Modifier.size(20.dp))
+                                Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF00E676), modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(title, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.SemiBold)

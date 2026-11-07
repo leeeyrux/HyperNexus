@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -60,7 +61,6 @@ fun MainNavigationCapsule(
                 spotColor = Color.Black.copy(alpha = 0.8f)
             )
     ) {
-        // Capa 1: Efecto Liquid Glass Blur por Hardware
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             Box(
                 modifier = Modifier
@@ -78,19 +78,23 @@ fun MainNavigationCapsule(
             )
         }
 
-        // Capa 2: Borde ultrafino neón plateado
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .clip(capsuleShape)
                 .border(
                     width = 1.dp,
-                    color = Color.White.copy(alpha = 0.2f),
+                    brush = Brush.linearGradient(
+                        listOf(
+                            Color(0x52FFFFFF),
+                            Color(0x0FFFFFFF),
+                            Color(0x52FFFFFF)
+                        )
+                    ),
                     shape = capsuleShape
                 )
         )
 
-        // Capa 3: Swipe horizontal no-lineal 3D-Cube (Monochrome Bold-White)
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,

@@ -3,6 +3,7 @@ package com.hypernexus.ui
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hypernexus.PrivilegedActions
@@ -10,13 +11,19 @@ import com.hypernexus.data.NexusSettings
 import com.hypernexus.data.PreferencesRepository
 import com.hypernexus.services.HyperNexusVpnService
 import com.hypernexus.services.RefreshRateKeeperService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class HyperNexusViewModel(
     val privilegedActions: PrivilegedActions,
     private val repository: PreferencesRepository
 ) : ViewModel() {
+
+    private var thresholdJob: Job? = null
 
     val uiState: StateFlow<NexusSettings> = repository.settingsFlow
         .stateIn(
@@ -25,12 +32,56 @@ class HyperNexusViewModel(
             initialValue = NexusSettings()
         )
 
+    init {
+        viewModelScope.launch {
+            repository.settingsFlow.collectLatest { settings ->
+                if (settings.thresholdRamPurger && thresholdJob == null) {
+                    startMemoryThresholdMonitoring()
+                } else if (!settings.thresholdRamPurger && thresholdJob != null) {
+                    thresholdJob?.cancel()
+                    thresholdJob = null
+                }
+            }
+        }
+    }
+
+    fun toggleThresholdRamPurger(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateThresholdRamPurger(enable)
+        }
+    }
+
+    fun toggleDohAntiThrottling(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateDohAntiThrottling(enable)
+        }
+    }
+
+    private fun startMemoryThresholdMonitoring() {
+        thresholdJob = viewModelScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                delay(8000)
+                try {
+                    val memInfo = privilegedActions.getRamUsage()
+                    if (memInfo.usagePercent >= 85) {
+                        privilegedActions.clearSmartCache()
+                        Log.i("HyperNexus", "Limpieza silenciosa por umbral de memoria ejecutada")
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
     fun toggleVpnTunnel(context: Context, targetPackage: String, enable: Boolean) {
         viewModelScope.launch {
             repository.updateVpnState(enable, targetPackage)
+            val useDoh = uiState.value.dohAntiThrottling
             val intent = Intent(context, HyperNexusVpnService::class.java).apply {
                 action = if (enable) HyperNexusVpnService.ACTION_START else HyperNexusVpnService.ACTION_STOP
-                if (enable) putExtra(HyperNexusVpnService.EXTRA_TARGET_PACKAGE, targetPackage)
+                if (enable) {
+                    putExtra(HyperNexusVpnService.EXTRA_TARGET_PACKAGE, targetPackage)
+                    putExtra(HyperNexusVpnService.EXTRA_USE_DOH, useDoh)
+                }
             }
             if (enable) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent)
