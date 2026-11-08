@@ -300,15 +300,14 @@ fun ModulosScreen(
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(Color(0xFF0F0F12))
                                     .padding(8.dp)
-                                ) {
-                                    Text(
-                                        text = output,
-                                        color = Color(0xFF8E8E93),
-                                        fontSize = 11.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        lineHeight = 14.sp
-                                    )
-                                }
+                            ) {
+                                Text(
+                                    text = output,
+                                    color = Color(0xFF8E8E93),
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    lineHeight = 14.sp
+                                )
                             }
                         }
                     }
