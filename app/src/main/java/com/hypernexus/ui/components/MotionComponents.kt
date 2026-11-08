@@ -12,8 +12,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
-// Curva estándar de desaceleración iNexus Flow-State (easeOutQuad)
-val EaseOutQuadEasing = CubicBezierEasing(0.25f, 0.46f, 0.45f, 0.94f)
+// ============================================================
+// iNEXUS STORE — SCROLL ANIMATION SYSTEM (FÓRMULA 1:1 WEB)
+// - Opacidad: 0 -> 1
+// - translateY: 30px (30.dp) -> 0px
+// - Duración: 600ms (0.6s)
+// - Easing: easeOutQuad cubic-bezier(0.25, 0.46, 0.45, 0.94)
+// - Stagger: 100ms entre hijos (0ms, 100ms, 200ms, 300ms...)
+// - translateX: 0 | scale: 1 | rotateY: 0 (Movimiento vertical puro)
+// ============================================================
+val INexusEaseOutQuad = CubicBezierEasing(0.25f, 0.46f, 0.45f, 0.94f)
 
 @Composable
 fun CyberGlowEntranceWrapper(
@@ -22,12 +30,13 @@ fun CyberGlowEntranceWrapper(
     itemKey: Any? = null,
     content: @Composable () -> Unit
 ) {
-    // Escudo de Memoria: Bloquea animaciones al scrollear hacia arriba o abajo en la misma pestaña
-    var hasAnimated by rememberSaveable(key = "flow_anim_${index}_${itemKey ?: index}") {
+    // Equivale a: entry.target.classList.add('visible') con threshold: 0.1
+    // En cuanto entra en viewport se activa y no vuelve a reiniciarse al scrollear
+    var isVisible by rememberSaveable(key = "inexus_scroll_${index}_${itemKey ?: index}") {
         mutableStateOf(false)
     }
 
-    if (hasAnimated) {
+    if (isVisible) {
         Box(modifier = modifier) {
             content()
         }
@@ -35,29 +44,35 @@ fun CyberGlowEntranceWrapper(
     }
 
     val density = LocalDensity.current
+    // translateY(30px) exacto del CSS de tu web
     val startOffsetY = with(density) { 30.dp.toPx() }
 
     val animProgress = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
-        // Desfase en cascada secuencial: 50ms exactos por índice
-        val delayMs = (index * 50L).coerceAtMost(500L)
-        delay(delayMs)
+        // Stagger de 100ms exacto de tu web (.feature-pill:nth-child delay)
+        val delayMs = (index * 100L).coerceAtMost(500L)
+        if (delayMs > 0L) {
+            delay(delayMs)
+        }
         animProgress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 600, easing = EaseOutQuadEasing)
+            animationSpec = tween(
+                durationMillis = 600, // 0.6s exactos de tu web
+                easing = INexusEaseOutQuad // cubic-bezier(0.25, 0.46, 0.45, 0.94)
+            )
         )
-        hasAnimated = true
+        isVisible = true
     }
 
-    val progress = animProgress.value
-    val currentAlpha = progress
-    val currentTranslationY = startOffsetY * (1f - progress)
-
+    // FASE DE DIBUJO PURA (Hardware RenderThread):
+    // animProgress.value se lee ÚNICAMENTE dentro de graphicsLayer.
+    // La CPU no recompone nodos; la GPU mueve la textura en C++ igual que en Brave.
     Box(
         modifier = modifier.graphicsLayer {
-            alpha = currentAlpha
-            translationY = currentTranslationY
+            val progress = animProgress.value
+            alpha = progress // opacity: 0 -> 1
+            translationY = startOffsetY * (1f - progress) // translateY: 30px -> 0
         }
     ) {
         content()
