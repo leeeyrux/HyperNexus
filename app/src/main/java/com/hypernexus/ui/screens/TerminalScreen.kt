@@ -1,6 +1,8 @@
 package com.hypernexus.ui.screens
 
 import android.widget.Toast
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -36,8 +39,28 @@ fun TerminalScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     var inputCommand by remember { mutableStateOf("") }
-    var consoleLogs by remember { mutableStateOf("HyperNexus ADB Shell v1.4.0 [Shizuku Protocol]\nEscriba un comando o seleccione uno predefinido.\n") }
+    var consoleLogs by remember { mutableStateOf("HyperNexus ADB Shell v1.6.1 [Shizuku Protocol]\nEscriba un comando o seleccione uno predefinido.\n") }
     var isExecuting by remember { mutableStateOf(false) }
+    var commandSuccessPulse by remember { mutableStateOf(false) }
+
+    // Pulso neón verde instantáneo al ejecutar
+    val pulseBorderColor by animateColorAsState(
+        targetValue = if (commandSuccessPulse) Color(0xFF00E676) else Color.Transparent,
+        animationSpec = tween(durationMillis = 280),
+        label = "neonPulse"
+    )
+
+    // Lluvia Matrix descendente continua a 4% de opacidad
+    val infiniteTransition = rememberInfiniteTransition(label = "matrixRain")
+    val matrixShiftY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 60f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "matrixShift"
+    )
 
     val presetCommands = remember {
         listOf(
@@ -62,10 +85,13 @@ fun TerminalScreen(
 
         scope.launch {
             val result = viewModel.privilegedActions.bridge.executeShellCommand(target)
-            consoleLogs += if (result.first == 0) {
-                if (result.second.isBlank()) "[Comando ejecutado con éxito (Exit 0)]\n" else "${result.second}\n"
+            if (result.first == 0) {
+                consoleLogs += if (result.second.isBlank()) "[Comando ejecutado con éxito (Exit 0)]\n" else "${result.second}\n"
+                commandSuccessPulse = true
+                delay(300)
+                commandSuccessPulse = false
             } else {
-                "[Error de salida: ${result.first}]\n${result.second}\n"
+                consoleLogs += "[Error de salida: ${result.first}]\n${result.second}\n"
             }
             isExecuting = false
         }
@@ -111,6 +137,7 @@ fun TerminalScreen(
             }
         }
 
+        // CONSOLA CON LLUVIA MATRIX DESCENDENTE AL 4% DE OPACIDAD
         item(key = "term_console", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "term_console") {
                 GlassCard {
@@ -130,11 +157,31 @@ fun TerminalScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(180.dp)
+                                .height(190.dp)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(Color(0xFF0F0F12))
+                                .border(1.5.dp, pulseBorderColor, RoundedCornerShape(10.dp))
                                 .padding(10.dp)
                         ) {
+                            // Cascada Matrix translúcida al fondo
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .offset(y = matrixShiftY.dp)
+                            ) {
+                                repeat(5) {
+                                    Text(
+                                        text = "01101001 01101110 01110000 01110101 01110100 01101100 01100001 01100111",
+                                        color = Color(0xFF00E676).copy(alpha = 0.04f),
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp,
+                                        letterSpacing = 2.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                }
+                            }
+
+                            // Logs activos interactivos
                             Text(
                                 text = consoleLogs,
                                 color = Color(0xFF30D158),
@@ -278,6 +325,6 @@ fun TerminalScreen(
             }
         }
 
-        item { Spacer(modifier = Modifier.height(80.dp)) }
+        item { Spacer(modifier = Modifier.height(96.dp)) }
     }
 }

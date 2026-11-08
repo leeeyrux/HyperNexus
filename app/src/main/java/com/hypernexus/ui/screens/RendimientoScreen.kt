@@ -40,6 +40,8 @@ fun RendimientoScreen(
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
 
+    var inputLagBypassActive by remember { mutableStateOf(false) }
+
     val dpiOptions = remember { listOf(320, 340, 360, 380, 400, 420, 440, 460, 480, 500) }
     val scaleOptions = remember { listOf(0.0f, 0.5f, 1.0f, 1.5f, 2.0f) }
     val refreshRates = remember { listOf(0 to "Auto", 60 to "60Hz", 90 to "90Hz", 120 to "120Hz", 144 to "144Hz") }
@@ -185,8 +187,26 @@ fun RendimientoScreen(
             }
         }
 
+        // TWEAK: FILTRO DE BAJA LATENCIA TÁCTIL (INPUT LAG BYPASS)
+        item(key = "rend_input_lag", contentType = "premium_card_node") {
+            CyberGlowEntranceWrapper(index = 6, itemKey = "rend_input_lag") {
+                IOSSwitchTile(
+                    title = "Filtro de Baja Latencia Táctil (Input Lag Bypass)",
+                    subtitle = "Bypasea el retardo de interrupciones de ahorro energético del kernel",
+                    checked = inputLagBypassActive,
+                    onCheckedChange = {
+                        inputLagBypassActive = it
+                        scope.launch {
+                            viewModel.privilegedActions.setInputLagBypass(it)
+                            Toast.makeText(context, if (it) "Bypass táctil activo" else "Modo táctil estándar", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
+        }
+
         item(key = "rend_resolution", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 6, itemKey = "rend_resolution") {
+            CyberGlowEntranceWrapper(index = 7, itemKey = "rend_resolution") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -223,7 +243,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_hw_overlays", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 7, itemKey = "rend_hw_overlays") {
+            CyberGlowEntranceWrapper(index = 8, itemKey = "rend_hw_overlays") {
                 IOSSwitchTile(
                     title = "Disable HW Overlays",
                     subtitle = "Fuerza composición directa por GPU en SurfaceFlinger",
@@ -234,7 +254,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_msaa", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 8, itemKey = "rend_msaa") {
+            CyberGlowEntranceWrapper(index = 9, itemKey = "rend_msaa") {
                 IOSSwitchTile(
                     title = "Enable Forced 4x MSAA",
                     subtitle = "Inyección global de anti-aliasing OpenGL ES 2.0+",
@@ -245,7 +265,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_governor", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 9, itemKey = "rend_governor") {
+            CyberGlowEntranceWrapper(index = 10, itemKey = "rend_governor") {
                 IOSSwitchTile(
                     title = "Performance Governor Scheduler",
                     subtitle = "Fuerza frecuencia máxima en todos los clústeres del CPU",
@@ -256,7 +276,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_dex2oat", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 10, itemKey = "rend_dex2oat") {
+            CyberGlowEntranceWrapper(index = 11, itemKey = "rend_dex2oat") {
                 IOSSwitchTile(
                     title = "Force High-Priority Dex2oat",
                     subtitle = "Asigna 8 hilos dedicados para compilación de paquetes AOT",
@@ -267,7 +287,7 @@ fun RendimientoScreen(
         }
 
         item(key = "rend_quick_profile", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 11, itemKey = "rend_quick_profile") {
+            CyberGlowEntranceWrapper(index = 12, itemKey = "rend_quick_profile") {
                 Button(
                     onClick = {
                         scope.launch {
@@ -291,7 +311,7 @@ fun RendimientoScreen(
             }
         }
 
-        item { Spacer(modifier = Modifier.height(80.dp)) }
+        item { Spacer(modifier = Modifier.height(96.dp)) }
     }
 
     if (showAntiCuriosoDialog && selectedResolutionTarget != null) {

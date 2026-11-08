@@ -35,6 +35,41 @@ class PrivilegedActions(val bridge: ShizukuBridge) {
         executeScriptWithValidation(commands, "Force Refresh Rate: $rate Hz")
     }
 
+    suspend fun setInputLagBypass(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = if (enable) {
+            listOf(
+                "setprop persist.sys.touch.latency 0",
+                "setprop debug.touch.latency 0",
+                "setprop persist.sys.touch_low_latency 1",
+                "echo 0 > /sys/devices/virtual/touch/touch_dev/sample_time 2>/dev/null",
+                "setprop view.touch_slop 1"
+            )
+        } else {
+            listOf(
+                "setprop persist.sys.touch.latency 1",
+                "setprop debug.touch.latency 1",
+                "setprop view.touch_slop 8"
+            )
+        }
+        executeScriptWithValidation(commands, "Input Lag Bypass: $enable")
+    }
+
+    suspend fun setBufferbloatMitigation(enable: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val commands = if (enable) {
+            listOf(
+                "setprop net.ipv4.tcp_congestion_control bbr",
+                "setprop net.core.default_qdisc fq",
+                "sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null",
+                "sysctl -w net.core.default_qdisc=fq 2>/dev/null"
+            )
+        } else {
+            listOf(
+                "setprop net.ipv4.tcp_congestion_control cubic"
+            )
+        }
+        executeScriptWithValidation(commands, "Bufferbloat Mitigation: $enable")
+    }
+
     suspend fun optimizePing(): Pair<Int, String> = withContext(Dispatchers.IO) {
         val commands = listOf(
             "ndc resolver flushdefaultif",
@@ -326,6 +361,11 @@ class PrivilegedActions(val bridge: ShizukuBridge) {
         executeScriptWithValidation(listOf("setprop debug.hwui.show_dirty_regions ${if (enable) "true" else "false"}"), "Show Dirty Regions: $enable")
     }
 
+    suspend fun configureAntialiasing(enabled: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val v = if (enabled) "4" else "0"
+        executeScriptWithValidation(listOf("setprop debug.egl.force_msaa $v"), "Antialiasing: $enabled")
+    }
+
     suspend fun optimizeHwuiCache(): Result<Unit> = withContext(Dispatchers.IO) {
         executeScriptWithValidation(
             listOf("setprop debug.hwui.texture_cache_size 24", "setprop debug.hwui.layer_cache_size 8"),
@@ -334,7 +374,8 @@ class PrivilegedActions(val bridge: ShizukuBridge) {
     }
 
     suspend fun clearSmartCache(): Result<Unit> = withContext(Dispatchers.IO) {
-        executeScriptWithValidation(listOf("pm trim-caches 4096G", "fstrim -v /data"), "Smart Cache Cleaner")
+        val commands = listOf("pm trim-caches 4096G", "fstrim -v /data")
+        executeScriptWithValidation(commands, "Smart Cache Cleaner")
     }
 
     suspend fun killBackgroundApps(): Result<Unit> = withContext(Dispatchers.IO) {

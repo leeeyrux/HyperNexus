@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -48,12 +49,13 @@ fun MainNavigationCapsule(
         )
     }
 
-    val capsuleShape = RoundedCornerShape(28.dp)
+    // Geometría de curvatura extrema para barras de texto conversacionales Kimi IA
+    val capsuleShape = RoundedCornerShape(100.dp)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp)
+            .height(60.dp)
             .shadow(
                 elevation = 16.dp,
                 shape = capsuleShape,
@@ -61,23 +63,25 @@ fun MainNavigationCapsule(
                 spotColor = Color.Black.copy(alpha = 0.8f)
             )
     ) {
+        // CAPA 1: BLUR LIGERO DE 12.DP Y CAPA DE TINTE AL 8% (COLOR 0x14121216)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .clip(capsuleShape)
                     .blur(radius = 12.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
-                    .background(Color(0x991A1A1A))
+                    .background(Color(0x14121216))
             )
         } else {
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .clip(capsuleShape)
-                    .background(Color(0xCC1A1A1A))
+                    .background(Color(0xE6121216))
             )
         }
 
+        // CAPA 2: BORDE REFLEJO KIMI IA (3D EXTREME EDGE HIGHLIGHT)
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -95,13 +99,14 @@ fun MainNavigationCapsule(
                 )
         )
 
+        // CAPA 3: TRACKER HORIZONTAL SWIPE CON HIGHLIGHT MONOCROMÁTICO BOLD
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,
             contentColor = Color.White,
             divider = {},
             indicator = {},
-            edgePadding = 12.dp,
+            edgePadding = 16.dp,
             modifier = Modifier
                 .fillMaxSize()
                 .align(Alignment.Center)
@@ -112,19 +117,13 @@ fun MainNavigationCapsule(
                 val animScale by animateFloatAsState(
                     targetValue = if (isSelected) 1.0f else 0.92f,
                     animationSpec = tween(durationMillis = 350, easing = CubeSwipeEasing),
-                    label = "cubeScale"
+                    label = "capsuleScale"
                 )
 
                 val animAlpha by animateFloatAsState(
                     targetValue = if (isSelected) 1.0f else 0.45f,
                     animationSpec = tween(durationMillis = 350, easing = CubeSwipeEasing),
-                    label = "cubeAlpha"
-                )
-
-                val animShiftX by animateFloatAsState(
-                    targetValue = if (isSelected) 0f else if (selectedTab > index) -3f else 3f,
-                    animationSpec = tween(durationMillis = 350, easing = CubeSwipeEasing),
-                    label = "cubeShift"
+                    label = "capsuleAlpha"
                 )
 
                 Tab(
@@ -149,7 +148,6 @@ fun MainNavigationCapsule(
                                 .graphicsLayer {
                                     scaleX = animScale
                                     scaleY = animScale
-                                    translationX = animShiftX
                                 },
                             tint = Color.White.copy(alpha = animAlpha)
                         )

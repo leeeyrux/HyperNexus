@@ -67,7 +67,9 @@ fun SeguridadScreen(
     val appFilterManager = remember { AppFilterManager(context, viewModel.privilegedActions.bridge) }
 
     var storageData by remember { mutableStateOf<StorageTelemetry?>(null) }
+    var isCleaning by remember { mutableStateOf(false) }
 
+    // DUAL ENGINE ARCS: Estados de rotación y escaneo
     var isBoosterClearing by remember { mutableStateOf(false) }
     var isAntivirusScanning by remember { mutableStateOf(false) }
     var scannedAppPackageName by remember { mutableStateOf("") }
@@ -93,25 +95,16 @@ fun SeguridadScreen(
 
     val isTunnelRunning = uiState.vpnActive || HyperNexusVpnService.isRunning
 
-    val infiniteTransition = rememberInfiniteTransition(label = "cyberGlow")
-    val ringRotation by infiniteTransition.animateFloat(
+    // Láser Shimmer standby y aceleración al tocar
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmerTransition")
+    val laserSweepAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2800, easing = LinearEasing),
+            animation = tween(if (isAntivirusScanning || isBoosterClearing) 500 else 3200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "ringRotation"
-    )
-
-    val boosterRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (isBoosterClearing) 600 else 4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "boosterRotation"
+        label = "laserSweep"
     )
 
     fun startDeepAntivirusScan() {
@@ -138,7 +131,7 @@ fun SeguridadScreen(
             packages.forEachIndexed { idx, pkg ->
                 scannedAppPackageName = pkg.packageName
                 antivirusProgress = (idx + 1).toFloat() / total.toFloat()
-                delay(10)
+                delay(12)
             }
             scannedAppPackageName = "[ 100% DISPOSITIVO PROTEGIDO ]"
             isAntivirusScanning = false
@@ -168,13 +161,13 @@ fun SeguridadScreen(
             CyberGlowEntranceWrapper(index = 0, itemKey = "seg_header") {
                 Column {
                     Text("Seguridad & Red Gamer", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Dual-Engine Cybersecurity & Anti-Throttling v1.6.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Dual-Engine Cybersecurity & Anti-Throttling v1.6.1", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
 
         // ====================================================================
-        // DASHBOARD SPLIT DUAL-ENGINE: BOOSTER (CYAN) & ANTIVIRUS (EMERALD)
+        // DASHBOARD SPLIT DUAL-ENGINE CON LÁSER SHIMMER SWEEP
         // ====================================================================
         item(key = "seg_dual_engine", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "seg_dual_engine") {
@@ -182,7 +175,7 @@ fun SeguridadScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // LEFT: GAMING BOOSTER ENGINE
+                    // LEFT: GAMING BOOSTER ENGINE (CYAN #00E5FF + LÁSER)
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -196,7 +189,7 @@ fun SeguridadScreen(
                                         viewModel.privilegedActions.cleanHyperEngine()
                                         delay(1400)
                                         isBoosterClearing = false
-                                        Toast.makeText(context, "Gaming Booster: Caché Depurada", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Gaming Booster: Memoria Depurada", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
@@ -208,18 +201,23 @@ fun SeguridadScreen(
                                 Canvas(
                                     modifier = Modifier
                                         .size(76.dp)
-                                        .graphicsLayer { rotationZ = boosterRotation }
                                         .drawWithCache {
                                             onDrawBehind {
                                                 drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 8f))
                                                 drawArc(
-                                                    brush = Brush.sweepGradient(
-                                                        listOf(Color(0xFF00E5FF), Color(0xFF00B0FF), Color(0xFF00E5FF))
-                                                    ),
+                                                    color = Color(0xFF00E5FF),
                                                     startAngle = -90f,
                                                     sweepAngle = 270f,
                                                     useCenter = false,
                                                     style = Stroke(width = 8f, cap = StrokeCap.Round)
+                                                )
+                                                // Línea láser brillante Shimmer
+                                                drawArc(
+                                                    color = Color.White,
+                                                    startAngle = laserSweepAngle,
+                                                    sweepAngle = 25f,
+                                                    useCenter = false,
+                                                    style = Stroke(width = 10f, cap = StrokeCap.Round)
                                                 )
                                             }
                                         }
@@ -232,7 +230,7 @@ fun SeguridadScreen(
                         }
                     }
 
-                    // RIGHT: DEEP ANTIVIRUS ENGINE
+                    // RIGHT: DEEP ANTIVIRUS ENGINE (EMERALD GREEN + LÁSER)
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -248,7 +246,6 @@ fun SeguridadScreen(
                                 Canvas(
                                     modifier = Modifier
                                         .size(76.dp)
-                                        .graphicsLayer { rotationZ = ringRotation }
                                         .drawWithCache {
                                             onDrawBehind {
                                                 drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 8f))
@@ -260,6 +257,14 @@ fun SeguridadScreen(
                                                     sweepAngle = (antivirusProgress * 360f).coerceAtLeast(30f),
                                                     useCenter = false,
                                                     style = Stroke(width = 8f, cap = StrokeCap.Round)
+                                                )
+                                                // Línea láser brillante Shimmer
+                                                drawArc(
+                                                    color = Color.White,
+                                                    startAngle = (laserSweepAngle + 180f) % 360f,
+                                                    sweepAngle = 25f,
+                                                    useCenter = false,
+                                                    style = Stroke(width = 10f, cap = StrokeCap.Round)
                                                 )
                                             }
                                         }
@@ -284,7 +289,7 @@ fun SeguridadScreen(
             }
         }
 
-        // SUB-LABEL DE ESTADO ANTIVIRUS EN VIVO
+        // ETIQUETA EN TIEMPO REAL DEL ESCÁNER
         if (scannedAppPackageName.isNotBlank()) {
             item(key = "seg_scan_status", contentType = "premium_node") {
                 Box(
@@ -516,7 +521,56 @@ fun SeguridadScreen(
             }
         }
 
-        item { Spacer(modifier = Modifier.height(80.dp)) }
+        // REUBICACIÓN AL PIE: BOTONES DE ACCIÓN RÁPIDA
+        item(key = "seg_footer_actions", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 6, itemKey = "seg_footer_actions") {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                viewModel.privilegedActions.killBackgroundApps()
+                                viewModel.privilegedActions.clearSmartCache()
+                                Toast.makeText(context, "RAM Liberada", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))
+                    ) {
+                        Text("Limpiar RAM", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                viewModel.privilegedActions.enableGamingMode()
+                                Toast.makeText(context, "Gaming Boost Inyectado", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9500))
+                    ) {
+                        Text("Gaming Boost", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = {
+                            viewModel.optimizePing { msg ->
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676))
+                    ) {
+                        Text("Optimizar Ping", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    }
+                }
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(96.dp)) }
     }
 
     if (showGamePickerModal) {

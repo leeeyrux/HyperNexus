@@ -3,8 +3,6 @@ package com.hypernexus.ui.screens
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,7 +35,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.launch
 
 data class ConflatedTelemetrySnapshot(
     val liveMetrics: LiveHardwareMetrics,
@@ -51,10 +48,10 @@ fun PanelScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val hardwareMonitor = remember { HardwareMonitor(context) }
     val specs = remember { hardwareMonitor.getStaticSpecs() }
 
+    // Flujo asíncrono seguro conflado a 500ms en Dispatchers.Default
     val telemetryFlow = remember {
         flow {
             while (true) {
@@ -71,16 +68,9 @@ fun PanelScreen(
 
     val telemetrySnapshot by telemetryFlow.collectAsState(initial = null)
 
-    val currentTemp by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.thermalTemp ?: 34f } }
-    val thermalAccentColor by animateColorAsState(
-        targetValue = when {
-            currentTemp >= 43.0f -> Color(0xFFFF003C)
-            currentTemp >= 36.0f -> Color(0xFF00E676)
-            else -> Color(0xFF00E5FF)
-        },
-        animationSpec = tween(600),
-        label = "thermalAccent"
-    )
+    // Paleta Cyber-Dark estática oficial
+    val accentGreen = Color(0xFF00E676)
+    val accentCyan = Color(0xFF00E5FF)
 
     val ramUsedMb by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.usedRamMb ?: 0L } }
     val ramTotalMb by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.totalRamMb ?: 4096L } }
@@ -122,14 +112,14 @@ fun PanelScreen(
                                 modifier = Modifier
                                     .size(46.dp)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .border(1.dp, thermalAccentColor.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                                    .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
                             )
                         } else {
                             Box(
                                 modifier = Modifier
                                     .size(46.dp)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(thermalAccentColor),
+                                    .background(accentGreen),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text("HN", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -138,7 +128,7 @@ fun PanelScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Hub de Telemetría v1.6.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                            Text("Nodo de Telemetría v1.6.1", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                         }
                     }
                 }
@@ -185,11 +175,12 @@ fun PanelScreen(
             }
         }
 
+        // RESTAURACIÓN DE MEMORIA RAM EN FORMATO NATIVO PLANO Y SEGURO
         item(key = "panel_ram", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "panel_ram") {
                 GlassCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Memory, null, tint = thermalAccentColor, modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Memory, null, tint = accentGreen, modifier = Modifier.size(32.dp))
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Memoria RAM", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
@@ -206,7 +197,7 @@ fun PanelScreen(
                                     .fillMaxWidth()
                                     .height(6.dp)
                                     .clip(RoundedCornerShape(3.dp)),
-                                color = if (ramPercent > 85) Color(0xFFFF003C) else thermalAccentColor,
+                                color = if (ramPercent > 85) Color(0xFFFF003C) else accentGreen,
                                 trackColor = Color(0xFF2C2C2E)
                             )
                             Spacer(modifier = Modifier.height(4.dp))
@@ -217,12 +208,13 @@ fun PanelScreen(
             }
         }
 
+        // TELEMETRÍA DE RED EN VIVO
         item(key = "panel_network", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 4, itemKey = "panel_network") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Wifi, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
+                            Icon(Icons.Default.Wifi, null, tint = accentCyan, modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             Text("Telemetría de Conectividad en Vivo", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
                         }
@@ -236,7 +228,7 @@ fun PanelScreen(
                                 Text(
                                     text = if (pingVal > 0) "$pingVal ms" else "-- ms",
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = if (pingVal in 1..70) Color(0xFF00E676) else Color(0xFFFF9500),
+                                    color = if (pingVal in 1..70) accentGreen else Color(0xFFFF9500),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -246,7 +238,7 @@ fun PanelScreen(
                             }
                             Column {
                                 Text("Tipo de Enlace", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
-                                Text(netData?.connectionType ?: "Verificando...", style = MaterialTheme.typography.titleMedium, color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+                                Text(netData?.connectionType ?: "Verificando...", style = MaterialTheme.typography.titleMedium, color = accentCyan, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -254,12 +246,13 @@ fun PanelScreen(
             }
         }
 
+        // TELEMETRÍA DE BATERÍA DETALLADA
         item(key = "panel_battery", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 5, itemKey = "panel_battery") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.BatteryChargingFull, null, tint = Color(0xFF00E676), modifier = Modifier.size(24.dp))
+                            Icon(Icons.Default.BatteryChargingFull, null, tint = accentGreen, modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             Text("Telemetría Energética de Batería", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
                         }
@@ -286,12 +279,13 @@ fun PanelScreen(
             }
         }
 
+        // 8 NÚCLEOS DE CPU
         item(key = "panel_cpu", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 6, itemKey = "panel_cpu") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Speed, null, tint = thermalAccentColor, modifier = Modifier.size(28.dp))
+                            Icon(Icons.Default.Speed, null, tint = accentGreen, modifier = Modifier.size(28.dp))
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 val count = telemetrySnapshot?.liveMetrics?.cores?.size?.takeIf { it > 0 } ?: 8
@@ -302,9 +296,9 @@ fun PanelScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Lectura en tiempo real (${"%.1f".format(currentTemp)}°C)",
+                                    text = "Lectura en tiempo real por clúster (0-7)",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = thermalAccentColor
+                                    color = Color(0xFF8E8E93)
                                 )
                             }
                         }
@@ -352,55 +346,8 @@ fun PanelScreen(
             }
         }
 
-        item(key = "panel_actions", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 7, itemKey = "panel_actions") {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                viewModel.privilegedActions.killBackgroundApps()
-                                viewModel.privilegedActions.clearSmartCache()
-                                Toast.makeText(context, "RAM Liberada", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))
-                    ) {
-                        Text("Limpiar RAM", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                viewModel.privilegedActions.enableGamingMode()
-                                Toast.makeText(context, "Gaming Boost Inyectado", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9500))
-                    ) {
-                        Text("Gaming Boost", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    Button(
-                        onClick = {
-                            viewModel.optimizePing { msg ->
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676))
-                    ) {
-                        Text("Optimizar Ping", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                    }
-                }
-            }
-        }
-
-        item { Spacer(modifier = Modifier.height(100.dp)) }
+        // Espacio para libre paso tras la barra de navegación flotante
+        item { Spacer(modifier = Modifier.height(96.dp)) }
     }
 }
 
