@@ -18,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -107,7 +108,6 @@ fun ModulosScreen(
     }
 
     fun executeAndCapture(id: String, script: String) {
-        // Ejecución aislada en Dispatchers.IO para no bloquear la UI
         scope.launch(Dispatchers.IO) {
             val res = viewModel.privilegedActions.executeScriptRaw(script)
             val lines = res.second.lines().filter { it.isNotBlank() }
@@ -300,14 +300,15 @@ fun ModulosScreen(
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(Color(0xFF0F0F12))
                                     .padding(8.dp)
-                            ) {
-                                Text(
-                                    text = output,
-                                    color = Color(0xFF8E8E93),
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    lineHeight = 14.sp
-                                )
+                                ) {
+                                    Text(
+                                        text = output,
+                                        color = Color(0xFF8E8E93),
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        lineHeight = 14.sp
+                                    )
+                                }
                             }
                         }
                     }
