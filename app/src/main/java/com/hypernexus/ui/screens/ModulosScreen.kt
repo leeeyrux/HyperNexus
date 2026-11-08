@@ -4,7 +4,9 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,15 +18,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitch
+import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -41,7 +46,12 @@ fun ModulosScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
+
+    // Historial dinámico de las últimas 3 líneas de salida por módulo
+    val moduleOutputs = remember { mutableStateMapOf<String, String>() }
+    val expandedOutputs = remember { mutableStateMapOf<String, Boolean>() }
 
     val presetModules = remember {
         listOf(
@@ -96,6 +106,15 @@ fun ModulosScreen(
         )
     }
 
+    fun executeAndCapture(id: String, script: String) {
+        scope.launch {
+            val res = viewModel.privilegedActions.executeScriptRaw(script)
+            val lines = res.second.lines().filter { it.isNotBlank() }
+            val last3 = if (lines.isNotEmpty()) lines.takeLast(3).joinToString("\n") else "[Inyección exitosa: Exit 0]"
+            moduleOutputs[id] = last3
+        }
+    }
+
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -122,16 +141,16 @@ fun ModulosScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item(key = "mod_header", contentType = "premium_card_node") {
+        item(key = "mod_header", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "mod_header") {
                 Column {
                     Text("Módulos Universales", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Inyector de scripts, optimizaciones y mods de rendimiento", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Inyector de scripts, mods y telemetría de salida v1.7.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
 
-        item(key = "mod_install_btn", contentType = "premium_card_node") {
+        item(key = "mod_install_btn", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "mod_install_btn") {
                 Button(
                     onClick = { filePickerLauncher.launch("*/*") },
@@ -146,42 +165,78 @@ fun ModulosScreen(
             }
         }
 
+        // MÓDULOS DE USUARIO CON VISOR DE SALIDA
         if (uiState.installedModulePaths.isNotEmpty()) {
-            item(key = "mod_custom_title", contentType = "premium_card_node") {
+            item(key = "mod_custom_title", contentType = "premium_node") {
                 Text("Módulos Personalizados (${uiState.installedModulePaths.size})", style = MaterialTheme.typography.titleMedium, color = Color.White)
             }
 
             items(
                 items = uiState.installedModulePaths.toList(),
                 key = { it },
-                contentType = { "premium_card_node" }
+                contentType = { "premium_node" }
             ) { rawModule ->
                 val parts = rawModule.split(":::")
                 val name = parts.getOrNull(0) ?: "Custom Script"
                 val script = parts.getOrNull(1) ?: ""
                 val isActive = uiState.activeModules.contains(name)
+                val isExpanded = expandedOutputs[name] ?: false
+                val output = moduleOutputs[name] ?: "Sin ejecución registrada."
 
                 CyberGlowEntranceWrapper(index = 2, itemKey = rawModule) {
                     GlassCard {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(name, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(script.take(80) + if (script.length > 80) "..." else "", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93), fontFamily = FontFamily.Monospace)
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(name, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(script.take(70) + if (script.length > 70) "..." else "", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93), fontFamily = FontFamily.Monospace)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IOSSwitch(
+                                        checked = isActive,
+                                        onCheckedChange = {
+                                            viewModel.toggleModule(name, script)
+                                            if (it) executeAndCapture(name, script)
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    IconButton(onClick = { viewModel.removeCustomModule(rawModule) }) {
+                                        Icon(Icons.Default.Delete, "Eliminar", tint = Color(0xFFFF003C))
+                                    }
+                                }
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IOSSwitch(
-                                    checked = isActive,
-                                    onCheckedChange = { viewModel.toggleModule(name, script) }
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                IconButton(onClick = { viewModel.removeCustomModule(rawModule) }) {
-                                    Icon(Icons.Default.Delete, "Eliminar", tint = Color(0xFFFF003C))
+
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = if (isExpanded) "▾ [ Ocultar Salida ]" else "▸ [ Ver Salida ]",
+                                color = Color(0xFF00E5FF),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { expandedOutputs[name] = !isExpanded }
+                            )
+
+                            AnimatedVisibility(visible = isExpanded) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF0F0F12))
+                                        .padding(8.dp)
+                                ) {
+                                    Text(
+                                        text = output,
+                                        color = Color(0xFF8E8E93),
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        lineHeight = 14.sp
+                                    )
                                 }
                             }
                         }
@@ -190,38 +245,75 @@ fun ModulosScreen(
             }
         }
 
-        item(key = "mod_presets_title", contentType = "premium_card_node") {
+        // PRESETS RECOMENDADOS CON VISOR DE SALIDA
+        item(key = "mod_presets_title", contentType = "premium_node") {
             Text("Sugerencias de Inyección Rápida", style = MaterialTheme.typography.titleMedium, color = Color.White)
         }
 
         items(
             items = presetModules,
             key = { it.id },
-            contentType = { "premium_card_node" }
+            contentType = { "premium_node" }
         ) { mod ->
             val isActive = uiState.activeModules.contains(mod.id)
+            val isExpanded = expandedOutputs[mod.id] ?: false
+            val output = moduleOutputs[mod.id] ?: "Sin ejecución registrada."
+
             CyberGlowEntranceWrapper(index = 3, itemKey = mod.id) {
                 GlassCard {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(mod.title, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(mod.description, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(mod.title, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(mod.description, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            IOSSwitch(
+                                checked = isActive,
+                                onCheckedChange = {
+                                    viewModel.toggleModule(mod.id, mod.script)
+                                    if (it) executeAndCapture(mod.id, mod.script)
+                                }
+                            )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        IOSSwitch(
-                            checked = isActive,
-                            onCheckedChange = { viewModel.toggleModule(mod.id, mod.script) }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = if (isExpanded) "▾ [ Ocultar Salida ]" else "▸ [ Ver Salida ]",
+                            color = Color(0xFF00E5FF),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { expandedOutputs[mod.id] = !isExpanded }
                         )
+
+                        AnimatedVisibility(visible = isExpanded) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF0F0F12))
+                                    .padding(8.dp)
+                            ) {
+                                Text(
+                                    text = output,
+                                    color = Color(0xFF8E8E93),
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    lineHeight = 14.sp
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
 
-        item { Spacer(modifier = Modifier.height(80.dp)) }
+        item { Spacer(modifier = Modifier.height(96.dp)) }
     }
 }

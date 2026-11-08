@@ -65,16 +65,16 @@ fun RendimientoScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item(key = "rend_header", contentType = "premium_card_node") {
+        item(key = "rend_header", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "rend_header") {
                 Column {
                     Text("Rendimiento", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Ajustes por pasos seguros sin deslizamiento errático", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Ajustes por pasos seguros sin deslizamiento errático v1.7.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
 
-        item(key = "rend_hz", contentType = "premium_card_node") {
+        item(key = "rend_hz", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "rend_hz") {
                 GlassCard {
                     Column {
@@ -109,7 +109,7 @@ fun RendimientoScreen(
             }
         }
 
-        item(key = "rend_dpi", contentType = "premium_card_node") {
+        item(key = "rend_dpi", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "rend_dpi") {
                 GlassCard {
                     Column {
@@ -145,7 +145,7 @@ fun RendimientoScreen(
             }
         }
 
-        item(key = "rend_transition", contentType = "premium_card_node") {
+        item(key = "rend_transition", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "rend_transition") {
                 StepOptionCard(
                     title = "Escala de Transición",
@@ -159,7 +159,7 @@ fun RendimientoScreen(
             }
         }
 
-        item(key = "rend_animator", contentType = "premium_card_node") {
+        item(key = "rend_animator", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 4, itemKey = "rend_animator") {
                 StepOptionCard(
                     title = "Escala de Animación / Duración",
@@ -173,7 +173,7 @@ fun RendimientoScreen(
             }
         }
 
-        item(key = "rend_window", contentType = "premium_card_node") {
+        item(key = "rend_window", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 5, itemKey = "rend_window") {
                 StepOptionCard(
                     title = "Escala de Ventana",
@@ -188,7 +188,7 @@ fun RendimientoScreen(
         }
 
         // TWEAK: FILTRO DE BAJA LATENCIA TÁCTIL (INPUT LAG BYPASS)
-        item(key = "rend_input_lag", contentType = "premium_card_node") {
+        item(key = "rend_input_lag", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 6, itemKey = "rend_input_lag") {
                 IOSSwitchTile(
                     title = "Filtro de Baja Latencia Táctil (Input Lag Bypass)",
@@ -205,7 +205,7 @@ fun RendimientoScreen(
             }
         }
 
-        item(key = "rend_resolution", contentType = "premium_card_node") {
+        item(key = "rend_resolution", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 7, itemKey = "rend_resolution") {
                 GlassCard {
                     Column {
@@ -242,7 +242,7 @@ fun RendimientoScreen(
             }
         }
 
-        item(key = "rend_hw_overlays", contentType = "premium_card_node") {
+        item(key = "rend_hw_overlays", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 8, itemKey = "rend_hw_overlays") {
                 IOSSwitchTile(
                     title = "Disable HW Overlays",
@@ -253,7 +253,7 @@ fun RendimientoScreen(
             }
         }
 
-        item(key = "rend_msaa", contentType = "premium_card_node") {
+        item(key = "rend_msaa", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 9, itemKey = "rend_msaa") {
                 IOSSwitchTile(
                     title = "Enable Forced 4x MSAA",
@@ -264,7 +264,7 @@ fun RendimientoScreen(
             }
         }
 
-        item(key = "rend_governor", contentType = "premium_card_node") {
+        item(key = "rend_governor", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 10, itemKey = "rend_governor") {
                 IOSSwitchTile(
                     title = "Performance Governor Scheduler",
@@ -275,19 +275,8 @@ fun RendimientoScreen(
             }
         }
 
-        item(key = "rend_dex2oat", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 11, itemKey = "rend_dex2oat") {
-                IOSSwitchTile(
-                    title = "Force High-Priority Dex2oat",
-                    subtitle = "Asigna 8 hilos dedicados para compilación de paquetes AOT",
-                    checked = uiState.highPriorityDex2oat,
-                    onCheckedChange = { viewModel.toggleHighPriorityDex2oat(it) }
-                )
-            }
-        }
-
-        item(key = "rend_quick_profile", contentType = "premium_card_node") {
-            CyberGlowEntranceWrapper(index = 12, itemKey = "rend_quick_profile") {
+        item(key = "rend_quick_profile", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 11, itemKey = "rend_quick_profile") {
                 Button(
                     onClick = {
                         scope.launch {

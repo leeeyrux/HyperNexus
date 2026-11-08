@@ -51,7 +51,7 @@ fun PanelScreen(
     val hardwareMonitor = remember { HardwareMonitor(context) }
     val specs = remember { hardwareMonitor.getStaticSpecs() }
 
-    // Flujo asíncrono seguro conflado a 500ms en Dispatchers.Default
+    // Flujo asíncrono conflado a 500ms en Dispatchers.Default
     val telemetryFlow = remember {
         flow {
             while (true) {
@@ -68,9 +68,9 @@ fun PanelScreen(
 
     val telemetrySnapshot by telemetryFlow.collectAsState(initial = null)
 
-    // Paleta Cyber-Dark estática oficial
+    // Paleta Electric Blue restaurada para visibilidad y contraste
+    val electricBlue = Color(0xFF007AFF)
     val accentGreen = Color(0xFF00E676)
-    val accentCyan = Color(0xFF00E5FF)
 
     val ramUsedMb by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.usedRamMb ?: 0L } }
     val ramTotalMb by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.totalRamMb ?: 4096L } }
@@ -119,16 +119,16 @@ fun PanelScreen(
                                 modifier = Modifier
                                     .size(46.dp)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(accentGreen),
+                                    .background(electricBlue),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("HN", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text("HN", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Nodo de Telemetría v1.6.1", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                            Text("Nodo de Telemetría v1.7.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                         }
                     }
                 }
@@ -175,12 +175,12 @@ fun PanelScreen(
             }
         }
 
-        // RESTAURACIÓN DE MEMORIA RAM EN FORMATO NATIVO PLANO Y SEGURO
+        // MEMORIA RAM CON ICONO ELECTRIC BLUE RESTAURADO
         item(key = "panel_ram", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "panel_ram") {
                 GlassCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Memory, null, tint = accentGreen, modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Memory, null, tint = electricBlue, modifier = Modifier.size(32.dp))
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Memoria RAM", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
@@ -208,13 +208,13 @@ fun PanelScreen(
             }
         }
 
-        // TELEMETRÍA DE RED EN VIVO
+        // TELEMETRÍA DE RED CON ICONO Y TOKEN ELECTRIC BLUE
         item(key = "panel_network", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 4, itemKey = "panel_network") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Wifi, null, tint = accentCyan, modifier = Modifier.size(24.dp))
+                            Icon(Icons.Default.Wifi, null, tint = electricBlue, modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             Text("Telemetría de Conectividad en Vivo", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
                         }
@@ -238,7 +238,7 @@ fun PanelScreen(
                             }
                             Column {
                                 Text("Tipo de Enlace", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
-                                Text(netData?.connectionType ?: "Verificando...", style = MaterialTheme.typography.titleMedium, color = accentCyan, fontWeight = FontWeight.Bold)
+                                Text(netData?.connectionType ?: "Verificando...", style = MaterialTheme.typography.titleMedium, color = electricBlue, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -279,7 +279,7 @@ fun PanelScreen(
             }
         }
 
-        // 8 NÚCLEOS DE CPU
+        // 8 NÚCLEOS DE CPU EN TIEMPO REAL
         item(key = "panel_cpu", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 6, itemKey = "panel_cpu") {
                 GlassCard {
@@ -346,7 +346,6 @@ fun PanelScreen(
             }
         }
 
-        // Espacio para libre paso tras la barra de navegación flotante
         item { Spacer(modifier = Modifier.height(96.dp)) }
     }
 }

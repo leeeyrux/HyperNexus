@@ -1,13 +1,10 @@
 package com.hypernexus.ui.screens
 
-import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
-import android.provider.Settings
 import android.widget.Toast
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -31,7 +28,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -67,9 +63,8 @@ fun SeguridadScreen(
     val appFilterManager = remember { AppFilterManager(context, viewModel.privilegedActions.bridge) }
 
     var storageData by remember { mutableStateOf<StorageTelemetry?>(null) }
-    var isCleaning by remember { mutableStateOf(false) }
 
-    // DUAL ENGINE ARCS: Estados de rotación y escaneo
+    // DUAL ENGINE MEGA-RINGS (+35% TAMAÑO)
     var isBoosterClearing by remember { mutableStateOf(false) }
     var isAntivirusScanning by remember { mutableStateOf(false) }
     var scannedAppPackageName by remember { mutableStateOf("") }
@@ -95,13 +90,13 @@ fun SeguridadScreen(
 
     val isTunnelRunning = uiState.vpnActive || HyperNexusVpnService.isRunning
 
-    // Láser Shimmer standby y aceleración al tocar
+    // Láser Shimmer que se acelera al interactuar
     val infiniteTransition = rememberInfiniteTransition(label = "shimmerTransition")
     val laserSweepAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(if (isAntivirusScanning || isBoosterClearing) 500 else 3200, easing = LinearEasing),
+            animation = tween(if (isAntivirusScanning || isBoosterClearing) 480 else 3000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "laserSweep"
@@ -138,18 +133,6 @@ fun SeguridadScreen(
         }
     }
 
-    val auditChecks = remember {
-        val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager
-        val isDev = Settings.Global.getInt(context.contentResolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1
-        listOf(
-            "Depuración USB / Modo Desarrollador" to if (isDev) "Controlado por Shizuku" else "Protegido (Desactivado)",
-            "Patrón / Clave de Bloqueo" to "Activo (Cifrado de Pantalla)",
-            "Capa de Cifrado del Dispositivo" to if (dpm?.storageEncryptionStatus == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE) "Activo (FBE Hardware)" else "Activo (Android Keystore)",
-            "Módulo de Comunicación NFC" to "Aislado en Hardware",
-            "Validación Google Play Protect" to "Certificado y Seguro"
-        )
-    }
-
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -161,13 +144,13 @@ fun SeguridadScreen(
             CyberGlowEntranceWrapper(index = 0, itemKey = "seg_header") {
                 Column {
                     Text("Seguridad & Red Gamer", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Dual-Engine Cybersecurity & Anti-Throttling v1.6.1", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Mega-Core Dual Engine Cybersecurity v1.7.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
 
         // ====================================================================
-        // DASHBOARD SPLIT DUAL-ENGINE CON LÁSER SHIMMER SWEEP
+        // DUAL MEGA-RINGS: 35% MÁS GRANDES (116.DP) CON LÁSER SHIMMER EN GRAPHICSLAYER
         // ====================================================================
         item(key = "seg_dual_engine", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "seg_dual_engine") {
@@ -175,13 +158,13 @@ fun SeguridadScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // LEFT: GAMING BOOSTER ENGINE (CYAN #00E5FF + LÁSER)
+                    // LEFT: GAMING BOOSTER ENGINE (CYAN #00E5FF)
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(22.dp))
                             .background(Color(0xFF141416))
-                            .border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+                            .border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.35f), RoundedCornerShape(22.dp))
                             .clickable {
                                 if (!isBoosterClearing) {
                                     isBoosterClearing = true
@@ -193,62 +176,61 @@ fun SeguridadScreen(
                                     }
                                 }
                             }
-                            .padding(14.dp),
+                            .padding(vertical = 18.dp, horizontal = 12.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(86.dp)) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(116.dp)) {
                                 Canvas(
                                     modifier = Modifier
-                                        .size(76.dp)
+                                        .size(102.dp)
                                         .drawWithCache {
                                             onDrawBehind {
-                                                drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 8f))
+                                                drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 9f))
                                                 drawArc(
                                                     color = Color(0xFF00E5FF),
                                                     startAngle = -90f,
                                                     sweepAngle = 270f,
                                                     useCenter = false,
-                                                    style = Stroke(width = 8f, cap = StrokeCap.Round)
+                                                    style = Stroke(width = 9f, cap = StrokeCap.Round)
                                                 )
-                                                // Línea láser brillante Shimmer
                                                 drawArc(
                                                     color = Color.White,
                                                     startAngle = laserSweepAngle,
-                                                    sweepAngle = 25f,
+                                                    sweepAngle = 30f,
                                                     useCenter = false,
-                                                    style = Stroke(width = 10f, cap = StrokeCap.Round)
+                                                    style = Stroke(width = 11f, cap = StrokeCap.Round)
                                                 )
                                             }
                                         }
                                 ) {}
-                                Icon(Icons.Default.Bolt, null, tint = Color(0xFF00E5FF), modifier = Modifier.size(28.dp))
+                                Icon(Icons.Default.Bolt, null, tint = Color(0xFF00E5FF), modifier = Modifier.size(36.dp))
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("BOOSTER", style = MaterialTheme.typography.titleSmall, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text(if (isBoosterClearing) "Optimizando..." else "Toca para Limpiar", fontSize = 10.sp, color = Color(0xFF00E5FF))
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text("BOOSTER", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(if (isBoosterClearing) "Optimizando..." else "Toca para Limpiar", fontSize = 11.sp, color = Color(0xFF00E5FF))
                         }
                     }
 
-                    // RIGHT: DEEP ANTIVIRUS ENGINE (EMERALD GREEN + LÁSER)
+                    // RIGHT: DEEP ANTIVIRUS ENGINE (EMERALD GREEN #00E676)
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(22.dp))
                             .background(Color(0xFF141416))
-                            .border(1.dp, Color(0xFF00E676).copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+                            .border(1.dp, Color(0xFF00E676).copy(alpha = 0.35f), RoundedCornerShape(22.dp))
                             .clickable { startDeepAntivirusScan() }
-                            .padding(14.dp),
+                            .padding(vertical = 18.dp, horizontal = 12.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(86.dp)) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(116.dp)) {
                                 Canvas(
                                     modifier = Modifier
-                                        .size(76.dp)
+                                        .size(102.dp)
                                         .drawWithCache {
                                             onDrawBehind {
-                                                drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 8f))
+                                                drawCircle(color = Color(0xFF2C2C2E), style = Stroke(width = 9f))
                                                 drawArc(
                                                     brush = Brush.sweepGradient(
                                                         listOf(Color(0xFF00E676), Color(0xFF00B0FF), Color(0xFF00E676))
@@ -256,31 +238,30 @@ fun SeguridadScreen(
                                                     startAngle = 0f,
                                                     sweepAngle = (antivirusProgress * 360f).coerceAtLeast(30f),
                                                     useCenter = false,
-                                                    style = Stroke(width = 8f, cap = StrokeCap.Round)
+                                                    style = Stroke(width = 9f, cap = StrokeCap.Round)
                                                 )
-                                                // Línea láser brillante Shimmer
                                                 drawArc(
                                                     color = Color.White,
                                                     startAngle = (laserSweepAngle + 180f) % 360f,
-                                                    sweepAngle = 25f,
+                                                    sweepAngle = 30f,
                                                     useCenter = false,
-                                                    style = Stroke(width = 10f, cap = StrokeCap.Round)
+                                                    style = Stroke(width = 11f, cap = StrokeCap.Round)
                                                 )
                                             }
                                         }
                                 ) {}
                                 Text(
                                     text = if (isAntivirusScanning) "${(antivirusProgress * 100).toInt()}%" else "100%",
-                                    style = MaterialTheme.typography.titleSmall,
+                                    style = MaterialTheme.typography.titleLarge,
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("ANTIVIRUS", style = MaterialTheme.typography.titleSmall, color = Color.White, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text("ANTIVIRUS", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
                             Text(
                                 text = if (isAntivirusScanning) "Auditando..." else "Protegido",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 color = Color(0xFF00E676)
                             )
                         }
@@ -289,7 +270,6 @@ fun SeguridadScreen(
             }
         }
 
-        // ETIQUETA EN TIEMPO REAL DEL ESCÁNER
         if (scannedAppPackageName.isNotBlank()) {
             item(key = "seg_scan_status", contentType = "premium_node") {
                 Box(
@@ -336,7 +316,7 @@ fun SeguridadScreen(
             }
         }
 
-        // MASTER WIDGET: SCI-FI GAMING VPN TUNNEL
+        // GAMING VPN TUNNEL
         item(key = "seg_vpn_card", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 4, itemKey = "seg_vpn_card") {
                 Box(
@@ -491,39 +471,9 @@ fun SeguridadScreen(
             }
         }
 
-        // AUDITORÍA DE ENTORNOS
-        item(key = "seg_audit_list", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 5, itemKey = "seg_audit_list") {
-                GlassCard {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Security, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text("Auditoría de Entorno y Ajustes", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        auditChecks.forEach { (title, subtitle) ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF00E676), modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(title, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.SemiBold)
-                                    Text(subtitle, style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // REUBICACIÓN AL PIE: BOTONES DE ACCIÓN RÁPIDA
+        // FOOTER ACTIONS REUBICADAS (LIMPIAR RAM, GAMING BOOST, OPTIMIZAR PING)
         item(key = "seg_footer_actions", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 6, itemKey = "seg_footer_actions") {
+            CyberGlowEntranceWrapper(index = 5, itemKey = "seg_footer_actions") {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = {

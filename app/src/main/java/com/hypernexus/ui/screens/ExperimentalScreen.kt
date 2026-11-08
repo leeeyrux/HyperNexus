@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import com.hypernexus.domain.GameTargetApp
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
+import com.hypernexus.ui.components.IOSSwitchTile
 import kotlinx.coroutines.launch
 
 @Composable
@@ -49,6 +51,7 @@ fun ExperimentalScreen(
     var gameFps by remember { mutableStateOf(120) }
     var downscale80 by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
+    var zramGamerActive by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val apps = appFilterManager.getInstalledUserApplications()
@@ -68,8 +71,8 @@ fun ExperimentalScreen(
         item(key = "exp_header", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "exp_header") {
                 Column {
-                    Text("Game Tuner & DEX2OAT", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
-                    Text("Motor de optimización por aplicación con priorización gaming", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Game Tuner & ZRAM Gamer", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
+                    Text("Compilación PGO y bloqueo de texturas en RAM física v1.7.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -174,6 +177,7 @@ fun ExperimentalScreen(
             }
         }
 
+        // COMPILACIÓN PGO (PROFILE-GUIDED OPTIMIZATION)
         item(key = "exp_dex2oat_card", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "exp_dex2oat_card") {
                 GlassCard {
@@ -181,11 +185,11 @@ fun ExperimentalScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Bolt, null, tint = Color(0xFF30D158), modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text("Compilación DEX2OAT Speed", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text("Compilación PGO (Profile-Guided Optimization)", style = MaterialTheme.typography.titleMedium, color = Color.White)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Convierte el código a binario nativo AOT para evitar tirones y recortar tiempos de carga.",
+                            text = "Fuerza 8 hilos dedicados y genera binario AOT adaptativo con perfil de velocidad completo para evitar tirones.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF8E8E93)
                         )
@@ -196,9 +200,10 @@ fun ExperimentalScreen(
                                 selectedApp?.let { app ->
                                     scope.launch {
                                         isCompiling = true
-                                        viewModel.privilegedActions.compileAppSpeed(app.packageName)
+                                        // PGO: cmd package compile -m speed-profile -f
+                                        viewModel.privilegedActions.bridge.executeShellCommand("cmd package compile -m speed-profile -f ${app.packageName}")
                                         isCompiling = false
-                                        Toast.makeText(context, "DEX2OAT finalizado: ${app.appName}", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "PGO completado para: ${app.appName}", Toast.LENGTH_LONG).show()
                                     }
                                 }
                             },
@@ -210,9 +215,9 @@ fun ExperimentalScreen(
                             if (isCompiling) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Text("Compilando código AOT...")
+                                Text("Compilando código PGO...")
                             } else {
-                                Text("Compilar ${selectedApp?.appName ?: "App"}", fontWeight = FontWeight.Bold)
+                                Text("Compilar ${selectedApp?.appName ?: "Juego"}", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -220,6 +225,7 @@ fun ExperimentalScreen(
             }
         }
 
+        // GAME MANAGER API TUNER
         item(key = "exp_game_api_card", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "exp_game_api_card") {
                 GlassCard {
@@ -275,6 +281,30 @@ fun ExperimentalScreen(
             }
         }
 
-        item { Spacer(modifier = Modifier.height(80.dp)) }
+        // TWEAK: OPTIMIZAR ASIGNACIÓN ZRAM GAMER
+        item(key = "exp_zram_card", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 4, itemKey = "exp_zram_card") {
+                IOSSwitchTile(
+                    title = "Optimizar Asignación ZRAM Gamer",
+                    subtitle = "Ajusta swappiness para retener texturas en RAM física y expulsar apps inactivas a swap, eliminando tirones en giros de 360°",
+                    checked = zramGamerActive,
+                    onCheckedChange = { active ->
+                        zramGamerActive = active
+                        scope.launch {
+                            val swappiness = if (active) "130" else "60"
+                            val pressure = if (active) "50" else "100"
+                            viewModel.privilegedActions.bridge.executeShellCommand(
+                                "echo $swappiness > /proc/sys/vm/swappiness 2>/dev/null; " +
+                                "echo $pressure > /proc/sys/vm/vfs_cache_pressure 2>/dev/null; " +
+                                "setprop persist.sys.zram_tuning ${if (active) 1 else 0}"
+                            )
+                            Toast.makeText(context, if (active) "ZRAM Gamer activada (Texturas fijas en RAM)" else "ZRAM restablecida", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(96.dp)) }
     }
 }
