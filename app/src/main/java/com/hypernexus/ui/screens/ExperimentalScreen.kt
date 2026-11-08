@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Gamepad
-import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,7 +29,9 @@ import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitchTile
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun ExperimentalScreen(
@@ -72,7 +73,7 @@ fun ExperimentalScreen(
             CyberGlowEntranceWrapper(index = 0, itemKey = "exp_header") {
                 Column {
                     Text("Game Tuner & ZRAM Gamer", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
-                    Text("Compilación PGO y bloqueo de texturas en RAM física v1.7.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Compilación PGO y retención de texturas en RAM v1.7.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -177,7 +178,7 @@ fun ExperimentalScreen(
             }
         }
 
-        // COMPILACIÓN PGO (PROFILE-GUIDED OPTIMIZATION)
+        // COMPILACIÓN PGO ATÓMICA CON LOS 8 HILOS CONCURRENTES
         item(key = "exp_dex2oat_card", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "exp_dex2oat_card") {
                 GlassCard {
@@ -198,12 +199,16 @@ fun ExperimentalScreen(
                         Button(
                             onClick = {
                                 selectedApp?.let { app ->
-                                    scope.launch {
+                                    scope.launch(Dispatchers.IO) {
                                         isCompiling = true
-                                        // PGO: cmd package compile -m speed-profile -f
-                                        viewModel.privilegedActions.bridge.executeShellCommand("cmd package compile -m speed-profile -f ${app.packageName}")
-                                        isCompiling = false
-                                        Toast.makeText(context, "PGO completado para: ${app.appName}", Toast.LENGTH_LONG).show()
+                                        // 8 hilos completos + núcleos 0 a 7 forzados
+                                        viewModel.privilegedActions.bridge.executeShellCommand(
+                                            "setprop dalvik.vm.dex2oat-threads 8; setprop dalvik.vm.dex2oat-cpu-set 0,1,2,3,4,5,6,7; cmd package compile -m speed-profile -f ${app.packageName}"
+                                        )
+                                        withContext(Dispatchers.Main) {
+                                            isCompiling = false
+                                            Toast.makeText(context, "PGO completado para: ${app.appName}", Toast.LENGTH_LONG).show()
+                                        }
                                     }
                                 }
                             },
@@ -290,7 +295,7 @@ fun ExperimentalScreen(
                     checked = zramGamerActive,
                     onCheckedChange = { active ->
                         zramGamerActive = active
-                        scope.launch {
+                        scope.launch(Dispatchers.IO) {
                             val swappiness = if (active) "130" else "60"
                             val pressure = if (active) "50" else "100"
                             viewModel.privilegedActions.bridge.executeShellCommand(
@@ -298,7 +303,9 @@ fun ExperimentalScreen(
                                 "echo $pressure > /proc/sys/vm/vfs_cache_pressure 2>/dev/null; " +
                                 "setprop persist.sys.zram_tuning ${if (active) 1 else 0}"
                             )
-                            Toast.makeText(context, if (active) "ZRAM Gamer activada (Texturas fijas en RAM)" else "ZRAM restablecida", Toast.LENGTH_SHORT).show()
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, if (active) "ZRAM Gamer activada (Texturas fijas en RAM)" else "ZRAM restablecida", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 )

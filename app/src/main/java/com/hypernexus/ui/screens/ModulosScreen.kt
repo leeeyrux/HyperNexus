@@ -18,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -29,7 +28,9 @@ import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitch
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -49,7 +50,6 @@ fun ModulosScreen(
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
 
-    // Historial dinámico de las últimas 3 líneas de salida por módulo
     val moduleOutputs = remember { mutableStateMapOf<String, String>() }
     val expandedOutputs = remember { mutableStateMapOf<String, Boolean>() }
 
@@ -107,11 +107,14 @@ fun ModulosScreen(
     }
 
     fun executeAndCapture(id: String, script: String) {
-        scope.launch {
+        // Ejecución aislada en Dispatchers.IO para no bloquear la UI
+        scope.launch(Dispatchers.IO) {
             val res = viewModel.privilegedActions.executeScriptRaw(script)
             val lines = res.second.lines().filter { it.isNotBlank() }
             val last3 = if (lines.isNotEmpty()) lines.takeLast(3).joinToString("\n") else "[Inyección exitosa: Exit 0]"
-            moduleOutputs[id] = last3
+            withContext(Dispatchers.Main) {
+                moduleOutputs[id] = last3
+            }
         }
     }
 
@@ -145,7 +148,7 @@ fun ModulosScreen(
             CyberGlowEntranceWrapper(index = 0, itemKey = "mod_header") {
                 Column {
                     Text("Módulos Universales", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Inyector de scripts, mods y telemetría de salida v1.7.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Inyector de scripts, mods y telemetría de salida v1.7.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -165,7 +168,6 @@ fun ModulosScreen(
             }
         }
 
-        // MÓDULOS DE USUARIO CON VISOR DE SALIDA
         if (uiState.installedModulePaths.isNotEmpty()) {
             item(key = "mod_custom_title", contentType = "premium_node") {
                 Text("Módulos Personalizados (${uiState.installedModulePaths.size})", style = MaterialTheme.typography.titleMedium, color = Color.White)
@@ -245,7 +247,6 @@ fun ModulosScreen(
             }
         }
 
-        // PRESETS RECOMENDADOS CON VISOR DE SALIDA
         item(key = "mod_presets_title", contentType = "premium_node") {
             Text("Sugerencias de Inyección Rápida", style = MaterialTheme.typography.titleMedium, color = Color.White)
         }

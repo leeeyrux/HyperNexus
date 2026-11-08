@@ -63,8 +63,6 @@ fun SeguridadScreen(
     val appFilterManager = remember { AppFilterManager(context, viewModel.privilegedActions.bridge) }
 
     var storageData by remember { mutableStateOf<StorageTelemetry?>(null) }
-
-    // DUAL ENGINE MEGA-RINGS (+35% TAMAÑO)
     var isBoosterClearing by remember { mutableStateOf(false) }
     var isAntivirusScanning by remember { mutableStateOf(false) }
     var scannedAppPackageName by remember { mutableStateOf("") }
@@ -90,16 +88,29 @@ fun SeguridadScreen(
 
     val isTunnelRunning = uiState.vpnActive || HyperNexusVpnService.isRunning
 
-    // Láser Shimmer que se acelera al interactuar
-    val infiniteTransition = rememberInfiniteTransition(label = "shimmerTransition")
-    val laserSweepAngle by infiniteTransition.animateFloat(
+    // ANIMACIÓN UNIFICADA DE LÁSER SWEEP PARA AMBOS ANILLOS
+    val infiniteTransition = rememberInfiniteTransition(label = "unifiedLaserTransition")
+    
+    // Sweep del Booster (se acelera a 480ms al limpiar, 2800ms en reposo)
+    val boosterLaserAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(if (isAntivirusScanning || isBoosterClearing) 480 else 3000, easing = LinearEasing),
+            animation = tween(if (isBoosterClearing) 480 else 2800, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "laserSweep"
+        label = "boosterSweep"
+    )
+
+    // Sweep del Antivirus (se acelera a 480ms al escanear, 2800ms en reposo)
+    val antivirusLaserAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(if (isAntivirusScanning) 480 else 2800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "antivirusSweep"
     )
 
     fun startDeepAntivirusScan() {
@@ -144,13 +155,13 @@ fun SeguridadScreen(
             CyberGlowEntranceWrapper(index = 0, itemKey = "seg_header") {
                 Column {
                     Text("Seguridad & Red Gamer", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Mega-Core Dual Engine Cybersecurity v1.7.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Dual-Engine Symmetrical Hub v1.7.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
 
         // ====================================================================
-        // DUAL MEGA-RINGS: 35% MÁS GRANDES (116.DP) CON LÁSER SHIMMER EN GRAPHICSLAYER
+        // DUAL-ENGINE SIMÉTRICO: BOOSTER (CYAN) & ANTIVIRUS (EMERALD)
         // ====================================================================
         item(key = "seg_dual_engine", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "seg_dual_engine") {
@@ -170,7 +181,8 @@ fun SeguridadScreen(
                                     isBoosterClearing = true
                                     scope.launch {
                                         viewModel.privilegedActions.cleanHyperEngine()
-                                        delay(1400)
+                                        storageData = hardwareMonitor.getStorageTelemetry()
+                                        delay(1200)
                                         isBoosterClearing = false
                                         Toast.makeText(context, "Gaming Booster: Memoria Depurada", Toast.LENGTH_SHORT).show()
                                     }
@@ -194,9 +206,10 @@ fun SeguridadScreen(
                                                     useCenter = false,
                                                     style = Stroke(width = 9f, cap = StrokeCap.Round)
                                                 )
+                                                // Barrido láser idéntico unificado
                                                 drawArc(
                                                     color = Color.White,
-                                                    startAngle = laserSweepAngle,
+                                                    startAngle = boosterLaserAngle,
                                                     sweepAngle = 30f,
                                                     useCenter = false,
                                                     style = Stroke(width = 11f, cap = StrokeCap.Round)
@@ -235,14 +248,15 @@ fun SeguridadScreen(
                                                     brush = Brush.sweepGradient(
                                                         listOf(Color(0xFF00E676), Color(0xFF00B0FF), Color(0xFF00E676))
                                                     ),
-                                                    startAngle = 0f,
+                                                    startAngle = -90f,
                                                     sweepAngle = (antivirusProgress * 360f).coerceAtLeast(30f),
                                                     useCenter = false,
                                                     style = Stroke(width = 9f, cap = StrokeCap.Round)
                                                 )
+                                                // Barrido láser idéntico unificado
                                                 drawArc(
                                                     color = Color.White,
-                                                    startAngle = (laserSweepAngle + 180f) % 360f,
+                                                    startAngle = antivirusLaserAngle,
                                                     sweepAngle = 30f,
                                                     useCenter = false,
                                                     style = Stroke(width = 11f, cap = StrokeCap.Round)
@@ -270,6 +284,7 @@ fun SeguridadScreen(
             }
         }
 
+        // SUB-LABEL CON EL PAQUETE AUDITADO EN VIVO
         if (scannedAppPackageName.isNotBlank()) {
             item(key = "seg_scan_status", contentType = "premium_node") {
                 Box(
@@ -471,7 +486,7 @@ fun SeguridadScreen(
             }
         }
 
-        // FOOTER ACTIONS REUBICADAS (LIMPIAR RAM, GAMING BOOST, OPTIMIZAR PING)
+        // FOOTER ACTIONS REUBICADAS EN EL PIE DE SEGURIDAD
         item(key = "seg_footer_actions", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 5, itemKey = "seg_footer_actions") {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -480,6 +495,7 @@ fun SeguridadScreen(
                             scope.launch {
                                 viewModel.privilegedActions.killBackgroundApps()
                                 viewModel.privilegedActions.clearSmartCache()
+                                storageData = hardwareMonitor.getStorageTelemetry()
                                 Toast.makeText(context, "RAM Liberada", Toast.LENGTH_SHORT).show()
                             }
                         },

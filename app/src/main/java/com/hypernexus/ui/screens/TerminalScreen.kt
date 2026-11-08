@@ -26,8 +26,10 @@ import androidx.compose.ui.unit.sp
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun TerminalScreen(
@@ -39,18 +41,17 @@ fun TerminalScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     var inputCommand by remember { mutableStateOf("") }
-    var consoleLogs by remember { mutableStateOf("HyperNexus ADB Shell v1.6.1 [Shizuku Protocol]\nEscriba un comando o seleccione uno predefinido.\n") }
+    var consoleLogs by remember { mutableStateOf("HyperNexus ADB Shell v1.7.5 [Shizuku Protocol]\nEscriba un comando o seleccione uno predefinido.\n") }
     var isExecuting by remember { mutableStateOf(false) }
     var commandSuccessPulse by remember { mutableStateOf(false) }
 
-    // Pulso neón verde instantáneo al ejecutar
     val pulseBorderColor by animateColorAsState(
         targetValue = if (commandSuccessPulse) Color(0xFF00E676) else Color.Transparent,
         animationSpec = tween(durationMillis = 280),
         label = "neonPulse"
     )
 
-    // Lluvia Matrix descendente continua a 4% de opacidad
+    // Lluvia Matrix continua al 4% sobre Verde Fósforo IBM #003300
     val infiniteTransition = rememberInfiniteTransition(label = "matrixRain")
     val matrixShiftY by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -83,17 +84,22 @@ fun TerminalScreen(
         isExecuting = true
         consoleLogs += "\n$ $target\n"
 
-        scope.launch {
+        // Despachador de terminal aislado estrictamente en Dispatchers.IO
+        scope.launch(Dispatchers.IO) {
             val result = viewModel.privilegedActions.bridge.executeShellCommand(target)
-            if (result.first == 0) {
-                consoleLogs += if (result.second.isBlank()) "[Comando ejecutado con éxito (Exit 0)]\n" else "${result.second}\n"
-                commandSuccessPulse = true
-                delay(300)
-                commandSuccessPulse = false
-            } else {
-                consoleLogs += "[Error de salida: ${result.first}]\n${result.second}\n"
+            withContext(Dispatchers.Main) {
+                if (result.first == 0) {
+                    consoleLogs += if (result.second.isBlank()) "[Comando ejecutado con éxito (Exit 0)]\n" else "${result.second}\n"
+                    commandSuccessPulse = true
+                } else {
+                    consoleLogs += "[Error de salida: ${result.first}]\n${result.second}\n"
+                }
+                isExecuting = false
             }
-            isExecuting = false
+            if (result.first == 0) {
+                delay(300)
+                withContext(Dispatchers.Main) { commandSuccessPulse = false }
+            }
         }
     }
 
@@ -104,7 +110,7 @@ fun TerminalScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item(key = "term_banner", contentType = "premium_card_node") {
+        item(key = "term_banner", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "term_banner") {
                 Box(
                     modifier = Modifier
@@ -137,8 +143,8 @@ fun TerminalScreen(
             }
         }
 
-        // CONSOLA CON LLUVIA MATRIX DESCENDENTE AL 4% DE OPACIDAD
-        item(key = "term_console", contentType = "premium_card_node") {
+        // CONSOLA MATRIX VERDE FÓSFORO AL 4%
+        item(key = "term_console", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "term_console") {
                 GlassCard {
                     Column {
@@ -163,7 +169,6 @@ fun TerminalScreen(
                                 .border(1.5.dp, pulseBorderColor, RoundedCornerShape(10.dp))
                                 .padding(10.dp)
                         ) {
-                            // Cascada Matrix translúcida al fondo
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -172,7 +177,7 @@ fun TerminalScreen(
                                 repeat(5) {
                                     Text(
                                         text = "01101001 01101110 01110000 01110101 01110100 01101100 01100001 01100111",
-                                        color = Color(0xFF00E676).copy(alpha = 0.04f),
+                                        color = Color(0x0B003300), // ~4% de opacidad estricta
                                         fontFamily = FontFamily.Monospace,
                                         fontSize = 10.sp,
                                         letterSpacing = 2.sp
@@ -181,7 +186,6 @@ fun TerminalScreen(
                                 }
                             }
 
-                            // Logs activos interactivos
                             Text(
                                 text = consoleLogs,
                                 color = Color(0xFF30D158),
@@ -195,7 +199,7 @@ fun TerminalScreen(
             }
         }
 
-        item(key = "term_input_field", contentType = "premium_card_node") {
+        item(key = "term_input_field", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "term_input_field") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -262,13 +266,13 @@ fun TerminalScreen(
         }
 
         if (uiState.favoriteCommands.isNotEmpty()) {
-            item(key = "term_favs_title", contentType = "premium_card_node") {
+            item(key = "term_favs_title", contentType = "premium_node") {
                 Text("Comandos Guardados", style = MaterialTheme.typography.titleMedium, color = Color.White)
             }
             items(
                 items = uiState.favoriteCommands.toList(),
                 key = { it },
-                contentType = { "premium_card_node" }
+                contentType = { "premium_node" }
             ) { favCmd ->
                 CyberGlowEntranceWrapper(index = 3, itemKey = favCmd) {
                     Row(
@@ -294,14 +298,14 @@ fun TerminalScreen(
             }
         }
 
-        item(key = "term_presets_title", contentType = "premium_card_node") {
+        item(key = "term_presets_title", contentType = "premium_node") {
             Text("Comandos Útiles Predefinidos", style = MaterialTheme.typography.titleMedium, color = Color.White)
         }
 
         items(
             items = presetCommands,
             key = { it.second },
-            contentType = { "premium_card_node" }
+            contentType = { "premium_node" }
         ) { (title, cmd) ->
             CyberGlowEntranceWrapper(index = 4, itemKey = cmd) {
                 GlassCard(

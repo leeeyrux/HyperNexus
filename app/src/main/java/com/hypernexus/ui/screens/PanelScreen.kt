@@ -33,10 +33,11 @@ import com.hypernexus.ui.components.GlassCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
-data class ConflatedTelemetrySnapshot(
+data class PanelTelemetryState(
     val liveMetrics: LiveHardwareMetrics,
     val batteryData: BatteryTelemetry,
     val networkData: NetworkTelemetry
@@ -51,7 +52,7 @@ fun PanelScreen(
     val hardwareMonitor = remember { HardwareMonitor(context) }
     val specs = remember { hardwareMonitor.getStaticSpecs() }
 
-    // Flujo asíncrono conflado a 500ms en Dispatchers.Default
+    // 1. FLUJO ASÍNCRONO CONFLADO CALIBRADO A EXACTAMENTE 800MS
     val telemetryFlow = remember {
         flow {
             while (true) {
@@ -59,19 +60,20 @@ fun PanelScreen(
                     val m = hardwareMonitor.getLiveMetrics()
                     val b = hardwareMonitor.getBatteryTelemetry()
                     val n = hardwareMonitor.getNetworkTelemetry()
-                    emit(ConflatedTelemetrySnapshot(m, b, n))
+                    emit(PanelTelemetryState(m, b, n))
                 } catch (_: Throwable) {}
-                delay(500)
+                delay(800)
             }
-        }.flowOn(Dispatchers.Default).conflate()
+        }.flowOn(Dispatchers.Default).conflate().distinctUntilChanged()
     }
 
     val telemetrySnapshot by telemetryFlow.collectAsState(initial = null)
 
-    // Paleta Electric Blue restaurada para visibilidad y contraste
+    // Colores oficiales Electric Blue
     val electricBlue = Color(0xFF007AFF)
     val accentGreen = Color(0xFF00E676)
 
+    // Supresor de recomposición de cadenas
     val ramUsedMb by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.usedRamMb ?: 0L } }
     val ramTotalMb by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.totalRamMb ?: 4096L } }
     val ramPercent by remember { derivedStateOf { telemetrySnapshot?.liveMetrics?.ramUsagePercent ?: 0 } }
@@ -94,6 +96,7 @@ fun PanelScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // ORDEN 1: HEADER CON ENLACES SOCIALES
         item(key = "panel_header", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "panel_header") {
                 Row(
@@ -128,7 +131,7 @@ fun PanelScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Nodo de Telemetría v1.7.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                            Text("Hub de Telemetría v1.7.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                         }
                     }
                 }
@@ -175,42 +178,9 @@ fun PanelScreen(
             }
         }
 
-        // MEMORIA RAM CON ICONO ELECTRIC BLUE RESTAURADO
-        item(key = "panel_ram", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 3, itemKey = "panel_ram") {
-                GlassCard {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Memory, null, tint = electricBlue, modifier = Modifier.size(32.dp))
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Memoria RAM", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "$ramUsedMb MB / $ramTotalMb MB",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color(0xFF8E8E93)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            LinearProgressIndicator(
-                                progress = (ramPercent / 100f).coerceIn(0f, 1f),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
-                                color = if (ramPercent > 85) Color(0xFFFF003C) else accentGreen,
-                                trackColor = Color(0xFF2C2C2E)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("$ramPercent% en uso", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
-                        }
-                    }
-                }
-            }
-        }
-
-        // TELEMETRÍA DE RED CON ICONO Y TOKEN ELECTRIC BLUE
+        // ORDEN 2: TELEMETRÍA DE CONECTIVIDAD EN VIVO (ICONO Y TOKEN ELECTRIC BLUE)
         item(key = "panel_network", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 4, itemKey = "panel_network") {
+            CyberGlowEntranceWrapper(index = 3, itemKey = "panel_network") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -246,9 +216,9 @@ fun PanelScreen(
             }
         }
 
-        // TELEMETRÍA DE BATERÍA DETALLADA
+        // ORDEN 3: TELEMETRÍA ENERGÉTICA DE BATERÍA (MV, MA, SALUD Y TECNOLOGÍA)
         item(key = "panel_battery", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 5, itemKey = "panel_battery") {
+            CyberGlowEntranceWrapper(index = 4, itemKey = "panel_battery") {
                 GlassCard {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -279,7 +249,40 @@ fun PanelScreen(
             }
         }
 
-        // 8 NÚCLEOS DE CPU EN TIEMPO REAL
+        // ORDEN 4: MEMORIA RAM (TARJETA SÓLIDA NATIVA CON BARRA VERDE)
+        item(key = "panel_ram", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 5, itemKey = "panel_ram") {
+                GlassCard {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Memory, null, tint = electricBlue, modifier = Modifier.size(32.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Memoria RAM", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "$ramUsedMb MB / $ramTotalMb MB",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color(0xFF8E8E93)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = (ramPercent / 100f).coerceIn(0f, 1f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = if (ramPercent > 85) Color(0xFFFF003C) else accentGreen,
+                                trackColor = Color(0xFF2C2C2E)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("$ramPercent% en uso", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8E8E93))
+                        }
+                    }
+                }
+            }
+        }
+
+        // ORDEN 5: FRECUENCIAS DEL CPU (8 NÚCLEOS CORE #0 A CORE #7 EN EL FONDO ABSOLUTO)
         item(key = "panel_cpu", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 6, itemKey = "panel_cpu") {
                 GlassCard {

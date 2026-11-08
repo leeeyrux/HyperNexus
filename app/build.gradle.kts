@@ -11,8 +11,8 @@ android {
         applicationId = "com.hypernexus"
         minSdk = 26
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.7.0"
+        versionCode = 6
+        versionName = "1.7.5"
     }
 
     buildTypes {

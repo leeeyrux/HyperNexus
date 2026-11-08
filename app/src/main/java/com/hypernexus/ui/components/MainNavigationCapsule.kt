@@ -1,13 +1,11 @@
 package com.hypernexus.ui.components
 
-import android.os.Build
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,8 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -29,7 +25,7 @@ import androidx.compose.ui.unit.sp
 
 data class NavNode(val title: String, val icon: ImageVector)
 
-val CubeSwipeEasing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1.0f)
+val NavigationSwipeEasing = CubicBezierEasing(0.25f, 0.46f, 0.45f, 0.94f)
 
 @Composable
 fun MainNavigationCapsule(
@@ -49,7 +45,7 @@ fun MainNavigationCapsule(
         )
     }
 
-    // Geometría de curvatura extrema para barras de texto conversacionales Kimi IA
+    // Geometría de curvatura ovalada absoluta
     val capsuleShape = RoundedCornerShape(100.dp)
 
     Box(
@@ -63,25 +59,15 @@ fun MainNavigationCapsule(
                 spotColor = Color.Black.copy(alpha = 0.8f)
             )
     ) {
-        // CAPA 1: BLUR LIGERO DE 12.DP Y CAPA DE TINTE AL 8% (COLOR 0x14121216)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(capsuleShape)
-                    .blur(radius = 12.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
-                    .background(Color(0x14121216))
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(capsuleShape)
-                    .background(Color(0xE6121216))
-            )
-        }
+        // CAPA 1: GLASS PURO CERO BLUR (SUPERFICIE OSCURA TRANSLÚCIDA ULTRA LIGERA)
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(capsuleShape)
+                .background(Color(0xD9121216))
+        )
 
-        // CAPA 2: BORDE REFLEJO KIMI IA (3D EXTREME EDGE HIGHLIGHT)
+        // CAPA 2: RESALTE DE BORDE 3D (DESTELLO CRISTAL REFRACTIVO EN EXTREMOS)
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -99,7 +85,7 @@ fun MainNavigationCapsule(
                 )
         )
 
-        // CAPA 3: TRACKER HORIZONTAL SWIPE CON HIGHLIGHT MONOCROMÁTICO BOLD
+        // CAPA 3: SWIPE TRACKER HORIZONTAL CON SELECCIÓN MONOCROMÁTICA BOLD-WHITE
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,
@@ -116,13 +102,13 @@ fun MainNavigationCapsule(
 
                 val animScale by animateFloatAsState(
                     targetValue = if (isSelected) 1.0f else 0.92f,
-                    animationSpec = tween(durationMillis = 350, easing = CubeSwipeEasing),
+                    animationSpec = tween(durationMillis = 350, easing = NavigationSwipeEasing),
                     label = "capsuleScale"
                 )
 
                 val animAlpha by animateFloatAsState(
                     targetValue = if (isSelected) 1.0f else 0.45f,
-                    animationSpec = tween(durationMillis = 350, easing = CubeSwipeEasing),
+                    animationSpec = tween(durationMillis = 350, easing = NavigationSwipeEasing),
                     label = "capsuleAlpha"
                 )
 

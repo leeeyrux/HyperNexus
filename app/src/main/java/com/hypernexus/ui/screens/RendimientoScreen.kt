@@ -69,7 +69,7 @@ fun RendimientoScreen(
             CyberGlowEntranceWrapper(index = 0, itemKey = "rend_header") {
                 Column {
                     Text("Rendimiento", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Ajustes por pasos seguros sin deslizamiento errático v1.7.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Ajustes por pasos seguros sin deslizamiento errático v1.7.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }

@@ -12,8 +12,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
-// Curva cúbica no lineal orgánica a 520ms para gama de entrada y 120Hz
-val CyberCubeEasing = CubicBezierEasing(0.2f, 0.8f, 0.15f, 1.0f)
+// Curva estándar de desaceleración iNexus Flow-State (easeOutQuad)
+val EaseOutQuadEasing = CubicBezierEasing(0.25f, 0.46f, 0.45f, 0.94f)
 
 @Composable
 fun CyberGlowEntranceWrapper(
@@ -22,7 +22,8 @@ fun CyberGlowEntranceWrapper(
     itemKey: Any? = null,
     content: @Composable () -> Unit
 ) {
-    var hasAnimated by rememberSaveable(key = "cyber_anim_${index}_${itemKey ?: index}") {
+    // Escudo de Memoria: Bloquea animaciones al scrollear hacia arriba o abajo en la misma pestaña
+    var hasAnimated by rememberSaveable(key = "flow_anim_${index}_${itemKey ?: index}") {
         mutableStateOf(false)
     }
 
@@ -34,33 +35,28 @@ fun CyberGlowEntranceWrapper(
     }
 
     val density = LocalDensity.current
-    val startOffsetX = with(density) { (-35).dp.toPx() }
-    val startOffsetY = with(density) { 45.dp.toPx() }
+    val startOffsetY = with(density) { 30.dp.toPx() }
 
     val animProgress = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
-        val delayMs = (index * 25L).coerceAtMost(350L)
+        // Desfase en cascada secuencial: 50ms exactos por índice
+        val delayMs = (index * 50L).coerceAtMost(500L)
         delay(delayMs)
         animProgress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 520, easing = CyberCubeEasing)
+            animationSpec = tween(durationMillis = 600, easing = EaseOutQuadEasing)
         )
         hasAnimated = true
     }
 
     val progress = animProgress.value
     val currentAlpha = progress
-    val currentScale = 0.90f + (0.10f * progress)
-    val currentTranslationX = startOffsetX * (1f - progress)
     val currentTranslationY = startOffsetY * (1f - progress)
 
     Box(
         modifier = modifier.graphicsLayer {
             alpha = currentAlpha
-            scaleX = currentScale
-            scaleY = currentScale
-            translationX = currentTranslationX
             translationY = currentTranslationY
         }
     ) {
