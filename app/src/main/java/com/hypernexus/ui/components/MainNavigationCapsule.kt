@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -28,7 +29,7 @@ import androidx.compose.ui.unit.sp
 
 data class NavNode(val title: String, val icon: ImageVector)
 
-val CubeSwipeEasing = CubicBezierEasing(0.2f, 0.8f, 0.15f, 1.0f)
+val CubeSwipeEasing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1.0f)
 
 @Composable
 fun MainNavigationCapsule(
@@ -48,7 +49,7 @@ fun MainNavigationCapsule(
         )
     }
 
-    // Geometría de curvatura máxima absoluta (cápsula pura)
+    // Geometría de curvatura extrema para barras de texto conversacionales Kimi IA
     val capsuleShape = RoundedCornerShape(100.dp)
 
     Box(
@@ -62,14 +63,14 @@ fun MainNavigationCapsule(
                 spotColor = Color.Black.copy(alpha = 0.8f)
             )
     ) {
-        // CAPA 1: BLUR LIGERO DE 8.DP CON TINTE DEL 12% (GAMA MEDIA / SNAPDRAGON 685 COMPATIBLE)
+        // CAPA 1: BLUR LIGERO DE 12.DP Y CAPA DE TINTE AL 8% (COLOR 0x14121216)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .clip(capsuleShape)
-                    .blur(radius = 8.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
-                    .background(Color(0x1F121216))
+                    .blur(radius = 12.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
+                    .background(Color(0x14121216))
             )
         } else {
             Box(
@@ -98,7 +99,7 @@ fun MainNavigationCapsule(
                 )
         )
 
-        // CAPA 3: SWIPE MONOCROMÁTICO BOLD-WHITE
+        // CAPA 3: TRACKER HORIZONTAL SWIPE CON HIGHLIGHT MONOCROMÁTICO BOLD
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,

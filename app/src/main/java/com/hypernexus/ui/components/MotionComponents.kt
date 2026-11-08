@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
+// Curva cúbica no lineal orgánica a 520ms para gama de entrada y 120Hz
 val CyberCubeEasing = CubicBezierEasing(0.2f, 0.8f, 0.15f, 1.0f)
 
 @Composable
