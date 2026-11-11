@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -34,6 +35,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventEffect
+import androidx.lifecycle.LocalLifecycleOwner
 import com.hypernexus.data.HardwareMonitor
 import com.hypernexus.data.StorageTelemetry
 import com.hypernexus.domain.AppFilterManager
@@ -57,6 +61,7 @@ fun SeguridadScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
     val hardwareMonitor = remember { HardwareMonitor(context) }
@@ -74,6 +79,9 @@ fun SeguridadScreen(
     var selectedTargetGame by remember { mutableStateOf<GameTargetApp?>(null) }
     var showGamePickerModal by remember { mutableStateOf(false) }
 
+    // Private DNS state from DataStore
+    val privateDnsEnabled = uiState.privateDnsEnabled
+
     LaunchedEffect(Unit) {
         storageData = hardwareMonitor.getStorageTelemetry()
         val allApps = appFilterManager.getInstalledUserApplications()
@@ -86,17 +94,29 @@ fun SeguridadScreen(
         }
     }
 
+    // ============================================================
+    // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
+    // ============================================================
+    LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
+        scope.launch(Dispatchers.IO) {
+            syncExternalSecurityState(viewModel)
+        }
+    }
+
     val isTunnelRunning = uiState.vpnActive || HyperNexusVpnService.isRunning
 
     // ANIMACIÓN UNIFICADA DE LÁSER SWEEP PARA AMBOS ANILLOS
+    // Both rings share the same continuous standby shimmer motion (2800ms linear sweep)
+    // Booster: 1800ms active (matches pm trim-caches 999G runtime) - CYAN
+    // Antivirus: variable active duration (package audit) - EMERALD GREEN
     val infiniteTransition = rememberInfiniteTransition(label = "unifiedLaserTransition")
-    
-    // Sweep del Booster (se acelera a 480ms al limpiar, 2800ms en reposo)
+
+    // Sweep del Booster (1800ms al limpiar = pm trim-caches runtime, 2800ms en reposo)
     val boosterLaserAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(if (isBoosterClearing) 480 else 2800, easing = LinearEasing),
+            animation = tween(if (isBoosterClearing) 1800 else 2800, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "boosterSweep"
@@ -155,7 +175,7 @@ fun SeguridadScreen(
             CyberGlowEntranceWrapper(index = 0, itemKey = "seg_header") {
                 Column {
                     Text("Seguridad & Red Gamer", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Dual-Engine Symmetrical Hub v1.7.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Dual-Engine Symmetrical Hub v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -182,7 +202,7 @@ fun SeguridadScreen(
                                     scope.launch {
                                         viewModel.privilegedActions.cleanHyperEngine()
                                         storageData = hardwareMonitor.getStorageTelemetry()
-                                        delay(1200)
+                                        delay(1800)
                                         isBoosterClearing = false
                                         Toast.makeText(context, "Gaming Booster: Memoria Depurada", Toast.LENGTH_SHORT).show()
                                     }
@@ -331,9 +351,21 @@ fun SeguridadScreen(
             }
         }
 
+        // DNS PRIVADO RÁPIDO (1.1.1.1) - NUEVA OPCIÓN
+        item(key = "seg_private_dns_switch", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 4, itemKey = "seg_private_dns_switch") {
+                IOSSwitchTile(
+                    title = "DNS Privado Rápido (1.1.1.1)",
+                    subtitle = "Acelera el internet y evita bloqueos básicos de red sin gastar batería.",
+                    checked = privateDnsEnabled,
+                    onCheckedChange = { viewModel.togglePrivateDns(it) }
+                )
+            }
+        }
+
         // GAMING VPN TUNNEL
         item(key = "seg_vpn_card", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 4, itemKey = "seg_vpn_card") {
+            CyberGlowEntranceWrapper(index = 5, itemKey = "seg_vpn_card") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -488,7 +520,7 @@ fun SeguridadScreen(
 
         // FOOTER ACTIONS REUBICADAS EN EL PIE DE SEGURIDAD
         item(key = "seg_footer_actions", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 5, itemKey = "seg_footer_actions") {
+            CyberGlowEntranceWrapper(index = 6, itemKey = "seg_footer_actions") {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = {
@@ -605,5 +637,39 @@ fun SeguridadScreen(
                 }
             }
         )
+    }
+}
+
+// ============================================================
+// UNIVERSAL SYNC ENGINE - Queries real-time security properties
+// ============================================================
+private suspend fun syncExternalSecurityState(viewModel: HyperNexusViewModel) {
+    val bridge = viewModel.privilegedActions.bridge
+    return try {
+        // Sync Private DNS
+        val dnsModeResult = bridge.executeShellCommand("settings get global private_dns_mode")
+        if (dnsModeResult.first == 0) {
+            val mode = dnsModeResult.second.trim()
+            val current = mode == "hostname"
+            if (current != viewModel.uiState.value.privateDnsEnabled) {
+                viewModel.repository.updatePrivateDns(current)
+            }
+        }
+
+        // Sync Threshold RAM Purger (check if the monitoring job is running)
+        // This is harder to detect externally, skip for now
+
+        // Sync DoH Anti-Throttling (check DNS settings)
+        val dnsResult = bridge.executeShellCommand("settings get global private_dns_specifier")
+        if (dnsResult.first == 0) {
+            val specifier = dnsResult.second.trim()
+            val current = specifier == "one.one.one.one"
+            if (current != viewModel.uiState.value.dohAntiThrottling) {
+                viewModel.repository.updateDohAntiThrottling(current)
+            }
+        }
+
+    } catch (e: Exception) {
+        // Silent fail - sync is best effort
     }
 }

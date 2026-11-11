@@ -41,7 +41,7 @@ fun TerminalScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     var inputCommand by remember { mutableStateOf("") }
-    var consoleLogs by remember { mutableStateOf("HyperNexus ADB Shell v1.7.5 [Shizuku Protocol]\nEscriba un comando o seleccione uno predefinido.\n") }
+    var consoleLogs by remember { mutableStateOf("HyperNexus ADB Shell v1.8.0 [Shizuku Protocol]\nEscriba un comando o seleccione uno predefinido.\n") }
     var isExecuting by remember { mutableStateOf(false) }
     var commandSuccessPulse by remember { mutableStateOf(false) }
 
@@ -51,7 +51,8 @@ fun TerminalScreen(
         label = "neonPulse"
     )
 
-    // Lluvia Matrix continua al 4% sobre Verde Fósforo IBM #003300
+    // Lluvia Matrix v1.6.1: cascada vertical de caracteres neutros al 4% opacidad exacta (0.04f)
+    // Sin capas verde fósforo, sin matrices de brillo - solo gris neutro sobre negro puro
     val infiniteTransition = rememberInfiniteTransition(label = "matrixRain")
     val matrixShiftY by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -62,6 +63,9 @@ fun TerminalScreen(
         ),
         label = "matrixShift"
     )
+
+    // Color gris neutro con alpha exacto 0.04f (4% opacidad) - v1.6.1 stable layout
+    val matrixCharColor = Color(0xFF757575).copy(alpha = 0.04f)
 
     val presetCommands = remember {
         listOf(
@@ -153,7 +157,7 @@ fun TerminalScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Consola Shizuku", style = MaterialTheme.typography.titleSmall, color = Color.White)
+                            Text("Consola Shizuku v1.8.0", style = MaterialTheme.typography.titleSmall, color = Color.White)
                             IconButton(onClick = { consoleLogs = "HyperNexus Shell Limpia.\n" }, modifier = Modifier.size(24.dp)) {
                                 Icon(Icons.Default.DeleteSweep, "Limpiar", tint = Color(0xFF8E8E93))
                             }
@@ -177,7 +181,7 @@ fun TerminalScreen(
                                 repeat(5) {
                                     Text(
                                         text = "01101001 01101110 01110000 01110101 01110100 01101100 01100001 01100111",
-                                        color = Color(0x0B003300), // ~4% de opacidad estricta
+                                        color = matrixCharColor,
                                         fontFamily = FontFamily.Monospace,
                                         fontSize = 10.sp,
                                         letterSpacing = 2.sp

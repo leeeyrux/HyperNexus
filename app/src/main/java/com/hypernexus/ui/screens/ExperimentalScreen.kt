@@ -23,6 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventEffect
+import androidx.lifecycle.LocalLifecycleOwner
 import com.hypernexus.domain.AppFilterManager
 import com.hypernexus.domain.GameTargetApp
 import com.hypernexus.ui.HyperNexusViewModel
@@ -39,6 +42,7 @@ fun ExperimentalScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val appFilterManager = remember {
         AppFilterManager(context, viewModel.privilegedActions.bridge)
@@ -52,7 +56,18 @@ fun ExperimentalScreen(
     var gameFps by remember { mutableStateOf(120) }
     var downscale80 by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
-    var zramGamerActive by remember { mutableStateOf(false) }
+
+    // Use persistent state from DataStore instead of volatile memory
+    val zramGamerActive = viewModel.uiState.collectAsState().value?.zramGamer ?: false
+
+    // ============================================================
+    // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
+    // ============================================================
+    LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
+        scope.launch(Dispatchers.IO) {
+            syncExternalExperimentalState(viewModel)
+        }
+    }
 
     LaunchedEffect(Unit) {
         val apps = appFilterManager.getInstalledUserApplications()
@@ -73,7 +88,7 @@ fun ExperimentalScreen(
             CyberGlowEntranceWrapper(index = 0, itemKey = "exp_header") {
                 Column {
                     Text("Game Tuner & ZRAM Gamer", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
-                    Text("Compilación PGO y retención de texturas en RAM v1.7.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Compilación PGO y retención de texturas en RAM v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -294,7 +309,7 @@ fun ExperimentalScreen(
                     subtitle = "Ajusta swappiness para retener texturas en RAM física y expulsar apps inactivas a swap, eliminando tirones en giros de 360°",
                     checked = zramGamerActive,
                     onCheckedChange = { active ->
-                        zramGamerActive = active
+                        viewModel.toggleZramGamer(active)
                         scope.launch(Dispatchers.IO) {
                             val swappiness = if (active) "130" else "60"
                             val pressure = if (active) "50" else "100"
@@ -313,5 +328,35 @@ fun ExperimentalScreen(
         }
 
         item { Spacer(modifier = Modifier.height(96.dp)) }
+    }
+}
+
+// ============================================================
+// UNIVERSAL SYNC ENGINE - Queries real-time experimental properties
+// ============================================================
+private suspend fun syncExternalExperimentalState(viewModel: HyperNexusViewModel) {
+    val bridge = viewModel.privilegedActions.bridge
+    return try {
+        // Sync ZRAM Gamer
+        val zramResult = bridge.executeShellCommand("getprop persist.sys.zram_tuning")
+        if (zramResult.first == 0) {
+            val current = zramResult.second.trim() == "1"
+            if (current != viewModel.uiState.value.zramGamer) {
+                viewModel.repository.updateZramGamer(current)
+            }
+        }
+
+        // Also check swappiness as fallback
+        val swapResult = bridge.executeShellCommand("cat /proc/sys/vm/swappiness")
+        if (swapResult.first == 0) {
+            val current = swapResult.second.trim().toIntOrNull() ?: 60
+            val isZramActive = current >= 100
+            if (isZramActive != viewModel.uiState.value.zramGamer) {
+                viewModel.repository.updateZramGamer(isZramActive)
+            }
+        }
+
+    } catch (e: Exception) {
+        // Silent fail - sync is best effort
     }
 }

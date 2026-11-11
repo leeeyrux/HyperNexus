@@ -46,7 +46,10 @@ data class NexusSettings(
     val vpnActive: Boolean = false,
     val vpnTargetPackage: String = "",
     val thresholdRamPurger: Boolean = false,
-    val dohAntiThrottling: Boolean = false
+    val dohAntiThrottling: Boolean = false,
+    val inputLagBypass: Boolean = false,
+    val zramGamer: Boolean = false,
+    val privateDnsEnabled: Boolean = false
 )
 
 class PreferencesRepository(private val context: Context) {
@@ -87,6 +90,9 @@ class PreferencesRepository(private val context: Context) {
         val VPN_TARGET_PACKAGE = stringPreferencesKey("vpn_target_package")
         val THRESHOLD_RAM = booleanPreferencesKey("threshold_ram_purger")
         val DOH_THROTTLING = booleanPreferencesKey("doh_anti_throttling")
+        val INPUT_LAG_BYPASS = booleanPreferencesKey("input_lag_bypass")
+        val ZRAM_GAMER = booleanPreferencesKey("zram_gamer")
+        val PRIVATE_DNS = booleanPreferencesKey("private_dns_enabled")
     }
 
     val settingsFlow: Flow<NexusSettings> = context.dataStore.data
@@ -129,7 +135,10 @@ class PreferencesRepository(private val context: Context) {
                 vpnActive = prefs[Keys.VPN_ACTIVE] ?: false,
                 vpnTargetPackage = prefs[Keys.VPN_TARGET_PACKAGE] ?: "",
                 thresholdRamPurger = prefs[Keys.THRESHOLD_RAM] ?: false,
-                dohAntiThrottling = prefs[Keys.DOH_THROTTLING] ?: false
+                dohAntiThrottling = prefs[Keys.DOH_THROTTLING] ?: false,
+                inputLagBypass = prefs[Keys.INPUT_LAG_BYPASS] ?: false,
+                zramGamer = prefs[Keys.ZRAM_GAMER] ?: false,
+                privateDnsEnabled = prefs[Keys.PRIVATE_DNS] ?: false
             )
         }
 
@@ -175,6 +184,9 @@ class PreferencesRepository(private val context: Context) {
 
     suspend fun updateThresholdRamPurger(enable: Boolean) = set(Keys.THRESHOLD_RAM, enable)
     suspend fun updateDohAntiThrottling(enable: Boolean) = set(Keys.DOH_THROTTLING, enable)
+    suspend fun updateInputLagBypass(enable: Boolean) = set(Keys.INPUT_LAG_BYPASS, enable)
+    suspend fun updateZramGamer(enable: Boolean) = set(Keys.ZRAM_GAMER, enable)
+    suspend fun updatePrivateDns(enable: Boolean) = set(Keys.PRIVATE_DNS, enable)
 
     suspend fun toggleFavoriteCommand(cmd: String) {
         context.dataStore.edit { prefs ->

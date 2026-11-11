@@ -131,7 +131,7 @@ fun PanelScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text("HyperNexus", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Hub de Telemetría v1.7.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                            Text("Hub de Telemetría v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                         }
                     }
                 }

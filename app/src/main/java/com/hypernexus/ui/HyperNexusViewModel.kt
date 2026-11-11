@@ -58,6 +58,37 @@ class HyperNexusViewModel(
         }
     }
 
+    fun toggleInputLagBypass(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateInputLagBypass(enable)
+            privilegedActions.setInputLagBypass(enable)
+        }
+    }
+
+    fun toggleZramGamer(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateZramGamer(enable)
+            // ZRAM commands are executed directly in the screen via bridge
+        }
+    }
+
+    fun togglePrivateDns(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updatePrivateDns(enable)
+            val mode = if (enable) "hostname" else "opportunistic"
+            val specifier = if (enable) "one.one.one.one" else ""
+            val commands = if (enable) {
+                listOf(
+                    "settings put global private_dns_mode $mode",
+                    "settings put global private_dns_specifier $specifier"
+                )
+            } else {
+                listOf("settings put global private_dns_mode opportunistic")
+            }
+            privilegedActions.bridge.executeScript(commands)
+        }
+    }
+
     private fun startMemoryThresholdMonitoring() {
         thresholdJob = viewModelScope.launch(Dispatchers.IO) {
             while (isActive) {

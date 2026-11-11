@@ -1,8 +1,6 @@
 package com.hypernexus.ui.components
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -11,6 +9,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 // ============================================================
 // iNEXUS STORE — SCROLL ANIMATION SYSTEM (FÓRMULA 1:1 WEB)
@@ -22,6 +21,13 @@ import kotlinx.coroutines.delay
 // - translateX: 0 | scale: 1 | rotateY: 0 (Movimiento vertical puro)
 // ============================================================
 val INexusEaseOutQuad = CubicBezierEasing(0.25f, 0.46f, 0.45f, 0.94f)
+
+// Ease-out quad function: 1 - (1 - t)^2
+@kotlin.jvm.JvmInline
+value class EaseOutQuadProgress(private val value: Float) {
+    operator fun component1(): Float = value
+    fun eased(): Float = 1f - (1f - value) * (1f - value)
+}
 
 @Composable
 fun CyberGlowEntranceWrapper(
@@ -47,7 +53,10 @@ fun CyberGlowEntranceWrapper(
     // translateY(30px) exacto del CSS de tu web
     val startOffsetY = with(density) { 30.dp.toPx() }
 
-    val animProgress = remember { Animatable(0f) }
+    // Animation state driven by manual frame clock - BYPASSES animator_duration_scale
+    var animProgress by remember { mutableStateOf(0f) }
+    var startTime by remember { mutableStateOf(0L) }
+    var animationJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
     LaunchedEffect(Unit) {
         // Stagger de 100ms exacto de tu web (.feature-pill:nth-child delay)
@@ -55,22 +64,45 @@ fun CyberGlowEntranceWrapper(
         if (delayMs > 0L) {
             delay(delayMs)
         }
-        animProgress.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(
-                durationMillis = 600, // 0.6s exactos de tu web
-                easing = INexusEaseOutQuad // cubic-bezier(0.25, 0.46, 0.45, 0.94)
-            )
-        )
-        isVisible = true
+
+        startTime = System.nanoTime()
+        val durationNanos = 600_000_000L // 600ms en nanosegundos
+
+        animationJob = launch {
+            // Manual frame-by-frame animation loop using withFrameNanos
+            // This bypasses the high-level Compose animation framework entirely
+            // and drives coordinates directly on the hardware graphics layer
+            while (animProgress < 1f) {
+                val currentTime = withFrameNanos { it }
+                val elapsed = currentTime - startTime
+                val rawProgress = (elapsed.toFloat() / durationNanos.toFloat()).coerceIn(0f, 1f)
+                
+                // Apply easeOutQuad easing manually
+                animProgress = 1f - (1f - rawProgress) * (1f - rawProgress)
+                
+                if (rawProgress >= 1f) {
+                    animProgress = 1f
+                    break
+                }
+            }
+            isVisible = true
+        }
+    }
+
+    // Cleanup on recomposition
+    DisposableEffect(Unit) {
+        onDispose {
+            animationJob?.cancel()
+        }
     }
 
     // FASE DE DIBUJO PURA (Hardware RenderThread):
-    // animProgress.value se lee ÚNICAMENTE dentro de graphicsLayer.
+    // animProgress se lee ÚNICAMENTE dentro de graphicsLayer.
     // La CPU no recompone nodos; la GPU mueve la textura en C++ igual que en Brave.
+    // Bypass completo del animator_duration_scale del sistema.
     Box(
         modifier = modifier.graphicsLayer {
-            val progress = animProgress.value
+            val progress = animProgress
             alpha = progress // opacity: 0 -> 1
             translationY = startOffsetY * (1f - progress) // translateY: 30px -> 0
         }

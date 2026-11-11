@@ -1,5 +1,7 @@
 package com.hypernexus.ui.screens
 
+import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -25,11 +27,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventEffect
+import androidx.lifecycle.LocalLifecycleOwner
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
 import com.hypernexus.ui.components.IOSSwitchTile
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun RendimientoScreen(
@@ -37,10 +44,18 @@ fun RendimientoScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
 
-    var inputLagBypassActive by remember { mutableStateOf(false) }
+    // ============================================================
+    // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
+    // ============================================================
+    LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
+        scope.launch(Dispatchers.IO) {
+            syncExternalSystemState(viewModel)
+        }
+    }
 
     val dpiOptions = remember { listOf(320, 340, 360, 380, 400, 420, 440, 460, 480, 500) }
     val scaleOptions = remember { listOf(0.0f, 0.5f, 1.0f, 1.5f, 2.0f) }
@@ -58,6 +73,9 @@ fun RendimientoScreen(
     var selectedResolutionTarget by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var showAntiCuriosoDialog by remember { mutableStateOf(false) }
 
+    // Use persistent state from DataStore instead of volatile memory
+    val inputLagBypassActive = uiState.inputLagBypass
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -69,7 +87,7 @@ fun RendimientoScreen(
             CyberGlowEntranceWrapper(index = 0, itemKey = "rend_header") {
                 Column {
                     Text("Rendimiento", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Ajustes por pasos seguros sin deslizamiento errático v1.7.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Ajustes por pasos seguros sin deslizamiento errático v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -195,11 +213,8 @@ fun RendimientoScreen(
                     subtitle = "Bypasea el retardo de interrupciones de ahorro energético del kernel",
                     checked = inputLagBypassActive,
                     onCheckedChange = {
-                        inputLagBypassActive = it
-                        scope.launch {
-                            viewModel.privilegedActions.setInputLagBypass(it)
-                            Toast.makeText(context, if (it) "Bypass táctil activo" else "Modo táctil estándar", Toast.LENGTH_SHORT).show()
-                        }
+                        viewModel.toggleInputLagBypass(it)
+                        Toast.makeText(context, if (it) "Bypass táctil activo" else "Modo táctil estándar", Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -395,3 +410,85 @@ private fun StepOptionCard(
 }
 
 private fun formatScale(scale: Float): String = if (scale == 0f) "0x" else "${scale}x"
+
+// ============================================================
+// UNIVERSAL SYNC ENGINE - Queries real-time system properties
+// ============================================================
+private suspend fun syncExternalSystemState(viewModel: HyperNexusViewModel) {
+    val bridge = viewModel.privilegedActions.bridge
+    return try {
+        // Sync Disable HW Overlays
+        val hwOverlayResult = bridge.executeShellCommand("getprop debug.sf.disable_hw_overlays")
+        if (hwOverlayResult.first == 0) {
+            val current = hwOverlayResult.second.trim() == "1"
+            if (current != viewModel.uiState.value.disableHwOverlays) {
+                viewModel.repository.updateDisableHwOverlays(current)
+            }
+        }
+
+        // Sync Force 4x MSAA
+        val msaaResult = bridge.executeShellCommand("getprop debug.egl.force_msaa")
+        if (msaaResult.first == 0) {
+            val current = msaaResult.second.trim() == "4"
+            if (current != viewModel.uiState.value.msaa4x) {
+                viewModel.repository.updateMsaa4x(current)
+            }
+        }
+
+        // Sync Performance Governor
+        val govResult = bridge.executeShellCommand("cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
+        if (govResult.first == 0) {
+            val current = govResult.second.trim().lowercase() == "performance"
+            if (current != viewModel.uiState.value.perfGovernor) {
+                viewModel.repository.updatePerfGovernor(current)
+            }
+        }
+
+        // Sync Animation Scales
+        val transResult = bridge.executeShellCommand("settings get global transition_animation_scale")
+        if (transResult.first == 0) {
+            val current = transResult.second.trim().toFloatOrNull() ?: 1f
+            if (abs(current - (viewModel.uiState.value.transitionScale ?: 1f)) > 0.01f) {
+                viewModel.repository.updateTransitionScale(current)
+            }
+        }
+
+        val animResult = bridge.executeShellCommand("settings get global animator_duration_scale")
+        if (animResult.first == 0) {
+            val current = animResult.second.trim().toFloatOrNull() ?: 1f
+            if (abs(current - (viewModel.uiState.value.animatorScale ?: 1f)) > 0.01f) {
+                viewModel.repository.updateAnimatorScale(current)
+            }
+        }
+
+        val winResult = bridge.executeShellCommand("settings get global window_animation_scale")
+        if (winResult.first == 0) {
+            val current = winResult.second.trim().toFloatOrNull() ?: 1f
+            if (abs(current - (viewModel.uiState.value.windowScale ?: 1f)) > 0.01f) {
+                viewModel.repository.updateWindowScale(current)
+            }
+        }
+
+        // Sync DPI
+        val dpiResult = bridge.executeShellCommand("wm density")
+        if (dpiResult.first == 0) {
+            val output = dpiResult.second.trim()
+            val dpi = output.split(" ").lastOrNull()?.toIntOrNull()
+            if (dpi != null && dpi != viewModel.uiState.value.displayDpi) {
+                viewModel.repository.updateDpi(dpi)
+            }
+        }
+
+        // Sync Input Lag Bypass
+        val touchLatencyResult = bridge.executeShellCommand("getprop persist.sys.touch.latency")
+        if (touchLatencyResult.first == 0) {
+            val current = touchLatencyResult.second.trim() == "0"
+            if (current != viewModel.uiState.value.inputLagBypass) {
+                viewModel.repository.updateInputLagBypass(current)
+            }
+        }
+
+    } catch (e: Exception) {
+        // Silent fail - sync is best effort
+    }
+}
