@@ -46,9 +46,7 @@ fun GraficosScreen(
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
     // ============================================================
     LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
-        scope.launch(Dispatchers.IO) {
-            syncExternalGraphicsState(viewModel)
-        }
+        viewModel.syncGraphicsState()
     }
 
     val renderers = listOf(
@@ -256,93 +254,5 @@ fun GraficosScreen(
         }
 
         item { Spacer(modifier = Modifier.height(80.dp)) }
-    }
-}
-
-// ============================================================
-// UNIVERSAL SYNC ENGINE - Queries real-time graphics properties
-// ============================================================
-private suspend fun syncExternalGraphicsState(viewModel: HyperNexusViewModel) {
-    val bridge = viewModel.privilegedActions.bridge
-    return try {
-        // Sync Fluid Graphics
-        val fluidResult = bridge.executeShellCommand("getprop debug.sf.latch_unsignaled")
-        if (fluidResult.first == 0) {
-            val current = fluidResult.second.trim() == "1"
-            if (current != viewModel.uiState.value.fluidGraphics) {
-                viewModel.repository.updateFluidGraphics(current)
-            }
-        }
-
-        // Sync SF Hardware Accel
-        val sfResult = bridge.executeShellCommand("getprop debug.sf.hw")
-        if (sfResult.first == 0) {
-            val current = sfResult.second.trim() == "1"
-            if (current != viewModel.uiState.value.sfHardwareAccel) {
-                viewModel.repository.updateSfHardwareAccel(current)
-            }
-        }
-
-        // Sync GPU Pacing
-        val pacingResult = bridge.executeShellCommand("getprop debug.sf.early_phase_offset_ns")
-        if (pacingResult.first == 0) {
-            val current = pacingResult.second.trim().toLongOrNull() != 0L
-            if (current != viewModel.uiState.value.gpuPacingControl) {
-                viewModel.repository.updateGpuPacing(current)
-            }
-        }
-
-        // Sync Thermal Controller
-        val thermalResult = bridge.executeShellCommand("getprop debug.thermal.bypass")
-        if (thermalResult.first == 0) {
-            val current = thermalResult.second.trim() == "1"
-            if (current != viewModel.uiState.value.thermalController) {
-                viewModel.repository.updateThermalController(current)
-            }
-        }
-
-        // Sync Touchscreen Optimized
-        val touchResult = bridge.executeShellCommand("getprop persist.sys.Touchscreen.tap_response_time")
-        if (touchResult.first == 0) {
-            val current = touchResult.second.trim().toFloatOrNull() != null && touchResult.second.trim().toFloatOrNull()! < 0.01f
-            if (current != viewModel.uiState.value.touchscreenOptimized) {
-                viewModel.repository.updateTouchscreenOptimized(current)
-            }
-        }
-
-        // Sync Booster SkiaGL
-        val skiaResult = bridge.executeShellCommand("getprop debug.hwui.renderer")
-        if (skiaResult.first == 0) {
-            val current = skiaResult.second.trim().contains("skiagl", ignoreCase = true)
-            if (current != viewModel.uiState.value.boosterSkiaGl) {
-                viewModel.repository.updateBoosterSkiaGl(current)
-            }
-        }
-
-        // Sync Booster Vulkan
-        val vkResult = bridge.executeShellCommand("getprop debug.hwui.renderer")
-        if (vkResult.first == 0) {
-            val current = vkResult.second.trim().contains("skiavk", ignoreCase = true)
-            if (current != viewModel.uiState.value.boosterVulkan) {
-                viewModel.repository.updateBoosterVulkan(current)
-            }
-        }
-
-        // Sync Composition Type
-        val compResult = bridge.executeShellCommand("getprop persist.sys.composition.type")
-        if (compResult.first == 0) {
-            val current = compResult.second.trim().lowercase()
-            val mapped = when (current) {
-                "gpu" -> "GPU"
-                "c2d" -> "CPU"
-                else -> "Dynamic"
-            }
-            if (mapped != viewModel.uiState.value.compositionType) {
-                viewModel.repository.updateCompositionType(mapped)
-            }
-        }
-
-    } catch (e: Exception) {
-        // Silent fail - sync is best effort
     }
 }

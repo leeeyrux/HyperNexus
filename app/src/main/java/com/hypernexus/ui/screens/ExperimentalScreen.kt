@@ -64,9 +64,7 @@ fun ExperimentalScreen(
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
     // ============================================================
     LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
-        scope.launch(Dispatchers.IO) {
-            syncExternalExperimentalState(viewModel)
-        }
+        viewModel.syncExperimentalState()
     }
 
     LaunchedEffect(Unit) {
@@ -328,35 +326,5 @@ fun ExperimentalScreen(
         }
 
         item { Spacer(modifier = Modifier.height(96.dp)) }
-    }
-}
-
-// ============================================================
-// UNIVERSAL SYNC ENGINE - Queries real-time experimental properties
-// ============================================================
-private suspend fun syncExternalExperimentalState(viewModel: HyperNexusViewModel) {
-    val bridge = viewModel.privilegedActions.bridge
-    return try {
-        // Sync ZRAM Gamer
-        val zramResult = bridge.executeShellCommand("getprop persist.sys.zram_tuning")
-        if (zramResult.first == 0) {
-            val current = zramResult.second.trim() == "1"
-            if (current != viewModel.uiState.value.zramGamer) {
-                viewModel.repository.updateZramGamer(current)
-            }
-        }
-
-        // Also check swappiness as fallback
-        val swapResult = bridge.executeShellCommand("cat /proc/sys/vm/swappiness")
-        if (swapResult.first == 0) {
-            val current = swapResult.second.trim().toIntOrNull() ?: 60
-            val isZramActive = current >= 100
-            if (isZramActive != viewModel.uiState.value.zramGamer) {
-                viewModel.repository.updateZramGamer(isZramActive)
-            }
-        }
-
-    } catch (e: Exception) {
-        // Silent fail - sync is best effort
     }
 }

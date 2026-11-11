@@ -98,9 +98,7 @@ fun SeguridadScreen(
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
     // ============================================================
     LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
-        scope.launch(Dispatchers.IO) {
-            syncExternalSecurityState(viewModel)
-        }
+        viewModel.syncSecurityState()
     }
 
     val isTunnelRunning = uiState.vpnActive || HyperNexusVpnService.isRunning
@@ -637,39 +635,5 @@ fun SeguridadScreen(
                 }
             }
         )
-    }
-}
-
-// ============================================================
-// UNIVERSAL SYNC ENGINE - Queries real-time security properties
-// ============================================================
-private suspend fun syncExternalSecurityState(viewModel: HyperNexusViewModel) {
-    val bridge = viewModel.privilegedActions.bridge
-    return try {
-        // Sync Private DNS
-        val dnsModeResult = bridge.executeShellCommand("settings get global private_dns_mode")
-        if (dnsModeResult.first == 0) {
-            val mode = dnsModeResult.second.trim()
-            val current = mode == "hostname"
-            if (current != viewModel.uiState.value.privateDnsEnabled) {
-                viewModel.repository.updatePrivateDns(current)
-            }
-        }
-
-        // Sync Threshold RAM Purger (check if the monitoring job is running)
-        // This is harder to detect externally, skip for now
-
-        // Sync DoH Anti-Throttling (check DNS settings)
-        val dnsResult = bridge.executeShellCommand("settings get global private_dns_specifier")
-        if (dnsResult.first == 0) {
-            val specifier = dnsResult.second.trim()
-            val current = specifier == "one.one.one.one"
-            if (current != viewModel.uiState.value.dohAntiThrottling) {
-                viewModel.repository.updateDohAntiThrottling(current)
-            }
-        }
-
-    } catch (e: Exception) {
-        // Silent fail - sync is best effort
     }
 }

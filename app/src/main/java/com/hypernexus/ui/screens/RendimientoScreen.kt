@@ -37,6 +37,7 @@ import com.hypernexus.ui.components.IOSSwitchTile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
 
 @Composable
 fun RendimientoScreen(
@@ -52,9 +53,7 @@ fun RendimientoScreen(
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
     // ============================================================
     LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
-        scope.launch(Dispatchers.IO) {
-            syncExternalSystemState(viewModel)
-        }
+        viewModel.syncSystemState()
     }
 
     val dpiOptions = remember { listOf(320, 340, 360, 380, 400, 420, 440, 460, 480, 500) }
@@ -411,84 +410,4 @@ private fun StepOptionCard(
 
 private fun formatScale(scale: Float): String = if (scale == 0f) "0x" else "${scale}x"
 
-// ============================================================
-// UNIVERSAL SYNC ENGINE - Queries real-time system properties
-// ============================================================
-private suspend fun syncExternalSystemState(viewModel: HyperNexusViewModel) {
-    val bridge = viewModel.privilegedActions.bridge
-    return try {
-        // Sync Disable HW Overlays
-        val hwOverlayResult = bridge.executeShellCommand("getprop debug.sf.disable_hw_overlays")
-        if (hwOverlayResult.first == 0) {
-            val current = hwOverlayResult.second.trim() == "1"
-            if (current != viewModel.uiState.value.disableHwOverlays) {
-                viewModel.repository.updateDisableHwOverlays(current)
-            }
-        }
 
-        // Sync Force 4x MSAA
-        val msaaResult = bridge.executeShellCommand("getprop debug.egl.force_msaa")
-        if (msaaResult.first == 0) {
-            val current = msaaResult.second.trim() == "4"
-            if (current != viewModel.uiState.value.msaa4x) {
-                viewModel.repository.updateMsaa4x(current)
-            }
-        }
-
-        // Sync Performance Governor
-        val govResult = bridge.executeShellCommand("cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
-        if (govResult.first == 0) {
-            val current = govResult.second.trim().lowercase() == "performance"
-            if (current != viewModel.uiState.value.perfGovernor) {
-                viewModel.repository.updatePerfGovernor(current)
-            }
-        }
-
-        // Sync Animation Scales
-        val transResult = bridge.executeShellCommand("settings get global transition_animation_scale")
-        if (transResult.first == 0) {
-            val current = transResult.second.trim().toFloatOrNull() ?: 1f
-            if (abs(current - (viewModel.uiState.value.transitionScale ?: 1f)) > 0.01f) {
-                viewModel.repository.updateTransitionScale(current)
-            }
-        }
-
-        val animResult = bridge.executeShellCommand("settings get global animator_duration_scale")
-        if (animResult.first == 0) {
-            val current = animResult.second.trim().toFloatOrNull() ?: 1f
-            if (abs(current - (viewModel.uiState.value.animatorScale ?: 1f)) > 0.01f) {
-                viewModel.repository.updateAnimatorScale(current)
-            }
-        }
-
-        val winResult = bridge.executeShellCommand("settings get global window_animation_scale")
-        if (winResult.first == 0) {
-            val current = winResult.second.trim().toFloatOrNull() ?: 1f
-            if (abs(current - (viewModel.uiState.value.windowScale ?: 1f)) > 0.01f) {
-                viewModel.repository.updateWindowScale(current)
-            }
-        }
-
-        // Sync DPI
-        val dpiResult = bridge.executeShellCommand("wm density")
-        if (dpiResult.first == 0) {
-            val output = dpiResult.second.trim()
-            val dpi = output.split(" ").lastOrNull()?.toIntOrNull()
-            if (dpi != null && dpi != viewModel.uiState.value.displayDpi) {
-                viewModel.repository.updateDpi(dpi)
-            }
-        }
-
-        // Sync Input Lag Bypass
-        val touchLatencyResult = bridge.executeShellCommand("getprop persist.sys.touch.latency")
-        if (touchLatencyResult.first == 0) {
-            val current = touchLatencyResult.second.trim() == "0"
-            if (current != viewModel.uiState.value.inputLagBypass) {
-                viewModel.repository.updateInputLagBypass(current)
-            }
-        }
-
-    } catch (e: Exception) {
-        // Silent fail - sync is best effort
-    }
-}
