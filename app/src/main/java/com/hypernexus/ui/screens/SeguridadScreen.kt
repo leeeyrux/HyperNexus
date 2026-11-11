@@ -85,13 +85,16 @@ fun SeguridadScreen(
 
     LaunchedEffect(Unit) {
         storageData = hardwareMonitor.getStorageTelemetry()
-        val allApps = appFilterManager.getInstalledUserApplications()
-        rawGames = allApps
-        if (allApps.isNotEmpty() && selectedTargetGame == null) {
+        rawGames = appFilterManager.getInstalledUserApplications()
+    }
+
+    // Selección del juego VPN: espera a que DataStore emita el paquete guardado
+    LaunchedEffect(rawGames, uiState.vpnTargetPackage) {
+        if (rawGames.isNotEmpty() && selectedTargetGame == null) {
             val savedPkg = uiState.vpnTargetPackage
-            selectedTargetGame = allApps.firstOrNull { it.packageName == savedPkg }
-                ?: allApps.firstOrNull { it.isGame }
-                ?: allApps.first()
+            selectedTargetGame = rawGames.firstOrNull { it.packageName == savedPkg }
+                ?: rawGames.firstOrNull { it.isGame }
+                ?: rawGames.first()
         }
     }
 
@@ -606,6 +609,7 @@ fun SeguridadScreen(
                                 .background(if (selectedTargetGame?.packageName == game.packageName) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color.Transparent)
                                 .clickable {
                                     selectedTargetGame = game
+                                    viewModel.selectVpnTarget(game.packageName)
                                     showGamePickerModal = false
                                 }
                                 .padding(8.dp),

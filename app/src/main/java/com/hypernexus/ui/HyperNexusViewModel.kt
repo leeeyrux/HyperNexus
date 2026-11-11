@@ -66,9 +66,15 @@ class HyperNexusViewModel(
     }
 
     fun toggleZramGamer(enable: Boolean) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.updateZramGamer(enable)
-            // ZRAM commands are executed directly in the screen via bridge
+            val swappiness = if (enable) "130" else "60"
+            val pressure = if (enable) "50" else "100"
+            privilegedActions.bridge.executeShellCommand(
+                "echo $swappiness > /proc/sys/vm/swappiness 2>/dev/null; " +
+                "echo $pressure > /proc/sys/vm/vfs_cache_pressure 2>/dev/null; " +
+                "setprop persist.sys.zram_tuning ${if (enable) 1 else 0}"
+            )
         }
     }
 
@@ -92,6 +98,30 @@ class HyperNexusViewModel(
     fun toggleGlassEffect(enable: Boolean) {
         viewModelScope.launch {
             repository.updateGlassEffect(enable)
+        }
+    }
+
+    fun setGameFpsTarget(fps: Int) {
+        viewModelScope.launch {
+            repository.updateGameFpsTarget(fps)
+        }
+    }
+
+    fun setGameDownscale(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateGameDownscale(enable)
+        }
+    }
+
+    fun selectGameTarget(packageName: String) {
+        viewModelScope.launch {
+            repository.updateGameTargetPackage(packageName)
+        }
+    }
+
+    fun selectVpnTarget(packageName: String) {
+        viewModelScope.launch {
+            repository.updateVpnState(uiState.value.vpnActive, packageName)
         }
     }
 
@@ -400,79 +430,83 @@ class HyperNexusViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             val bridge = privilegedActions.bridge
             try {
-                // Sync Disable HW Overlays
-                val hwOverlayResult = bridge.executeShellCommand("getprop debug.sf.disable_hw_overlays")
-                if (hwOverlayResult.first == 0) {
-                    val current = hwOverlayResult.second.trim() == "1"
-                    if (current != uiState.value.disableHwOverlays) {
-                        repository.updateDisableHwOverlays(current)
+                // NOTA: los toggles que administra la propia app (Input Lag, ZRAM,
+                // DoH, DNS privado) NO se sincronizan desde el sistema, porque eso
+                // pisaba la preferencia guardada y el switch volvía a OFF.
+                // Aquí solo se reflejan ajustes que pueden cambiar desde fuera.
+
+                // Disable HW Overlays (solo si el prop devuelve algo definitivo)
+                val hwOverlay = bridge.executeShellCommand("getprop debug.sf.disable_hw_overlays")
+                if (hwOverlay.first == 0) {
+                    val raw = hwOverlay.second.trim()
+                    if (raw.isNotEmpty()) {
+                        val current = raw == "1"
+                        if (current != uiState.value.disableHwOverlays) {
+                            repository.updateDisableHwOverlays(current)
+                        }
                     }
                 }
 
-                // Sync Force 4x MSAA
-                val msaaResult = bridge.executeShellCommand("getprop debug.egl.force_msaa")
-                if (msaaResult.first == 0) {
-                    val current = msaaResult.second.trim() == "4"
-                    if (current != uiState.value.msaa4x) {
-                        repository.updateMsaa4x(current)
+                // Force 4x MSAA
+                val msaa = bridge.executeShellCommand("getprop debug.egl.force_msaa")
+                if (msaa.first == 0) {
+                    val raw = msaa.second.trim()
+                    if (raw.isNotEmpty()) {
+                        val current = raw == "4"
+                        if (current != uiState.value.msaa4x) {
+                            repository.updateMsaa4x(current)
+                        }
                     }
                 }
 
-                // Sync Performance Governor
-                val govResult = bridge.executeShellCommand("cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
-                if (govResult.first == 0) {
-                    val current = govResult.second.trim().lowercase() == "performance"
-                    if (current != uiState.value.perfGovernor) {
-                        repository.updatePerfGovernor(current)
+                // Performance Governor
+                val gov = bridge.executeShellCommand("cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
+                if (gov.first == 0) {
+                    val raw = gov.second.trim().lowercase()
+                    if (raw.isNotEmpty()) {
+                        val current = raw == "performance"
+                        if (current != uiState.value.perfGovernor) {
+                            repository.updatePerfGovernor(current)
+                        }
                     }
                 }
 
-                // Sync Animation Scales
-                val transResult = bridge.executeShellCommand("settings get global transition_animation_scale")
-                if (transResult.first == 0) {
-                    val current = transResult.second.trim().toFloatOrNull() ?: 1f
-                    if (kotlin.math.abs(current - (uiState.value.transitionScale ?: 1f)) > 0.01f) {
-                        repository.updateTransitionScale(current)
+                // Escalas de animación (solo si se pudo parsear un float real)
+                val trans = bridge.executeShellCommand("settings get global transition_animation_scale")
+                if (trans.first == 0) {
+                    val parsed = trans.second.trim().toFloatOrNull()
+                    if (parsed != null && kotlin.math.abs(parsed - (uiState.value.transitionScale ?: parsed)) > 0.01f) {
+                        repository.updateTransitionScale(parsed)
                     }
                 }
 
-                val animResult = bridge.executeShellCommand("settings get global animator_duration_scale")
-                if (animResult.first == 0) {
-                    val current = animResult.second.trim().toFloatOrNull() ?: 1f
-                    if (kotlin.math.abs(current - (uiState.value.animatorScale ?: 1f)) > 0.01f) {
-                        repository.updateAnimatorScale(current)
+                val anim = bridge.executeShellCommand("settings get global animator_duration_scale")
+                if (anim.first == 0) {
+                    val parsed = anim.second.trim().toFloatOrNull()
+                    if (parsed != null && kotlin.math.abs(parsed - (uiState.value.animatorScale ?: parsed)) > 0.01f) {
+                        repository.updateAnimatorScale(parsed)
                     }
                 }
 
-                val winResult = bridge.executeShellCommand("settings get global window_animation_scale")
-                if (winResult.first == 0) {
-                    val current = winResult.second.trim().toFloatOrNull() ?: 1f
-                    if (kotlin.math.abs(current - (uiState.value.windowScale ?: 1f)) > 0.01f) {
-                        repository.updateWindowScale(current)
+                val win = bridge.executeShellCommand("settings get global window_animation_scale")
+                if (win.first == 0) {
+                    val parsed = win.second.trim().toFloatOrNull()
+                    if (parsed != null && kotlin.math.abs(parsed - (uiState.value.windowScale ?: parsed)) > 0.01f) {
+                        repository.updateWindowScale(parsed)
                     }
                 }
 
-                // Sync DPI
-                val dpiResult = bridge.executeShellCommand("wm density")
-                if (dpiResult.first == 0) {
-                    val output = dpiResult.second.trim()
-                    val dpi = output.split(" ").lastOrNull()?.toIntOrNull()
-                    if (dpi != null && dpi != uiState.value.displayDpi) {
-                        repository.updateDpi(dpi)
+                // DPI (solo si el último token es numérico)
+                val dpi = bridge.executeShellCommand("wm density")
+                if (dpi.first == 0) {
+                    val parsed = dpi.second.trim().split(" ").lastOrNull()?.toIntOrNull()
+                    if (parsed != null && parsed != uiState.value.displayDpi) {
+                        repository.updateDpi(parsed)
                     }
                 }
 
-                // Sync Input Lag Bypass
-                val touchLatencyResult = bridge.executeShellCommand("getprop persist.sys.touch.latency")
-                if (touchLatencyResult.first == 0) {
-                    val current = touchLatencyResult.second.trim() == "0"
-                    if (current != uiState.value.inputLagBypass) {
-                        repository.updateInputLagBypass(current)
-                    }
-                }
-
-            } catch (e: Exception) {
-                // Silent fail - sync is best effort
+            } catch (_: Exception) {
+                // Sync best-effort
             }
         }
     }
@@ -481,146 +515,98 @@ class HyperNexusViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             val bridge = privilegedActions.bridge
             try {
-                // Sync Fluid Graphics
-                val fluidResult = bridge.executeShellCommand("getprop debug.sf.latch_unsignaled")
-                if (fluidResult.first == 0) {
-                    val current = fluidResult.second.trim() == "1"
-                    if (current != uiState.value.fluidGraphics) {
-                        repository.updateFluidGraphics(current)
+                // Igual que en Rendimiento: nunca se escribe false por un fallo
+                // de lectura. Solo se aplica un valor cuando es concluyente.
+
+                val fluid = bridge.executeShellCommand("getprop debug.sf.latch_unsignaled")
+                if (fluid.first == 0) {
+                    val raw = fluid.second.trim()
+                    if (raw.isNotEmpty()) {
+                        val current = raw == "1"
+                        if (current != uiState.value.fluidGraphics) repository.updateFluidGraphics(current)
                     }
                 }
 
-                // Sync SF Hardware Accel
-                val sfResult = bridge.executeShellCommand("getprop debug.sf.hw")
-                if (sfResult.first == 0) {
-                    val current = sfResult.second.trim() == "1"
-                    if (current != uiState.value.sfHardwareAccel) {
-                        repository.updateSfHardwareAccel(current)
+                val sf = bridge.executeShellCommand("getprop debug.sf.hw")
+                if (sf.first == 0) {
+                    val raw = sf.second.trim()
+                    if (raw.isNotEmpty()) {
+                        val current = raw == "1"
+                        if (current != uiState.value.sfHardwareAccel) repository.updateSfHardwareAccel(current)
                     }
                 }
 
-                // Sync GPU Pacing
-                val pacingResult = bridge.executeShellCommand("getprop debug.sf.early_phase_offset_ns")
-                if (pacingResult.first == 0) {
-                    val current = pacingResult.second.trim().toLongOrNull() != 0L
-                    if (current != uiState.value.gpuPacingControl) {
-                        repository.updateGpuPacing(current)
+                val pacing = bridge.executeShellCommand("getprop debug.sf.early_phase_offset_ns")
+                if (pacing.first == 0) {
+                    val parsed = pacing.second.trim().toLongOrNull()
+                    if (parsed != null) {
+                        val current = parsed != 0L
+                        if (current != uiState.value.gpuPacingControl) repository.updateGpuPacing(current)
                     }
                 }
 
-                // Sync Thermal Controller
-                val thermalResult = bridge.executeShellCommand("getprop debug.thermal.bypass")
-                if (thermalResult.first == 0) {
-                    val current = thermalResult.second.trim() == "1"
-                    if (current != uiState.value.thermalController) {
-                        repository.updateThermalController(current)
+                val thermal = bridge.executeShellCommand("getprop debug.thermal.bypass")
+                if (thermal.first == 0) {
+                    val raw = thermal.second.trim()
+                    if (raw.isNotEmpty()) {
+                        val current = raw == "1"
+                        if (current != uiState.value.thermalController) repository.updateThermalController(current)
                     }
                 }
 
-                // Sync Touchscreen Optimized
-                val touchResult = bridge.executeShellCommand("getprop persist.sys.Touchscreen.tap_response_time")
-                if (touchResult.first == 0) {
-                    val touchValue = touchResult.second.trim().toFloatOrNull()
-                    val current = touchValue != null && touchValue < 0.01f
-                    if (current != uiState.value.touchscreenOptimized) {
-                        repository.updateTouchscreenOptimized(current)
+                val touch = bridge.executeShellCommand("getprop persist.sys.Touchscreen.tap_response_time")
+                if (touch.first == 0) {
+                    val parsed = touch.second.trim().toFloatOrNull()
+                    if (parsed != null) {
+                        val current = parsed < 0.01f
+                        if (current != uiState.value.touchscreenOptimized) repository.updateTouchscreenOptimized(current)
                     }
                 }
 
-                // Sync Booster SkiaGL
-                val skiaResult = bridge.executeShellCommand("getprop debug.hwui.renderer")
-                if (skiaResult.first == 0) {
-                    val current = skiaResult.second.trim().contains("skiagl", ignoreCase = true)
-                    if (current != uiState.value.boosterSkiaGl) {
-                        repository.updateBoosterSkiaGl(current)
+                val renderer = bridge.executeShellCommand("getprop debug.hwui.renderer")
+                if (renderer.first == 0) {
+                    val raw = renderer.second.trim()
+                    if (raw.isNotEmpty()) {
+                        val skia = raw.contains("skiagl", ignoreCase = true)
+                        if (skia != uiState.value.boosterSkiaGl) repository.updateBoosterSkiaGl(skia)
+                        val vulkan = raw.contains("skiavk", ignoreCase = true)
+                        if (vulkan != uiState.value.boosterVulkan) repository.updateBoosterVulkan(vulkan)
                     }
                 }
 
-                // Sync Booster Vulkan
-                val vkResult = bridge.executeShellCommand("getprop debug.hwui.renderer")
-                if (vkResult.first == 0) {
-                    val current = vkResult.second.trim().contains("skiavk", ignoreCase = true)
-                    if (current != uiState.value.boosterVulkan) {
-                        repository.updateBoosterVulkan(current)
-                    }
-                }
-
-                // Sync Composition Type
-                val compResult = bridge.executeShellCommand("getprop persist.sys.composition.type")
-                if (compResult.first == 0) {
-                    val current = compResult.second.trim().lowercase()
-                    val mapped = when (current) {
+                // Composición: solo si el sistema devuelve un token conocido
+                val comp = bridge.executeShellCommand("getprop persist.sys.composition.type")
+                if (comp.first == 0) {
+                    val mapped = when (comp.second.trim().lowercase()) {
                         "gpu" -> "GPU"
-                        "c2d" -> "CPU"
-                        else -> "Dynamic"
+                        "c2d", "cpu" -> "CPU"
+                        "dynamic" -> "Dynamic"
+                        else -> null
                     }
-                    if (mapped != uiState.value.compositionType) {
+                    if (mapped != null && mapped != uiState.value.compositionType) {
                         repository.updateCompositionType(mapped)
                     }
                 }
 
-            } catch (e: Exception) {
-                // Silent fail - sync is best effort
+            } catch (_: Exception) {
+                // Sync best-effort
             }
         }
     }
 
+    /**
+     * ZRAM es una preferencia administrada por la app. No se sincroniza desde
+     * el sistema para no pisar el switch cuando el shell no aplica el cambio.
+     */
     fun syncExperimentalState() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val bridge = privilegedActions.bridge
-            try {
-                // Sync ZRAM Gamer
-                val zramResult = bridge.executeShellCommand("getprop persist.sys.zram_tuning")
-                if (zramResult.first == 0) {
-                    val current = zramResult.second.trim() == "1"
-                    if (current != uiState.value.zramGamer) {
-                        repository.updateZramGamer(current)
-                    }
-                }
-
-                // Also check swappiness as fallback
-                val swapResult = bridge.executeShellCommand("cat /proc/sys/vm/swappiness")
-                if (swapResult.first == 0) {
-                    val current = swapResult.second.trim().toIntOrNull() ?: 60
-                    val isZramActive = current >= 100
-                    if (isZramActive != uiState.value.zramGamer) {
-                        repository.updateZramGamer(isZramActive)
-                    }
-                }
-
-            } catch (e: Exception) {
-                // Silent fail - sync is best effort
-            }
-        }
+        // Intencionalmente vacío: la preferencia manda.
     }
 
+    /**
+     * DoH y DNS privado son preferencias administradas por la app. No se
+     * sincronizan desde el sistema para evitar que el switch se revierta.
+     */
     fun syncSecurityState() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val bridge = privilegedActions.bridge
-            try {
-                // Sync Private DNS
-                val dnsModeResult = bridge.executeShellCommand("settings get global private_dns_mode")
-                if (dnsModeResult.first == 0) {
-                    val mode = dnsModeResult.second.trim()
-                    val current = mode == "hostname"
-                    if (current != uiState.value.privateDnsEnabled) {
-                        repository.updatePrivateDns(current)
-                    }
-                }
-
-                // Sync DoH Anti-Throttling (check DNS settings)
-                val dnsResult = bridge.executeShellCommand("settings get global private_dns_specifier")
-                if (dnsResult.first == 0) {
-                    val specifier = dnsResult.second.trim()
-                    val current = specifier == "one.one.one.one"
-                    if (current != uiState.value.dohAntiThrottling) {
-                        repository.updateDohAntiThrottling(current)
-                    }
-                }
-
-            } catch (e: Exception) {
-                // Silent fail - sync is best effort
-            }
-        }
+        // Intencionalmente vacío: la preferencia manda.
     }
 }

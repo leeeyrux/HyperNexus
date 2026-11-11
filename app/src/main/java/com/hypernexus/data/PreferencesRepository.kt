@@ -50,7 +50,10 @@ data class NexusSettings(
     val inputLagBypass: Boolean = false,
     val zramGamer: Boolean = false,
     val privateDnsEnabled: Boolean = false,
-    val glassEffectEnabled: Boolean = false
+    val glassEffectEnabled: Boolean = false,
+    val gameFpsTarget: Int = 120,
+    val gameDownscale: Boolean = false,
+    val gameTargetPackage: String = ""
 )
 
 class PreferencesRepository(private val context: Context) {
@@ -95,6 +98,9 @@ class PreferencesRepository(private val context: Context) {
         val ZRAM_GAMER = booleanPreferencesKey("zram_gamer")
         val PRIVATE_DNS = booleanPreferencesKey("private_dns_enabled")
         val GLASS_EFFECT = booleanPreferencesKey("glass_effect_enabled")
+        val GAME_FPS_TARGET = intPreferencesKey("game_fps_target")
+        val GAME_DOWNSCALE = booleanPreferencesKey("game_downscale")
+        val GAME_TARGET_PACKAGE = stringPreferencesKey("game_target_package")
     }
 
     val settingsFlow: Flow<NexusSettings> = context.dataStore.data
@@ -140,7 +146,11 @@ class PreferencesRepository(private val context: Context) {
                 dohAntiThrottling = prefs[Keys.DOH_THROTTLING] ?: false,
                 inputLagBypass = prefs[Keys.INPUT_LAG_BYPASS] ?: false,
                 zramGamer = prefs[Keys.ZRAM_GAMER] ?: false,
-                glassEffectEnabled = prefs[Keys.GLASS_EFFECT] ?: false
+                privateDnsEnabled = prefs[Keys.PRIVATE_DNS] ?: false,
+                glassEffectEnabled = prefs[Keys.GLASS_EFFECT] ?: false,
+                gameFpsTarget = prefs[Keys.GAME_FPS_TARGET] ?: 120,
+                gameDownscale = prefs[Keys.GAME_DOWNSCALE] ?: false,
+                gameTargetPackage = prefs[Keys.GAME_TARGET_PACKAGE] ?: ""
             )
         }
 
@@ -190,6 +200,9 @@ class PreferencesRepository(private val context: Context) {
     suspend fun updateZramGamer(enable: Boolean) = set(Keys.ZRAM_GAMER, enable)
     suspend fun updatePrivateDns(enable: Boolean) = set(Keys.PRIVATE_DNS, enable)
     suspend fun updateGlassEffect(enable: Boolean) = set(Keys.GLASS_EFFECT, enable)
+    suspend fun updateGameFpsTarget(fps: Int) = set(Keys.GAME_FPS_TARGET, fps)
+    suspend fun updateGameDownscale(enable: Boolean) = set(Keys.GAME_DOWNSCALE, enable)
+    suspend fun updateGameTargetPackage(pkg: String) = set(Keys.GAME_TARGET_PACKAGE, pkg)
 
     suspend fun toggleFavoriteCommand(cmd: String) {
         context.dataStore.edit { prefs ->

@@ -31,6 +31,7 @@ import com.hypernexus.domain.GameTargetApp
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
+import com.hypernexus.ui.components.IOSSwitch
 import com.hypernexus.ui.components.IOSSwitchTile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -53,14 +54,14 @@ fun ExperimentalScreen(
 
     var selectedApp by remember { mutableStateOf<GameTargetApp?>(null) }
     var isCompiling by remember { mutableStateOf(false) }
-    var gameFps by remember { mutableStateOf(120) }
-    var downscale80 by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
 
-    // Use persistent state from DataStore
+    // Preferencias persistentes (sobreviven a cambiar de pantalla o cerrar la app)
     val uiState by viewModel.uiState.collectAsState()
     val zramGamerActive = uiState.zramGamer
     val glassEffectEnabled = uiState.glassEffectEnabled
+    val gameFps = uiState.gameFpsTarget
+    val downscale80 = uiState.gameDownscale
 
     // ============================================================
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
@@ -76,10 +77,16 @@ fun ExperimentalScreen(
     }
 
     LaunchedEffect(Unit) {
-        val apps = appFilterManager.getInstalledUserApplications()
-        rawAppList = apps
-        if (apps.isNotEmpty() && selectedApp == null) {
-            selectedApp = apps.firstOrNull { it.isGame } ?: apps.first()
+        rawAppList = appFilterManager.getInstalledUserApplications()
+    }
+
+    // Selección del juego: espera a que DataStore emita el paquete guardado
+    LaunchedEffect(rawAppList, uiState.gameTargetPackage) {
+        if (rawAppList.isNotEmpty() && selectedApp == null) {
+            val savedPkg = uiState.gameTargetPackage
+            selectedApp = rawAppList.firstOrNull { it.packageName == savedPkg }
+                ?: rawAppList.firstOrNull { it.isGame }
+                ?: rawAppList.first()
         }
     }
 
@@ -163,6 +170,7 @@ fun ExperimentalScreen(
                                             .background(if (selectedApp?.packageName == app.packageName) Color(0xFF007AFF).copy(alpha = 0.2f) else Color.Transparent)
                                             .clickable {
                                                 selectedApp = app
+                                                viewModel.selectGameTarget(app.packageName)
                                                 expanded = false
                                             }
                                             .padding(8.dp),
@@ -269,7 +277,7 @@ fun ExperimentalScreen(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             fpsOptions.forEach { fps ->
                                 Button(
-                                    onClick = { gameFps = fps },
+                                    onClick = { viewModel.setGameFpsTarget(fps) },
                                     modifier = Modifier.weight(1f).height(38.dp),
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.buttonColors(
@@ -279,6 +287,28 @@ fun ExperimentalScreen(
                                     Text("$fps", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Opción persistente: bajar resolución al 80% para menos lag
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Reducir resolución al 80%", style = MaterialTheme.typography.labelMedium, color = Color.White)
+                                Text(
+                                    "Se ve un poco menos nítido, pero corre más fluido.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF8E8E93)
+                                )
+                            }
+                            IOSSwitch(
+                                checked = downscale80,
+                                onCheckedChange = { viewModel.setGameDownscale(it) }
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -314,18 +344,11 @@ fun ExperimentalScreen(
                     checked = zramGamerActive,
                     onCheckedChange = { active ->
                         viewModel.toggleZramGamer(active)
-                        scope.launch(Dispatchers.IO) {
-                            val swappiness = if (active) "130" else "60"
-                            val pressure = if (active) "50" else "100"
-                            viewModel.privilegedActions.bridge.executeShellCommand(
-                                "echo $swappiness > /proc/sys/vm/swappiness 2>/dev/null; " +
-                                "echo $pressure > /proc/sys/vm/vfs_cache_pressure 2>/dev/null; " +
-                                "setprop persist.sys.zram_tuning ${if (active) 1 else 0}"
-                            )
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(context, if (active) "ZRAM Activada (texturas en RAM)" else "ZRAM Restablecida", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                        Toast.makeText(
+                            context,
+                            if (active) "ZRAM Activada (texturas en RAM)" else "ZRAM Restablecida",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 )
             }
