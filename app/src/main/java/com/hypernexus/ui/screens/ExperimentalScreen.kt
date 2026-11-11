@@ -57,8 +57,9 @@ fun ExperimentalScreen(
     var downscale80 by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
 
-    // Use persistent state from DataStore instead of volatile memory
-    val zramGamerActive = viewModel.uiState.collectAsState().value?.zramGamer ?: false
+    // Use persistent state from DataStore
+    val uiState by viewModel.uiState.collectAsState()
+    val zramGamerActive = uiState.zramGamer
     val glassEffectEnabled = uiState.glassEffectEnabled
 
     // ============================================================
@@ -212,12 +213,11 @@ fun ExperimentalScreen(
 
                         Button(
                             onClick = {
-                                selectedApp?.let { app =>
+                                selectedApp?.let { app ->
                                     scope.launch(Dispatchers.IO) {
                                         isCompiling = true
-                                        viewModel.privilegedActions.bridge.executeShellCommand(
-                                            "setprop dalvik.vm.dex2oat-threads 8; setprop dalvik.vm.dex2oat-cpu-set 0,1,2,3,4,5,6,7; cmd package compile -m speed-profile -f ${app.packageName}"
-                                        )
+                                        val cmd = "setprop dalvik.vm.dex2oat-threads 8; setprop dalvik.vm.dex2oat-cpu-set 0,1,2,3,4,5,6,7; cmd package compile -m speed-profile -f ${app.packageName}"
+                                        viewModel.privilegedActions.bridge.executeShellCommand(cmd)
                                         withContext(Dispatchers.Main) {
                                             isCompiling = false
                                             Toast.makeText(context, "Optimizado: ${app.appName}", Toast.LENGTH_LONG).show()
@@ -235,7 +235,7 @@ fun ExperimentalScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text("Optimizando...")
                             } else {
-                                Text("Optimizar ${selectedApp?.appName ?: "Juego"}", fontWeight = FontWeight.Bold)
+                                Text("Optimizar ${selectedApp?.appName ?: 'Juego'}", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -292,7 +292,7 @@ fun ExperimentalScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9500)),
                             enabled = selectedApp != null
                         ) {
-                            Text("Aplicar a ${selectedApp?.appName ?: "App"}", fontWeight = FontWeight.Bold)
+                            Text("Aplicar a ${selectedApp?.appName ?: 'App'}", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
