@@ -81,6 +81,7 @@ fun SeguridadScreen(
 
     // Private DNS state from DataStore
     val privateDnsEnabled = uiState.privateDnsEnabled
+    val glassEffectEnabled = uiState.glassEffectEnabled
 
     LaunchedEffect(Unit) {
         storageData = hardwareMonitor.getStorageTelemetry()
@@ -172,8 +173,8 @@ fun SeguridadScreen(
         item(key = "seg_header", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "seg_header") {
                 Column {
-                    Text("Seguridad & Red Gamer", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Dual-Engine Symmetrical Hub v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Seguridad & Red", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Limpieza, DNS, VPN v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -325,24 +326,24 @@ fun SeguridadScreen(
             }
         }
 
-        // LIMPIEZA AUTOMÁTICA POR UMBRAL (15% RAM)
+        // LIMPIEZA AUTO (RAM BAJA)
         item(key = "seg_threshold_switch", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "seg_threshold_switch") {
                 IOSSwitchTile(
-                    title = "Limpieza Automática por Umbral",
-                    subtitle = "Purga memoria en segundo plano si la RAM libre cae bajo el 15%",
+                    title = "Limpieza Auto (RAM Baja)",
+                    subtitle = "Si RAM libre < 15%, limpia solo",
                     checked = uiState.thresholdRamPurger,
                     onCheckedChange = { viewModel.toggleThresholdRamPurger(it) }
                 )
             }
         }
 
-        // ANTI-THROTTLING NETWORK ENGINE (DoH)
+        // ANTI-LENTITUD RED (DoH)
         item(key = "seg_doh_switch", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "seg_doh_switch") {
                 IOSSwitchTile(
-                    title = "Anti-Throttling Network Engine (DoH)",
-                    subtitle = "Camufla metadatos DNS en HTTPS (Puerto 443) para evitar estrangulamiento ISP",
+                    title = "Anti-Lentitud Red (DoH)",
+                    subtitle = "DNS por HTTPS (puerto 443) para que tu operador no te limite",
                     checked = uiState.dohAntiThrottling,
                     onCheckedChange = { viewModel.toggleDohAntiThrottling(it) }
                 )
@@ -392,14 +393,14 @@ fun SeguridadScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = "GAMING VPN TUNNEL",
+                                        text = "VPN Gaming",
                                         style = MaterialTheme.typography.titleMedium,
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 1.sp
                                     )
                                     Text(
-                                        text = if (uiState.dohAntiThrottling) "DoH 443 | MTU 1400 | DNS 1.1.1.1" else "MTU 1400 | DNS 1.1.1.1 Zero-Drop",
+                                        text = if (uiState.dohAntiThrottling) "DoH 443 | MTU 1400 | DNS 1.1.1.1" else "MTU 1400 | DNS 1.1.1.1",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF8E8E93)
                                     )
@@ -438,7 +439,7 @@ fun SeguridadScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "[ PROTEGIDO - ENRUTANDO JUEGO SELECCIONADO ]",
+                                    text = "[ PROTEGIDO - Solo el juego va por VPN ]",
                                     color = Color(0xFF00E676),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -495,13 +496,13 @@ fun SeguridadScreen(
 
                                 Column {
                                     Text(
-                                        text = selectedTargetGame?.appName ?: "Seleccionar Juego...",
+                                        text = selectedTargetGame?.appName ?: "Elegir Juego...",
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = selectedTargetGame?.packageName ?: "Toca para abrir lista completa",
+                                        text = selectedTargetGame?.packageName ?: "Tap para ver todos",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF8E8E93),
                                         fontFamily = FontFamily.Monospace
@@ -540,14 +541,14 @@ fun SeguridadScreen(
                         onClick = {
                             scope.launch {
                                 viewModel.privilegedActions.enableGamingMode()
-                                Toast.makeText(context, "Gaming Boost Inyectado", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Modo Juego Activado", Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9500))
                     ) {
-                        Text("Gaming Boost", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Modo Juego", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
 
                     Button(
@@ -577,7 +578,7 @@ fun SeguridadScreen(
             modifier = Modifier.border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
             title = {
                 Text(
-                    text = "Seleccionar Juego (${memoizedGames.size} encontrados)",
+                    text = "Elegir Juego (${memoizedGames.size} encontrados)",
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )

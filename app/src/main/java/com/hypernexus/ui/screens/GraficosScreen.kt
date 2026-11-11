@@ -41,6 +41,7 @@ fun GraficosScreen(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
+    val glassEffectEnabled = uiState.glassEffectEnabled
 
     // ============================================================
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
@@ -50,11 +51,11 @@ fun GraficosScreen(
     }
 
     val renderers = listOf(
-        "vulkan_booster" to "Vulkan Booster (Star Feature para Juegos Pesados)",
-        "vulkan" to "Vulkan (Alto Desempeño)",
-        "vulkan_lite" to "Vulkan Lite (Bajo Consumo)",
-        "opengl" to "OpenGL SkiaGL",
-        "opengl_lite" to "OpenGL Lite (Estabilidad)"
+        "vulkan_booster" to "Vulkan Booster (Juegos Pesados)",
+        "vulkan" to "Vulkan (Rendimiento)",
+        "vulkan_lite" to "Vulkan Lite (Ahorro Batería)",
+        "opengl" to "OpenGL (SkiaGL)",
+        "opengl_lite" to "OpenGL Lite (Estable)"
     )
 
     val compositions = listOf("CPU", "GPU", "Dynamic")
@@ -69,8 +70,8 @@ fun GraficosScreen(
         item(key = "graf_header", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "graf_header") {
                 Column {
-                    Text("Gráficos & Renderizado", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Controladores de bajo nivel Magic Tuner & Vexiro Engine v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Gráficos", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Motor gráfico v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -78,8 +79,8 @@ fun GraficosScreen(
         item(key = "graf_hud_switch", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "graf_hud_switch") {
                 IOSSwitchTile(
-                    title = "Contador Red Magic Multi-Info",
-                    subtitle = "HUD flotante: Toca para alternar [FPS] o [Hora | FPS | Ping | Temp | Batería]",
+                    title = "HUD en Juego (FPS, Ping, Temp...)",
+                    subtitle = "Flotante. Tap: solo FPS / barra completa [Hora, FPS, Ping, Temp, Batería]",
                     checked = uiState.fpsOverlayActive,
                     onCheckedChange = { enabled ->
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
@@ -102,11 +103,11 @@ fun GraficosScreen(
 
         item(key = "graf_renderer_card", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "graf_renderer_card") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Configurar Renderizador de GPU", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text(uiState.graphicsRenderer ?: "Sin Seleccionar", color = Color(0xFF007AFF), fontSize = 12.sp)
+                            Text("Motor de Renderizado", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(uiState.graphicsRenderer ?: "Ninguno", color = Color(0xFF007AFF), fontSize = 12.sp)
                         }
                         Spacer(modifier = Modifier.height(10.dp))
 
@@ -120,7 +121,7 @@ fun GraficosScreen(
                                     .background(if (isSelected) Color(0xFF007AFF).copy(alpha = 0.15f) else Color(0xFF1C1C1E))
                                     .clickable {
                                         viewModel.setGraphicsRenderer(key)
-                                        Toast.makeText(context, "Pipeline: $key", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Motor: $key", Toast.LENGTH_SHORT).show()
                                     }
                                     .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -146,11 +147,11 @@ fun GraficosScreen(
 
         item(key = "graf_composition_card", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "graf_composition_card") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Composición de Pantalla", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text(uiState.compositionType ?: "Sin Seleccionar", color = Color(0xFF007AFF), fontSize = 12.sp)
+                            Text("Cómo Dibuja la Pantalla", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(uiState.compositionType ?: "Ninguna", color = Color(0xFF007AFF), fontSize = 12.sp)
                         }
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -159,7 +160,7 @@ fun GraficosScreen(
                                 Button(
                                     onClick = {
                                         viewModel.setCompositionType(comp)
-                                        Toast.makeText(context, "Composición: $comp", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Modo: $comp", Toast.LENGTH_SHORT).show()
                                     },
                                     modifier = Modifier.weight(1f).height(40.dp),
                                     shape = RoundedCornerShape(10.dp),
@@ -179,8 +180,8 @@ fun GraficosScreen(
         item(key = "graf_fluid_graphics", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 4, itemKey = "graf_fluid_graphics") {
                 IOSSwitchTile(
-                    title = "Modo de Gráficos Fluidos",
-                    subtitle = "Optimización profunda de sincronización y buffer SurfaceFlinger",
+                    title = "Gráficos Fluidos",
+                    subtitle = "Mejor sincronización, menos tirones",
                     checked = uiState.fluidGraphics,
                     onCheckedChange = { viewModel.toggleFluidGraphics(it) }
                 )
@@ -190,8 +191,8 @@ fun GraficosScreen(
         item(key = "graf_sf_accel", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 5, itemKey = "graf_sf_accel") {
                 IOSSwitchTile(
-                    title = "Aceleración por Hardware de SF",
-                    subtitle = "Prioridad absoluta de hardware para la composición de pantalla",
+                    title = "Aceleración Hardware (SF)",
+                    subtitle = "La GPU compone la pantalla, más rápido",
                     checked = uiState.sfHardwareAccel,
                     onCheckedChange = { viewModel.toggleSfHardwareAccel(it) }
                 )
@@ -201,8 +202,8 @@ fun GraficosScreen(
         item(key = "graf_pacing", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 6, itemKey = "graf_pacing") {
                 IOSSwitchTile(
-                    title = "Control de Intervalo de GPU",
-                    subtitle = "Alineación de cadencia de frames en microsegundos",
+                    title = "Cadencia de Frames (GPU)",
+                    subtitle = "Sincroniza frames para suavidad",
                     checked = uiState.gpuPacingControl,
                     onCheckedChange = { viewModel.toggleGpuPacing(it) }
                 )
@@ -212,8 +213,8 @@ fun GraficosScreen(
         item(key = "graf_thermal", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 7, itemKey = "graf_thermal") {
                 IOSSwitchTile(
-                    title = "Thermal Controller (Vexiro Engine)",
-                    subtitle = "Suprime el límite térmico que reduce el rendimiento en juegos",
+                    title = "Límite Térmico (Juegos)",
+                    subtitle = "Evita que el móvil baje rendimiento por calor",
                     checked = uiState.thermalController,
                     onCheckedChange = { viewModel.toggleThermalController(it) }
                 )
@@ -223,8 +224,8 @@ fun GraficosScreen(
         item(key = "graf_touch", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 8, itemKey = "graf_touch") {
                 IOSSwitchTile(
-                    title = "Touchscreen Optimized",
-                    subtitle = "Perfil de baja latencia táctil para máxima sensibilidad al deslizar",
+                    title = "Táctil Optimizado",
+                    subtitle = "Más respuesta al deslizar y tocar",
                     checked = uiState.touchscreenOptimized,
                     onCheckedChange = { viewModel.toggleTouchscreenOptimized(it) }
                 )
@@ -234,8 +235,8 @@ fun GraficosScreen(
         item(key = "graf_booster_skia", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 9, itemKey = "graf_booster_skia") {
                 IOSSwitchTile(
-                    title = "Booster Render (SkiaGL)",
-                    subtitle = "Refuerzo dedicado para el pipeline OpenGL 2D/3D del sistema",
+                    title = "Refuerzo OpenGL (SkiaGL)",
+                    subtitle = "Acelera gráficos 2D/3D del sistema",
                     checked = uiState.boosterSkiaGl,
                     onCheckedChange = { viewModel.toggleBoosterSkiaGl(it) }
                 )
@@ -245,8 +246,8 @@ fun GraficosScreen(
         item(key = "graf_booster_vk", contentType = "premium_card_node") {
             CyberGlowEntranceWrapper(index = 10, itemKey = "graf_booster_vk") {
                 IOSSwitchTile(
-                    title = "Booster Render (Vulkan)",
-                    subtitle = "Refuerzo para Vulkan con asignación de caché ampliada",
+                    title = "Refuerzo Vulkan",
+                    subtitle = "Más caché para Vulkan",
                     checked = uiState.boosterVulkan,
                     onCheckedChange = { viewModel.toggleBoosterVulkan(it) }
                 )

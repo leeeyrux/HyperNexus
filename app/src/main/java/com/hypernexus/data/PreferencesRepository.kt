@@ -49,7 +49,8 @@ data class NexusSettings(
     val dohAntiThrottling: Boolean = false,
     val inputLagBypass: Boolean = false,
     val zramGamer: Boolean = false,
-    val privateDnsEnabled: Boolean = false
+    val privateDnsEnabled: Boolean = false,
+    val glassEffectEnabled: Boolean = false
 )
 
 class PreferencesRepository(private val context: Context) {
@@ -93,6 +94,7 @@ class PreferencesRepository(private val context: Context) {
         val INPUT_LAG_BYPASS = booleanPreferencesKey("input_lag_bypass")
         val ZRAM_GAMER = booleanPreferencesKey("zram_gamer")
         val PRIVATE_DNS = booleanPreferencesKey("private_dns_enabled")
+        val GLASS_EFFECT = booleanPreferencesKey("glass_effect_enabled")
     }
 
     val settingsFlow: Flow<NexusSettings> = context.dataStore.data
@@ -138,7 +140,7 @@ class PreferencesRepository(private val context: Context) {
                 dohAntiThrottling = prefs[Keys.DOH_THROTTLING] ?: false,
                 inputLagBypass = prefs[Keys.INPUT_LAG_BYPASS] ?: false,
                 zramGamer = prefs[Keys.ZRAM_GAMER] ?: false,
-                privateDnsEnabled = prefs[Keys.PRIVATE_DNS] ?: false
+                glassEffectEnabled = prefs[Keys.GLASS_EFFECT] ?: false
             )
         }
 
@@ -187,6 +189,7 @@ class PreferencesRepository(private val context: Context) {
     suspend fun updateInputLagBypass(enable: Boolean) = set(Keys.INPUT_LAG_BYPASS, enable)
     suspend fun updateZramGamer(enable: Boolean) = set(Keys.ZRAM_GAMER, enable)
     suspend fun updatePrivateDns(enable: Boolean) = set(Keys.PRIVATE_DNS, enable)
+    suspend fun updateGlassEffect(enable: Boolean) = set(Keys.GLASS_EFFECT, enable)
 
     suspend fun toggleFavoriteCommand(cmd: String) {
         context.dataStore.edit { prefs ->

@@ -89,6 +89,12 @@ class HyperNexusViewModel(
         }
     }
 
+    fun toggleGlassEffect(enable: Boolean) {
+        viewModelScope.launch {
+            repository.updateGlassEffect(enable)
+        }
+    }
+
     private fun startMemoryThresholdMonitoring() {
         thresholdJob = viewModelScope.launch(Dispatchers.IO) {
             while (isActive) {
@@ -514,7 +520,8 @@ class HyperNexusViewModel(
                 // Sync Touchscreen Optimized
                 val touchResult = bridge.executeShellCommand("getprop persist.sys.Touchscreen.tap_response_time")
                 if (touchResult.first == 0) {
-                    val current = touchResult.second.trim().toFloatOrNull() != null && touchResult.second.trim().toFloatOrNull()! < 0.01f
+                    val touchValue = touchResult.second.trim().toFloatOrNull()
+                    val current = touchValue != null && touchValue < 0.01f
                     if (current != uiState.value.touchscreenOptimized) {
                         repository.updateTouchscreenOptimized(current)
                     }

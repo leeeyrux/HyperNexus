@@ -4,40 +4,31 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// UNIFICACIÓN EN CALIENTE DE LA PALETA APPLE DARK SETTINGS
-private val ThemeAccentBlue = Color(0xFF007AFF)
-private val ThemeSuccessGreen = Color(0xFF30D158)
-private val ThemeWarningOrange = Color(0xFFFF9500)
-private val ThemeDangerRed = Color(0xFFFF3B30)
-private val ThemeBackgroundBlack = Color(0xFF000000)
-private val ThemeCardGlass = Color(0xFF1C1C1E)
-private val ThemeTextPrimary = Color(0xFFFFFFFF) // Fallback seguro a Blanco Puro
-private val ThemeTextSecondary = Color(0xFF8E8E93)
-
+// Usa Color.kt como única fuente de verdad (sin duplicados)
 private val DarkColorScheme = darkColorScheme(
-    primary = ThemeAccentBlue,
+    primary = AccentBlue,
     onPrimary = Color.White,
-    primaryContainer = ThemeAccentBlue.copy(alpha = 0.2f),
-    onPrimaryContainer = ThemeAccentBlue,
+    primaryContainer = AccentBlue.copy(alpha = 0.2f),
+    onPrimaryContainer = AccentBlue,
     
-    secondary = ThemeSuccessGreen,
+    secondary = SuccessGreen,
     onSecondary = Color.White,
     
-    tertiary = ThemeWarningOrange,
+    tertiary = WarningOrange,
     onTertiary = Color.White,
     
-    background = ThemeBackgroundBlack,
-    onBackground = Color.White,
+    background = BackgroundBlack,
+    onBackground = TextPrimary,
     
-    surface = ThemeCardGlass,
-    onSurface = Color.White,
-    surfaceVariant = ThemeCardGlass.copy(alpha = 0.8f),
-    onSurfaceVariant = ThemeTextSecondary,
+    surface = CardGlass,
+    onSurface = TextPrimary,
+    surfaceVariant = CardGlassLight,
+    onSurfaceVariant = TextSecondary,
     
-    error = ThemeDangerRed,
+    error = DangerRed,
     onError = Color.White,
     
-    outline = ThemeTextSecondary,
+    outline = TextSecondary,
     outlineVariant = Color(0xFF2C2C2E)
 )
 

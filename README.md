@@ -1,76 +1,118 @@
-# 🌌 HyperNexus v1.5.0 - Ultimate Android System Modification Suite
+# 🌌 HyperNexus v1.8.0 - Optimización Android Simple y Potente
 
 <div align="center">
   <img src="app/src/main/res/drawable/ic_launcher.png" width="120" height="120" alt="HyperNexus Logo" style="border-radius: 24px;"/>
   <br />
-  <p><b>Desarrollado exclusivamente desde un entorno móvil (Termux) por @leeeyrux</b></p>
-  
-  [![Telegram](https://shields.io)](https://t.me)
-  [![TikTok](https://shields.io)](https://tiktok.com)
-  [![Instagram](https://shields.io)](https://instagram.com)
+  <p><b>Desarrollado desde un móvil (Termux) por @leeeyrux</b></p>
 </div>
 
 ---
 
 ## 🔍 ¿Qué es HyperNexus?
-**HyperNexus** (Hyper = *Completo* | Nexus = *Conectado*) es una suite avanzada de optimización, diagnóstico y modificación de bajo nivel para el sistema operativo Android. Nace con el objetivo radical de **eliminar la saturación, las interfaces confusas y la publicidad invasiva** de las herramientas comerciales tradicionales, centralizando el poder de **5 aplicaciones independientes en un entorno único, ultra-ligero (16 MB) y de alto rendimiento**.
+**HyperNexus** es una app de optimización y diagnóstico para Android que pone el control de tu móvil en tus manos, sin Root obligatorio. Une en una sola app (16 MB, ultra-ligera) lo que antes necesitabas 5 apps distintas para hacer.
 
-La aplicación opera bajo un modelo híbrido: ejecuta lecturas locales de telemetría sin privilegios elevados y despierta su motor de inyección de comandos de escritura mediante el puente **Shizuku / ADB shell**, eliminando la necesidad obligatoria de acceso Root en dispositivos modernos.
-
----
-
-## 🛠️ Arquitectura y Características por Módulo
-
-El sistema está estructurado mediante una interfaz monolítica de **7 pestañas principales** integradas en un contenedor de navegación flotante:
-
-### 1. 📊 Panel de Telemetría en Vivo (Home Dashboard)
-Centro de control enfocado exclusivamente en la monitorización de datos en tiempo real (Cero botones de configuración que obstruyan la vista).
-* **Frecuencias de CPU Activas:** Mapeo sutil por clúster (Core #0 a Core #7) extrayendo las frecuencias reales directo de `/sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq`.
-* **Métricas Energéticas de Batería:** Diagnóstico preciso de Salud de Celda, Tensión Exacta (mV), Amperaje Instantáneo (mA), Tipo de Química (Li-poly) y Capacidad Máxima Real.
-* **Conectividad y Red:** Sensor de Latencia de Ping (ms), Potencia de Señal exacta (dBm) y Tipo de Enlace activo (Wi-Fi 2.4/5GHz o Redes Móviles 4G/5G).
-* **Botones Rápidos de Acción:** Limpieza de memoria RAM instantánea, Gaming Boost y un script de inyección térmica de red denominado `Optimizar Ping`.
-
-### 2. ⚡ Rendimiento (System Performance Tweaks)
-Control técnico de parámetros visuales y de procesamiento del sistema operativo mediante un sistema de **Chips Discretos con Memoria Persistente**.
-* **Densidad de Pantalla (DPI Seguro):** Modificador de DPI con saltos fijos de 20 en 20 en rangos estrictamente seguros (320 a 500 DPI) para evitar el colapso de la pantalla por malas configuraciones.
-* **Escalas de Animación Avanzadas:** Configuración por chips de Escala de Transición, Animación/Duración y Escala de Ventana, ofreciendo multiplicadores oficiales de `0x (Apagadas)`, `0.5x`, `1x`, `1.5x` y `2x`.
-* **Escalador de Resolución Protegido:** Modificador de resolución (`wm size`) calibrado bajo el formato de aspecto seguro base **720x1600** para evitar la pérdida de zonas táctiles o botones del sistema.
-* **Filtro "Anti-Curiosos" Integrado:** Banner y diálogo de advertencia en rojo brillante que previene a usuarios inexpertos antes de alterar configuraciones críticas mediante el aviso legal del *"Che Jorge el Curioso"*.
-
-### 3. 🎮 Gráficos Avanzados & Game Manager API
-Suite de inyección para aceleración de renderizado en títulos de alta demanda gráfica (como Call of Duty, Blood Strike, Brawl Stars y Free Fire).
-* **Filtro de Aplicaciones Inteligente:** Motor unificado e ilimitado que escanea el sistema mediante `Intent.CATEGORY_LAUNCHER`, aislando los juegos del usuario en la parte superior del menú desplegable de forma alfabética con sus respectivos iconos nativos y enviando las utilidades de sistema al fondo.
-* **Túnel de Renderizado Forzado:** Modificación de variables del sistema en caliente para forzar la composición de pantalla mediante motores avanzados: **Vulkan Booster, Vulkan Lite, OpenGL SkiaGL y OpenGL Lite**.
-* **Tweaks de Estabilidad:** Alternadores para `VSYNC Bypass`, `Forzar Renderizado GPU`, Perfiles de optimización táctil (`Touchscreen Optimized`) y controladores térmicos de hardware (`Thermal Controller`).
-* **Contador Red Magic Multi-Info Overlay:** Servicio de ventana flotante (`WindowManager`) interactivo y resistente a fallos de ciclo de vida. Con un solo tap en pantalla alterna entre un contador minimalista ("58 FPS") y una barra completa de telemetría gamer gris translúcida con tipografía blanca futurista que muestra: `[ Hora | FPS | Ping | Temp | Batería ]`.
-
-### 4. 🛡️ Seguridad & Red Gamer (Cybersecurity Dashboard)
-Panel de mantenimiento y privacidad con un diseño visual interactivo de alta fidelidad.
-* **Medidor de Protección Circular:** Anillo dinámico animado con un `100% Protection Score` sobre gradientes oscuros.
-* **Hyper Cleaner / Booster Engine:** Barra segmentada horizontal multicolor que muestra el almacenamiento real y ejecuta un borrado secuencial ultrarrápido de archivos temporales y cachés residuales a velocidades de `157 MB/sec` usando comandos `pm trim-caches 999G`.
-* **Auditor de Vulnerabilidades del Sistema:** Lista de verificación con checks verdes que evalúa el estado del cifrado del dispositivo, bloqueo de pantalla, depuración por desarrollo y estado de protección de Google Play Protect.
-* **Túnel VPN Gamer de Privacidad (Split Tunneling):** Servicio nativo integrado (`VpnService`) con un interruptor maestro que genera un puente local de red con MTU optimizado a 1400 bytes y DNS de baja latencia (Cloudflare 1.1.1.1). Su arquitectura de túnel dividido redirige el tráfico cifrado **únicamente hacia el juego seleccionado en la lista superior**, dejando las apps normales de fondo libres de lag de red.
-
-### 5. 🗂️ Módulos Universales (Custom Mod Installer)
-Un motor de instalación de modificaciones global que rompe las barreras restrictivas de software propietario.
-* **Instalador de Almacenamiento Interno:** Abre un selector de archivos nativo de Android que permite cargar cualquier script de comandos `.sh` o perfiles de propiedades de tweaks de forma externa desde `/sdcard/HyperNexus_Modulos/`.
-* **Control de Módulos:** Añade de forma dinámica interruptores de activación, desactivación y botones de remoción rápida en tarjetas flotantes independientes.
-* **Módulos Preset Sugeridos:** Incluye de fábrica 4 optimizaciones automatizadas: *FPS Stabilizer Tweak*, *Touch Response Booster*, *Thermal Throttling Bypass* y *Network Ping Optimizer*.
-
-### 6. 💻 Terminal ADB Embebida (Shizuku Console Engine)
-Una consola interactiva de comandos del sistema integrada en la interfaz que elimina por completo la necesidad de una computadora externa para tareas de depuración.
-* **Ejecutor Asíncrono:** Entrada de comandos de texto en crudo procesados a través del contexto Binder de Shizuku.
-* **Presets de un Solo Toque:** Lista de 10 comandos ADB populares pre-cargados listos para ejecutarse (Modo Doze Extremo, Deep Sleep, forzar compilación Speed global, auditoría Logcat de crashes, etc.).
-* **Sistema de Marcadores:** Permite almacenar cadenas de comandos personalizados en una lista local de favoritos mediante interacciones de "Me Gusta".
+Funciona en dos niveles:
+- **Telemetría en vivo** (lectura local, sin permisos especiales)
+- **Optimizaciones reales** (vía Shizuku/ADB, sin Root en móviles modernos)
 
 ---
 
-## 🎨 Especificaciones del Motor Gráfico y Experiencia Visual (UI/UX)
-HyperNexus no es una aplicación de terminal tosca; implementa una interfaz de alta fidelidad basada en pautas **Sci-Fi Cyber-Dark & Glow Glassmorphism**:
-* **The Floating Liquid Glass Capsule:** La barra de navegación inferior de 7 pestañas ha sido transformada en una cápsula ovalada flotante estilo iOS despegada de los bordes. Utiliza un fondo gris carbón translúcido (`Color(0x991A1A1A)`) procesado mediante desenfoques de mapa de bits en tiempo real (`Modifier.blur(12.dp)`). El contenido del scroll y las tarjetas de la app pasan de forma fluida y distorsionada por detrás del cristal de la barra.
-* **Navegación por Scroll Horizontal Líquido:** Permite deslizar los 7 iconos de pestañas de lado a lado dentro del óvalo con el pulgar. Los elementos se desplazan usando una animación cúbica 3D no lineal regulada por una curva `FastOutSlowInEasing` que aporta peso físico y rebote elástico.
-* **Estilo Monochrome Bold-White:** Se eliminaron los colores saturados para las selecciones activas. Las pestañas inactivas permanecen en gris tenue, mientras que el apartado seleccionado se ilumina al instante en **Blanco Puro Brillante con tipografía gruesa (`FontWeight.Bold`)**, ofreciendo un contraste impecable de alta gama.
-* **Social Media Scroll Cache Shield:** Todas las listas e iconos de juegos cargan mediante claves fijas (`key = { it.packageName }`), tipos de celda reutilizables (`contentType`) y almacenamiento en caché gráfica (`Modifier.drawWithCache`). La animación tridimensional de entrada en cascada de las tarjetas se congela mediante un bloqueo booleano una vez mostrada; si el usuario sube y baja rápido por el Panel, las animaciones ya no se recalculan, permitiendo un scroll limpio, ligero y suave idéntico al feed de TikTok que no suelta los 60Hz.
+## 🛠️ 7 Pestañas, Todo en una Navegación Flotante
+
+### 1. 📊 Panel — Tu Móvil en Tiempo Real
+Vista limpia, solo datos, cero botones que estorben.
+- **CPU:** Frecuencia real de cada núcleo (8 núcleos)
+- **Batería:** Salud, voltaje (mV), amperaje (mA), tecnología, capacidad real
+- **Red:** Ping (ms), señal (dBm), tipo (Wi-Fi 2.4/5 GHz, 4G/5G)
+- **Acciones rápidas:** Limpiar RAM, Gaming Boost, Optimizar Ping
+
+### 2. ⚡ Rendimiento — Ajustes Seguros Paso a Paso
+Cambias valores con chips discretos, nada de sliders que se pasan.
+- **Hz de pantalla:** Auto / 60 / 90 / 120 / 144 Hz
+- **DPI (tamaño de interfaz):** 320–500 en saltos de 20 (rango seguro)
+- **Animaciones:** Transición, Duración, Ventana → 0x / 0.5x / 1x / 1.5x / 2x
+- **Resolución:** Nativa / 1080p / 720p (base segura 20:9) / 540p
+- **Filtro táctil (Input Lag Bypass):** Respuesta más rápida al tocar
+- **Efecto Cristal (Glass/Blur):** *Desactívalo en gama baja para más FPS*
+- **Perfil Extremo (un toque):** Apaga animaciones, máxima CPU, GPU directa
+
+### 3. 🎮 Gráficos — Para Juegos Exigentes (COD, Free Fire, Brawl Stars…)
+- **HUD Red Magic:** Flotante, tap para alternar FPS simple / barra completa [Hora | FPS | Ping | Temp | Batería]
+- **Motor de renderizado:** Vulkan Booster / Vulkan / Vulkan Lite / OpenGL SkiaGL / OpenGL Lite
+- **Composición:** CPU / GPU / Dinámica
+- **Interruptores:** Gráficos Fluidos / Aceleración HW / Intervalo GPU / Control Térmico / Touch Optimizado / Booster SkiaGL / Booster Vulkan
+
+### 4. 🛡️ Seguridad & Red — Limpieza y Privacidad
+- **Anillo Booster (Cian):** Tap → limpia memoria (`pm trim-caches`) en ~1.8 s
+- **Anillo Antivirus (Verde):** Escanea apps instaladas, muestra progreso real
+- **Limpieza automática:** Si RAM libre baja del 15%, purga en segundo plano
+- **Anti-Throttling (DoH):** DNS sobre HTTPS (puerto 443) para que el operador no estrangule
+- **DNS Privado Rápido (1.1.1.1):** Un interruptor, acelera web y evita bloqueos básicos
+- **VPN Gaming (Split Tunneling):** Solo el juego elegido va por el túnel (MTU 1400, DNS 1.1.1.1), el resto directo
+- **Botones pie:** Limpiar RAM / Gaming Boost / Optimizar Ping
+
+### 5. 🗂️ Módulos — Instala Tus Propios Scripts
+- **Importar .sh:** Selector nativo desde `/sdcard/HyperNexus_Modulos/`
+- **Gestión visual:** Cada módulo = tarjeta con switch, ver/ocultar salida, eliminar
+- **8 Presets de fábrica:**
+  1. FPS Stabilizer
+  2. Touch Response Booster
+  3. Thermal Throttling Bypass
+  4. Network Ping Optimizer
+  5. RAM Management Aggressive
+  6. GPU Sustained Clocks
+  7. Kernel Entropy Multiplier
+  8. Audio Bitrate Enhancer
+
+### 6. 💻 Terminal — ADB en el Móvil
+- Consola real vía Shizuku, sin PC
+- 10 presets listos (Doze Extremo, Deep Sleep, Trim Caché, Kill All, SurfaceFlinger, Rendimiento Máx, Compilación Speed, Logcat Crashes, Propiedades Térmicas)
+- Favoritos (marcar/desmarcar con ★)
+- Fondo Matrix 4% opacidad, solo gris neutro sobre negro
+
+### 7. 🧪 Experimental — Lo Más Avanzado
+- **Compilación PGO (8 hilos):** Binario AOT optimizado por perfil de velocidad para el juego elegido
+- **Game Manager API:** FPS objetivo (60/90/120/144) + downscale opcional 0.8x
+- **ZRAM Gamer:** Swappiness 130 → texturas en RAM física, apps inactivas a swap
 
 ---
-*HyperNexus es software libre, transparente y diseñado para llevar el control de tu dispositivo al límite. El uso indebido de las opciones avanzadas de hardware es responsabilidad única del usuario.*
+
+## 🎨 Diseño: Minimalista, Oscuro, 60 Hz Garantizados
+- **Navegación:** Cápsula flotante iOS-style, 7 iconos, scroll horizontal con física elástica
+- **Estilo:** Monocromo Bold-White (selección = blanco puro + negrita, resto = gris tenue)
+- **Tarjetas:** Glassmorphism opcional — **desactivado por defecto en gama baja** (ahorra GPU). Si lo activas: blur real (API 31+) o gradiente simulado (< API 31). Siempre con borde metálico fino.
+- **Entrada escalonada:** 30 dp → 0, 600 ms, ease-out-quad, 100 ms entre tarjetas (bypass `animator_duration_scale`)
+- **Listas:** Caché de iconos + claves fijas = scroll fluido tipo TikTok, sin recalcular animaciones
+
+---
+
+## ⚙️ Requisitos y Compatibilidad
+- Android 8.0+ (API 26)
+- **Shizuku** instalado y permiso concedido (la app te guía al abrir)
+- Funciona en **cualquier móvil**: desde Helio G36 / Snapdragon 450 hasta flagship
+- Tamaño APK ~16 MB, sin publicidad, sin trackers
+
+---
+
+## 📥 Descarga e Instalación
+1. Instala **Shizuku** (Play Store / GitHub)
+2. Da permiso Shizuku a HyperNexus (ADB o app Shizuku)
+3. Abre HyperNexus → concede permiso cuando pida
+4. Empieza a optimizar
+
+---
+
+## ⚠️ Aviso Importante
+Las opciones avanzadas (DPI, resolución, governor, thermal, etc.) modifican comportamiento del sistema. **Lee los diálogos de advertencia ("Che Jorge el Curioso") antes de aceptar**. El creador no se hace responsable de mal uso.
+
+---
+
+## 🔗 Enlaces
+- **Telegram:** https://t.me/Leeeyrux_Nexus
+- **TikTok:** https://tiktok.com/@leeeyrux
+- **Instagram:** https://instagram.com/leeeyru.btw
+- **YouTube:** https://youtube.com/@leeeyrux
+
+---
+
+*HyperNexus es software libre y transparente. Úsalo con criterio.*

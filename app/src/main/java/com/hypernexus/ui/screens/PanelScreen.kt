@@ -51,8 +51,9 @@ fun PanelScreen(
     val context = LocalContext.current
     val hardwareMonitor = remember { HardwareMonitor(context) }
     val specs = remember { hardwareMonitor.getStaticSpecs() }
+    val glassEffectEnabled = viewModel.uiState.collectAsState().value?.glassEffectEnabled ?: false
 
-    // 1. FLUJO ASÍNCRONO CONFLADO CALIBRADO A EXACTAMENTE 800MS
+    // FLUJO DE TELEMETRÍA CADA 800ms (balance batería/precisión)
     val telemetryFlow = remember {
         flow {
             while (true) {
@@ -140,7 +141,7 @@ fun PanelScreen(
 
         item(key = "panel_social", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "panel_social") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Text("Canales Oficiales y Soporte", style = MaterialTheme.typography.labelMedium, color = Color(0xFF8E8E93))
                         Spacer(modifier = Modifier.height(10.dp))
@@ -181,7 +182,7 @@ fun PanelScreen(
         // ORDEN 2: TELEMETRÍA DE CONECTIVIDAD EN VIVO (ICONO Y TOKEN ELECTRIC BLUE)
         item(key = "panel_network", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "panel_network") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Wifi, null, tint = electricBlue, modifier = Modifier.size(24.dp))
@@ -219,7 +220,7 @@ fun PanelScreen(
         // ORDEN 3: TELEMETRÍA ENERGÉTICA DE BATERÍA (MV, MA, SALUD Y TECNOLOGÍA)
         item(key = "panel_battery", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 4, itemKey = "panel_battery") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.BatteryChargingFull, null, tint = accentGreen, modifier = Modifier.size(24.dp))
@@ -252,7 +253,7 @@ fun PanelScreen(
         // ORDEN 4: MEMORIA RAM (TARJETA SÓLIDA NATIVA CON BARRA VERDE)
         item(key = "panel_ram", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 5, itemKey = "panel_ram") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Memory, null, tint = electricBlue, modifier = Modifier.size(32.dp))
                         Spacer(modifier = Modifier.width(16.dp))
@@ -285,7 +286,7 @@ fun PanelScreen(
         // ORDEN 5: FRECUENCIAS DEL CPU (8 NÚCLEOS CORE #0 A CORE #7 EN EL FONDO ABSOLUTO)
         item(key = "panel_cpu", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 6, itemKey = "panel_cpu") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Speed, null, tint = accentGreen, modifier = Modifier.size(28.dp))

@@ -39,6 +39,7 @@ fun TerminalScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
+    val glassEffectEnabled = uiState.glassEffectEnabled
 
     var inputCommand by remember { mutableStateOf("") }
     var consoleLogs by remember { mutableStateOf("HyperNexus ADB Shell v1.8.0 [Shizuku Protocol]\nEscriba un comando o seleccione uno predefinido.\n") }
@@ -69,16 +70,16 @@ fun TerminalScreen(
 
     val presetCommands = remember {
         listOf(
-            "1. Forzar Modo Doze Extremo" to "dumpsys deviceidle force-idle",
-            "2. Optimizar Batería (Deep Sleep)" to "cmd deviceidle conserve enabled 1",
+            "1. Ahorro Extremo de Batería (Doze)" to "dumpsys deviceidle force-idle",
+            "2. Suspender Apps (Deep Sleep)" to "cmd deviceidle conserve enabled 1",
             "3. Limpiar Caché del Sistema" to "pm trim-caches 999G",
-            "4. Liberar Memoria RAM" to "am kill-all",
-            "5. Verificar Estado de Superficie Gráfica" to "dumpsys surfaceflinger",
-            "6. Habilitar Modo Rendimiento Máximo" to "cmd power set-mode 1",
-            "7. Desactivar Límite de Procesos de Fondo" to "device_config put activity_manager max_phantom_processes 2147483647",
-            "8. Forzar Compilación Speed en Todo el Sistema" to "cmd package compile -m speed -a",
-            "9. Auditar Logs de Errores Críticos (Logcat)" to "logcat -b crash -d",
-            "10. Verificar Estado de Frecuencia Térmica de CPU" to "dumpsys hardware_properties"
+            "4. Liberar RAM" to "am kill-all",
+            "5. Ver Estado Gráfico (SurfaceFlinger)" to "dumpsys surfaceflinger",
+            "6. Modo Rendimiento Máximo" to "cmd power set-mode 1",
+            "7. Sin Límite Procesos 2do Plano" to "device_config put activity_manager max_phantom_processes 2147483647",
+            "8. Compilar Todo Rápido (Speed)" to "cmd package compile -m speed -a",
+            "9. Ver Errores Críticos (Logcat)" to "logcat -b crash -d",
+            "10. Info Térmica CPU" to "dumpsys hardware_properties"
         )
     }
 
@@ -150,7 +151,7 @@ fun TerminalScreen(
         // CONSOLA MATRIX VERDE FÓSFORO AL 4%
         item(key = "term_console", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "term_console") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(
                             modifier = Modifier.fillMaxWidth(),

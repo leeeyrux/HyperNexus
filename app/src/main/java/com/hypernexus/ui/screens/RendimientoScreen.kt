@@ -74,6 +74,7 @@ fun RendimientoScreen(
 
     // Use persistent state from DataStore instead of volatile memory
     val inputLagBypassActive = uiState.inputLagBypass
+    val glassEffectEnabled = uiState.glassEffectEnabled
 
     LazyColumn(
         modifier = modifier
@@ -93,12 +94,12 @@ fun RendimientoScreen(
 
         item(key = "rend_hz", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "rend_hz") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Speed, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text("Forzar Tasa de Refresco Global", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text("Hz de Pantalla", style = MaterialTheme.typography.titleMedium, color = Color.White)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -128,13 +129,13 @@ fun RendimientoScreen(
 
         item(key = "rend_dpi", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "rend_dpi") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Densidad de Pantalla (DPI)", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text("Tamaño de Interfaz (DPI)", style = MaterialTheme.typography.titleMedium, color = Color.White)
                             Text(uiState.displayDpi?.let { "$it DPI" } ?: "-- DPI", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
                         }
-                        Text("Selecciona un valor predeterminado seguro", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
+                        Text("Elige un valor seguro", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8E8E93))
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Row(
@@ -165,13 +166,14 @@ fun RendimientoScreen(
         item(key = "rend_transition", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "rend_transition") {
                 StepOptionCard(
-                    title = "Escala de Transición",
+                    title = "Animación de Transición",
                     selectedValue = uiState.transitionScale,
                     options = scaleOptions,
                     onSelected = {
                         viewModel.setTransitionScale(it)
                         Toast.makeText(context, "Transición: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
-                    }
+                    },
+                    glassEnabled = glassEffectEnabled
                 )
             }
         }
@@ -179,13 +181,14 @@ fun RendimientoScreen(
         item(key = "rend_animator", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 4, itemKey = "rend_animator") {
                 StepOptionCard(
-                    title = "Escala de Animación / Duración",
+                    title = "Animación General",
                     selectedValue = uiState.animatorScale,
                     options = scaleOptions,
                     onSelected = {
                         viewModel.setAnimatorScale(it)
                         Toast.makeText(context, "Duración: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
-                    }
+                    },
+                    glassEnabled = glassEffectEnabled
                 )
             }
         }
@@ -193,13 +196,14 @@ fun RendimientoScreen(
         item(key = "rend_window", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 5, itemKey = "rend_window") {
                 StepOptionCard(
-                    title = "Escala de Ventana",
+                    title = "Animación de Ventanas",
                     selectedValue = uiState.windowScale,
                     options = scaleOptions,
                     onSelected = {
                         viewModel.setWindowScale(it)
                         Toast.makeText(context, "Ventana: ${formatScale(it)}", Toast.LENGTH_SHORT).show()
-                    }
+                    },
+                    glassEnabled = glassEffectEnabled
                 )
             }
         }
@@ -208,12 +212,12 @@ fun RendimientoScreen(
         item(key = "rend_input_lag", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 6, itemKey = "rend_input_lag") {
                 IOSSwitchTile(
-                    title = "Filtro de Baja Latencia Táctil (Input Lag Bypass)",
-                    subtitle = "Bypasea el retardo de interrupciones de ahorro energético del kernel",
+                    title = "Respuesta Táctil Rápida",
+                    subtitle = "Elimina el retraso al tocar la pantalla",
                     checked = inputLagBypassActive,
                     onCheckedChange = {
                         viewModel.toggleInputLagBypass(it)
-                        Toast.makeText(context, if (it) "Bypass táctil activo" else "Modo táctil estándar", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, if (it) "Activado" else "Desactivado", Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -221,16 +225,16 @@ fun RendimientoScreen(
 
         item(key = "rend_resolution", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 7, itemKey = "rend_resolution") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.AspectRatio, null, tint = Color(0xFF007AFF), modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text("Escalador de Resolución (Ratio Fijo 20:9)", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text("Resolución de Pantalla", style = MaterialTheme.typography.titleMedium, color = Color.White)
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Calibrado al estándar 720x1600 para preservar gestos táctiles y barra superior.",
+                            text = "Basado en 720x1600 para que no fallen botones ni gestos.",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF8E8E93)
                         )
@@ -259,8 +263,8 @@ fun RendimientoScreen(
         item(key = "rend_hw_overlays", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 8, itemKey = "rend_hw_overlays") {
                 IOSSwitchTile(
-                    title = "Disable HW Overlays",
-                    subtitle = "Fuerza composición directa por GPU en SurfaceFlinger",
+                    title = "GPU Directa (sin capas)",
+                    subtitle = "La GPU dibuja directo, más fluidez",
                     checked = uiState.disableHwOverlays,
                     onCheckedChange = { viewModel.toggleDisableHwOverlays(it) }
                 )
@@ -270,8 +274,8 @@ fun RendimientoScreen(
         item(key = "rend_msaa", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 9, itemKey = "rend_msaa") {
                 IOSSwitchTile(
-                    title = "Enable Forced 4x MSAA",
-                    subtitle = "Inyección global de anti-aliasing OpenGL ES 2.0+",
+                    title = "Suavizado 4x (bordes)",
+                    subtitle = "Bordes lisos en todo el sistema",
                     checked = uiState.msaa4x,
                     onCheckedChange = { viewModel.toggleForced4xMsaa(it) }
                 )
@@ -281,16 +285,28 @@ fun RendimientoScreen(
         item(key = "rend_governor", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 10, itemKey = "rend_governor") {
                 IOSSwitchTile(
-                    title = "Performance Governor Scheduler",
-                    subtitle = "Fuerza frecuencia máxima en todos los clústeres del CPU",
+                    title = "CPU al Máximo",
+                    subtitle = "Todos los núcleos a tope siempre",
                     checked = uiState.perfGovernor,
                     onCheckedChange = { viewModel.togglePerfGovernor(it) }
                 )
             }
         }
 
+        // EFECTO GLASS EN TARJETAS (OPCIONAL - AHORRO GPU GAMA BAJA)
+        item(key = "rend_glass_effect", contentType = "premium_node") {
+            CyberGlowEntranceWrapper(index = 11, itemKey = "rend_glass_effect") {
+                IOSSwitchTile(
+                    title = "Efecto Cristal en Tarjetas",
+                    subtitle = "Apágalo en móviles básicos para ganar FPS. Sin desenfoque = más velocidad.",
+                    checked = glassEffectEnabled,
+                    onCheckedChange = { viewModel.toggleGlassEffect(it) }
+                )
+            }
+        }
+
         item(key = "rend_quick_profile", contentType = "premium_node") {
-            CyberGlowEntranceWrapper(index = 11, itemKey = "rend_quick_profile") {
+            CyberGlowEntranceWrapper(index = 12, itemKey = "rend_quick_profile") {
                 Button(
                     onClick = {
                         scope.launch {
@@ -300,7 +316,7 @@ fun RendimientoScreen(
                             viewModel.toggleHighPerformance(true)
                             viewModel.toggleFastTouch(true)
                             viewModel.toggleDisableHwOverlays(true)
-                            Toast.makeText(context, "Perfil de Máxima Velocidad Aplicado", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Modo Extremo Activado", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -309,7 +325,7 @@ fun RendimientoScreen(
                 ) {
                     Icon(Icons.Default.Bolt, null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Activar Perfil Extremo (0x Todo)", fontWeight = FontWeight.Bold)
+                    Text("Modo Extremo (Todo Apagado / al Máximo)", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -379,9 +395,10 @@ private fun StepOptionCard(
     title: String,
     selectedValue: Float?,
     options: List<Float>,
-    onSelected: (Float) -> Unit
+    onSelected: (Float) -> Unit,
+    glassEnabled: Boolean = true
 ) {
-    GlassCard {
+    GlassCard(glassEnabled = glassEnabled) {
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(title, style = MaterialTheme.typography.titleMedium, color = Color.White)

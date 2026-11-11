@@ -59,6 +59,7 @@ fun ExperimentalScreen(
 
     // Use persistent state from DataStore instead of volatile memory
     val zramGamerActive = viewModel.uiState.collectAsState().value?.zramGamer ?: false
+    val glassEffectEnabled = uiState.glassEffectEnabled
 
     // ============================================================
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
@@ -85,15 +86,15 @@ fun ExperimentalScreen(
         item(key = "exp_header", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "exp_header") {
                 Column {
-                    Text("Game Tuner & ZRAM Gamer", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
-                    Text("Compilación PGO y retención de texturas en RAM v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Juegos & ZRAM", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFFF9500), fontWeight = FontWeight.Bold)
+                    Text("Compilación optimizada y ZRAM v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
 
         item(key = "exp_app_picker", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 1, itemKey = "exp_app_picker") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Text("Selecciona una App o Juego (${memoizedAppList.size} detectados)", style = MaterialTheme.typography.titleMedium, color = Color.White)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -191,19 +192,19 @@ fun ExperimentalScreen(
             }
         }
 
-        // COMPILACIÓN PGO ATÓMICA CON LOS 8 HILOS CONCURRENTES
+        // COMPILACIÓN OPTIMIZADA (PGO) - 8 HILOS
         item(key = "exp_dex2oat_card", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 2, itemKey = "exp_dex2oat_card") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Bolt, null, tint = Color(0xFF30D158), modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text("Compilación PGO (Profile-Guided Optimization)", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text("Compilación Optimizada (PGO)", style = MaterialTheme.typography.titleMedium, color = Color.White)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Fuerza 8 hilos dedicados y genera binario AOT adaptativo con perfil de velocidad completo para evitar tirones.",
+                            text = "Usa 8 hilos y crea versión optimizada del juego para que no vaya a tirones.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF8E8E93)
                         )
@@ -211,16 +212,15 @@ fun ExperimentalScreen(
 
                         Button(
                             onClick = {
-                                selectedApp?.let { app ->
+                                selectedApp?.let { app =>
                                     scope.launch(Dispatchers.IO) {
                                         isCompiling = true
-                                        // 8 hilos completos + núcleos 0 a 7 forzados
                                         viewModel.privilegedActions.bridge.executeShellCommand(
                                             "setprop dalvik.vm.dex2oat-threads 8; setprop dalvik.vm.dex2oat-cpu-set 0,1,2,3,4,5,6,7; cmd package compile -m speed-profile -f ${app.packageName}"
                                         )
                                         withContext(Dispatchers.Main) {
                                             isCompiling = false
-                                            Toast.makeText(context, "PGO completado para: ${app.appName}", Toast.LENGTH_LONG).show()
+                                            Toast.makeText(context, "Optimizado: ${app.appName}", Toast.LENGTH_LONG).show()
                                         }
                                     }
                                 }
@@ -233,9 +233,9 @@ fun ExperimentalScreen(
                             if (isCompiling) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Text("Compilando código PGO...")
+                                Text("Optimizando...")
                             } else {
-                                Text("Compilar ${selectedApp?.appName ?: "Juego"}", fontWeight = FontWeight.Bold)
+                                Text("Optimizar ${selectedApp?.appName ?: "Juego"}", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -246,18 +246,18 @@ fun ExperimentalScreen(
         // GAME MANAGER API TUNER
         item(key = "exp_game_api_card", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 3, itemKey = "exp_game_api_card") {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Gamepad, null, tint = Color(0xFFFF9500), modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text("Game Manager API Tuner", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text("Ajustes de Juego (Game API)", style = MaterialTheme.typography.titleMedium, color = Color.White)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Ajusta políticas por hardware en el paquete seleccionado.", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                        Text("FPS objetivo y resolución para el juego elegido.", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Text("FPS Destino en Juego:", style = MaterialTheme.typography.labelMedium, color = Color.White)
+                        Text("FPS Objetivo:", style = MaterialTheme.typography.labelMedium, color = Color.White)
                         Spacer(modifier = Modifier.height(6.dp))
                         val fpsOptions = listOf(60, 90, 120, 144)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -283,7 +283,7 @@ fun ExperimentalScreen(
                                     scope.launch {
                                         val downscale = if (downscale80) 0.8f else 1.0f
                                         viewModel.privilegedActions.applyGameMode(app.packageName, gameFps, downscale)
-                                        Toast.makeText(context, "Game API inyectado a ${app.appName}", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Ajustes aplicados a ${app.appName}", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             },
@@ -292,19 +292,19 @@ fun ExperimentalScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9500)),
                             enabled = selectedApp != null
                         ) {
-                            Text("Inyectar Game API a ${selectedApp?.appName ?: "App"}", fontWeight = FontWeight.Bold)
+                            Text("Aplicar a ${selectedApp?.appName ?: "App"}", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
         }
 
-        // TWEAK: OPTIMIZAR ASIGNACIÓN ZRAM GAMER
+        // ZRAM GAMER
         item(key = "exp_zram_card", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 4, itemKey = "exp_zram_card") {
                 IOSSwitchTile(
-                    title = "Optimizar Asignación ZRAM Gamer",
-                    subtitle = "Ajusta swappiness para retener texturas en RAM física y expulsar apps inactivas a swap, eliminando tirones en giros de 360°",
+                    title = "ZRAM para Juegos",
+                    subtitle = "Mantiene texturas en RAM, pasa apps en segundo plano a swap. Menos tirones.",
                     checked = zramGamerActive,
                     onCheckedChange = { active ->
                         viewModel.toggleZramGamer(active)
@@ -317,7 +317,7 @@ fun ExperimentalScreen(
                                 "setprop persist.sys.zram_tuning ${if (active) 1 else 0}"
                             )
                             withContext(Dispatchers.Main) {
-                                Toast.makeText(context, if (active) "ZRAM Gamer activada (Texturas fijas en RAM)" else "ZRAM restablecida", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, if (active) "ZRAM Activada (texturas en RAM)" else "ZRAM Restablecida", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }

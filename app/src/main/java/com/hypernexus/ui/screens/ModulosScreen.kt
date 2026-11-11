@@ -50,6 +50,7 @@ fun ModulosScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
+    val glassEffectEnabled = uiState.glassEffectEnabled
 
     val moduleOutputs = remember { mutableStateMapOf<String, String>() }
     val expandedOutputs = remember { mutableStateMapOf<String, Boolean>() }
@@ -58,50 +59,50 @@ fun ModulosScreen(
         listOf(
             PresetModule(
                 id = "fps_stabilizer",
-                title = "1. FPS Stabilizer Tweak",
-                description = "Fuerza tasa de cuadros uniforme y bloquea caídas de sincronización vertical.",
+                title = "1. Estabilizar FPS",
+                description = "Evita caídas bruscas de frames en juegos.",
                 script = "setprop persist.sys.stable.fps.enable true; setprop debug.hwui.render_dirty_regions false; setprop debug.sf.showupdates 0; setprop debug.sf.showcpu 0"
             ),
             PresetModule(
                 id = "touch_booster",
-                title = "2. Touch Response Booster",
-                description = "Minimiza la fricción táctil a 0.01ms e incrementa el muestreo digital.",
+                title = "2. Tacto Más Rápido",
+                description = "Respuesta casi instantánea al tocar la pantalla.",
                 script = "setprop persist.sys.Touchscreen.tap_response_time 0.01; setprop persist.sys.enable.fast_rendering 1; setprop touch.pressure.scale 0.001"
             ),
             PresetModule(
                 id = "thermal_bypass",
-                title = "3. Thermal Throttling Bypass",
-                description = "Modifica directivas de atenuación térmica del CPU para sesiones de juego prolongadas.",
+                title = "3. Sin Límite Térmico",
+                description = "El móvil no baja rendimiento por calor en juegos largos.",
                 script = "setprop debug.thermal.bypass 1; settings put global thermal_limit_refresh 0; cmd power set-mode 0"
             ),
             PresetModule(
                 id = "ping_optimizer",
-                title = "4. Network Ping Optimizer",
-                description = "Limpia la caché de sockets DNS y agranda los búferes de recepción TCP WiFi.",
+                title = "4. Optimizar Ping/Red",
+                description = "Limpia DNS y ensancha buffers WiFi para menos lag.",
                 script = "ndc resolver flushdefaultif; setprop net.tcp.buffersize.wifi 524288,1048576,2097152,4096,262144,1048576; setprop persist.sys.wifi.low_latency true"
             ),
             PresetModule(
                 id = "ram_lmk_aggressive",
-                title = "5. RAM Management Aggressive Tweak",
-                description = "Modifica parámetros minfree de LMK y purgeable assets para multitarea pesada.",
+                title = "5. Gestión RAM Agresiva",
+                description = "Libera memoria más agresivamente para multitarea pesada.",
                 script = "setprop persist.sys.purgeable_assets 1; echo '18432,23040,27648,32256,36864,46080' > /sys/module/lowmemorykiller/parameters/minfree 2>/dev/null; echo 100 > /proc/sys/vm/vfs_cache_pressure 2>/dev/null"
             ),
             PresetModule(
                 id = "gpu_sustained_clocks",
-                title = "6. GPU Performance Sustained Profiles",
-                description = "Previene la caída de reloj en GPUs Adreno y Mali bajo cargas continuadas.",
+                title = "6. GPU a Rendimiento Máximo",
+                description = "Evita que la GPU baje velocidad en uso continuo.",
                 script = "setprop debug.hwui.fps_divisor 1; setprop persist.sys.power.profile performance; setprop debug.renderengine.backend 2; setprop debug.hwui.use_buffer_age true"
             ),
             PresetModule(
                 id = "kernel_entropy_multiplier",
-                title = "7. Kernel Entropy Multiplier",
-                description = "Aumenta umbrales de entropía del kernel reduciendo micro-tirones de entrada.",
+                title = "7. Suavidad de Entrada (Kernel)",
+                description = "Reduce micro-tirones al tocar/deslizar.",
                 script = "echo 4096 > /proc/sys/kernel/random/write_wakeup_threshold 2>/dev/null; echo 2048 > /proc/sys/kernel/random/read_wakeup_threshold 2>/dev/null"
             ),
             PresetModule(
                 id = "audio_bitrate_enhancer",
-                title = "8. System Audio Bitrate Enhancer",
-                description = "Optimiza la calidad de remuestreo del framework de audio de Android a 24/32 bits.",
+                title = "8. Audio Alta Calidad",
+                description = "Mejora calidad de audio del sistema a 24/32 bits.",
                 script = "setprop af.resampler.quality 4; setprop persist.sys.audio.high_res 1; setprop persist.af.resampler.quality 4"
             )
         )
@@ -147,8 +148,8 @@ fun ModulosScreen(
         item(key = "mod_header", contentType = "premium_node") {
             CyberGlowEntranceWrapper(index = 0, itemKey = "mod_header") {
                 Column {
-                    Text("Módulos Universales", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Inyector de scripts, mods y telemetría de salida v1.7.5", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
+                    Text("Módulos", style = MaterialTheme.typography.headlineLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Instala scripts .sh y ve su salida v1.8.0", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -186,7 +187,7 @@ fun ModulosScreen(
                 val output = moduleOutputs[name] ?: "Sin ejecución registrada."
 
                 CyberGlowEntranceWrapper(index = 2, itemKey = rawModule) {
-                    GlassCard {
+                    GlassCard(glassEnabled = glassEffectEnabled) {
                         Column {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -261,7 +262,7 @@ fun ModulosScreen(
             val output = moduleOutputs[mod.id] ?: "Sin ejecución registrada."
 
             CyberGlowEntranceWrapper(index = 3, itemKey = mod.id) {
-                GlassCard {
+                GlassCard(glassEnabled = glassEffectEnabled) {
                     Column {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
