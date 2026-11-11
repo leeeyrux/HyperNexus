@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
@@ -16,11 +17,19 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
+ * Estado global del efecto cristal. Por defecto APAGADO para no castigar
+ * la GPU en dispositivos de gama baja (Helio G36, etc.).
+ * MainActivity lo provee desde DataStore mediante CompositionLocalProvider.
+ */
+val LocalGlassEffectEnabled = compositionLocalOf<Boolean> { false }
+
+/**
  * COMPONENTE BASE: CONTENEDOR ESTILO NEOMÓRFICO / GLASSMOPHISM
  * Diseña tarjetas con efecto de desenfoque traslúcido para la API 31+. 
  * Incluye un fallback matemático con gradientes oscuros para sistemas antiguos.
  * 
- * @param glassEnabled Si true usa blur real (API 31+) o gradiente simulado; si false usa solo fondo semitransparente sin blur (ahorro de GPU en gama baja)
+ * @param glassEnabled true = blur real (API 31+) o gradiente simulado; false = fondo semitransparente sin blur.
+ *                     null (por defecto) = toma el ajuste global LocalGlassEffectEnabled (apagado en gama baja).
  */
 @Composable
 fun GlassCard(
@@ -29,9 +38,10 @@ fun GlassCard(
     blurRadius: Dp = 20.dp,
     backgroundColor: Color = Color(0xFF1C1C1E).copy(alpha = 0.7f),
     borderColor: Color = Color.White.copy(alpha = 0.1f),
-    glassEnabled: Boolean = true, // Nuevo: controla si se aplica blur/efecto glass
+    glassEnabled: Boolean? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val glassOn = glassEnabled ?: LocalGlassEffectEnabled.current
     val shape = RoundedCornerShape(cornerRadius)
     
     Box(
@@ -44,7 +54,7 @@ fun GlassCard(
     ) {
         // RENDERIZADO DINÁMICO DEL EFECTO DE DESENFOQUE (BLUR FUSED ANCHOR)
         // Solo aplica blur/gradiente si glassEnabled=true; si false -> fondo sólido semitransparente (0 coste GPU)
-        if (glassEnabled) {
+        if (glassOn) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 Box(
                     modifier = Modifier

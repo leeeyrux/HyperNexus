@@ -27,9 +27,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventEffect
-import androidx.lifecycle.LocalLifecycleOwner
+import androidx.lifecycle.LifecycleEventObserver
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
 import com.hypernexus.ui.components.GlassCard
@@ -52,8 +52,14 @@ fun RendimientoScreen(
     // ============================================================
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
     // ============================================================
-    LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
-        viewModel.syncSystemState()
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.syncSystemState()
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
     }
 
     val dpiOptions = remember { listOf(320, 340, 360, 380, 400, 420, 440, 460, 480, 500) }

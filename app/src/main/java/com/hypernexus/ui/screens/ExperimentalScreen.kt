@@ -23,9 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventEffect
-import androidx.lifecycle.LocalLifecycleOwner
+import androidx.lifecycle.LifecycleEventObserver
 import com.hypernexus.domain.AppFilterManager
 import com.hypernexus.domain.GameTargetApp
 import com.hypernexus.ui.HyperNexusViewModel
@@ -65,8 +65,14 @@ fun ExperimentalScreen(
     // ============================================================
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
     // ============================================================
-    LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
-        viewModel.syncExperimentalState()
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.syncExperimentalState()
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(Unit) {
@@ -235,7 +241,7 @@ fun ExperimentalScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text("Optimizando...")
                             } else {
-                                Text("Optimizar ${selectedApp?.appName ?: 'Juego'}", fontWeight = FontWeight.Bold)
+                                Text("Optimizar " + (selectedApp?.appName ?: "Juego"), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -292,7 +298,7 @@ fun ExperimentalScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9500)),
                             enabled = selectedApp != null
                         ) {
-                            Text("Aplicar a ${selectedApp?.appName ?: 'App'}", fontWeight = FontWeight.Bold)
+                            Text("Aplicar a " + (selectedApp?.appName ?: "App"), fontWeight = FontWeight.Bold)
                         }
                     }
                 }

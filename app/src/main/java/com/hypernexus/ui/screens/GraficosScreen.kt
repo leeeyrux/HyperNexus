@@ -20,9 +20,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventEffect
-import androidx.lifecycle.LocalLifecycleOwner
+import androidx.lifecycle.LifecycleEventObserver
 import com.hypernexus.services.RedMagicOverlayService
 import com.hypernexus.ui.HyperNexusViewModel
 import com.hypernexus.ui.components.CyberGlowEntranceWrapper
@@ -46,8 +46,14 @@ fun GraficosScreen(
     // ============================================================
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
     // ============================================================
-    LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
-        viewModel.syncGraphicsState()
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.syncGraphicsState()
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
     }
 
     val renderers = listOf(

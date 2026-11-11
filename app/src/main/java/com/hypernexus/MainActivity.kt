@@ -64,12 +64,17 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             HyperNexusTheme {
-                HyperNexusApp(
-                    shizukuBridge = shizukuBridge,
-                    viewModel = viewModel,
-                    onRequestVpnStart = { pkg -> requestVpnActivation(pkg) },
-                    onRequestVpnStop = { executeVpnStop() }
-                )
+                val nexusState by viewModel.uiState.collectAsState()
+                androidx.compose.runtime.CompositionLocalProvider(
+                    com.hypernexus.ui.components.LocalGlassEffectEnabled provides nexusState.glassEffectEnabled
+                ) {
+                    HyperNexusApp(
+                        shizukuBridge = shizukuBridge,
+                        viewModel = viewModel,
+                        onRequestVpnStart = { pkg -> requestVpnActivation(pkg) },
+                        onRequestVpnStop = { executeVpnStop() }
+                    )
+                }
             }
         }
     }

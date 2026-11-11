@@ -35,9 +35,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventEffect
-import androidx.lifecycle.LocalLifecycleOwner
+import androidx.lifecycle.LifecycleEventObserver
 import com.hypernexus.data.HardwareMonitor
 import com.hypernexus.data.StorageTelemetry
 import com.hypernexus.domain.AppFilterManager
@@ -98,8 +98,14 @@ fun SeguridadScreen(
     // ============================================================
     // UNIVERSAL SYNC LIFECYCLE ENGINE - Real-time external state sync
     // ============================================================
-    LifecycleEventEffect(lifecycle, Lifecycle.Event.ON_RESUME) {
-        viewModel.syncSecurityState()
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.syncSecurityState()
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
     }
 
     val isTunnelRunning = uiState.vpnActive || HyperNexusVpnService.isRunning
